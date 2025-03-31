@@ -4,25 +4,56 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private final JwtAuthEntryPoint authEntryPoint;
+    private final JwtAuthFilter jwtAuthFilter;
+    
+    public SecurityConfig(JwtAuthEntryPoint authEntryPoint, JwtAuthFilter jwtAuthFilter) {
+        this.authEntryPoint = authEntryPoint;
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/h2-console/**").permitAll() // Allow H2 without auth
+            .csrf(csrf -> csrf.disable()) // New DSL
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint(authEntryPoint)
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .authorizeHttpRequests(auth -> auth // Changed from authorizeRequests()
+                .requestMatchers("/api/auth/**", "/h2-console/**", "/api/auth/login").permitAll() // Changed from antMatchers()
                 .anyRequest().authenticated()
             )
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**") // Disable CSRF for H2
-            )
             .headers(headers -> headers
-                .frameOptions().disable() // Allow frames for H2 console
-            );
+                .frameOptions(frame -> frame.disable()) // New DSL
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(
+        AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
