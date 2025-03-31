@@ -44,5 +44,6 @@
     "vite": "^5.4.2",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/tinycolor2": "^1.4.6"
-  }
+  },
+  "proxy":"http://localhost:8080"
 }

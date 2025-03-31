@@ -13,6 +13,7 @@ export default function SignupClassic() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log("Create Account -> handleSubmit Called !")
     e.preventDefault();
     setError('');
     
@@ -25,7 +26,6 @@ export default function SignupClassic() {
       setError('You must agree to the terms and conditions');
       return;
     }
-
     try {
       setLoading(true);
       const response = await fetch('http://localhost:8080/api/auth/signup', {
@@ -47,17 +47,17 @@ export default function SignupClassic() {
         navigate('/welcome');
       } else {
         setError(data.message || 'Registration failed');
-        {error && (
-            <div className="text-red-500 text-sm text-center mb-4">
-              {error}
-            </div>
-          )}
       }
     } catch (err) {
       setError('Network error - please try again later');
     } finally {
       setLoading(false);
     }
+    {error && (
+      <div className="text-red-500 text-sm text-center mb-4">
+        {error}
+      </div>
+    )}
   };
 
   // Add Google OAuth handler
@@ -188,13 +188,14 @@ export default function SignupClassic() {
 
               <button
                 type="submit"
+                onClick={handleSubmit}
                 disabled={loading}
                 className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#4A154B] ${
                     loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#3D1D38]'
                 }`}
-                >
+              >
                 {loading ? 'Creating Account...' : 'Create Account'}
-                </button>
+              </button>
             </form>
 
             <div className="mt-8 text-center text-sm">
