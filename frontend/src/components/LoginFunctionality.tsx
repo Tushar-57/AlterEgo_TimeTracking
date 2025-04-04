@@ -185,10 +185,12 @@
 // }
 
 // LoginClassic.tsx
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';  // Import the useAuth hook to access context
-import '../public/Skeleton.jpg';
+import skeletonImage from '../images/Skeleton1.jpg';
+// import '../public/Skeleton.jpg';
+
 
 export default function LoginClassic() {
   const [email, setEmail] = useState('');
@@ -196,17 +198,24 @@ export default function LoginClassic() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();  // Destructure the login function from the context
+  const { isAuthenticated, login } = useAuth();  // Destructure the login function from the context
 
+  const location = useLocation();
+  const signupSuccess = location.state?.signupSuccess;
+  const emailFromSignup = location.state?.email;
+  
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      console.log("login functionality called...");
-      console.log(email);
-      console.log(password);
+      console.log("From FrontEnd - login functionality called...");
+      // console.log(email);
+      // console.log(password);
 
       const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
@@ -218,19 +227,15 @@ export default function LoginClassic() {
           password,
         }),
       });
-
       const data = await response.json();
-      console.log(data);
-
-      if (response.ok) {
-        // Store JWT token in localStorage
-        localStorage.setItem('authToken', data.token);
-
-        // Update the AuthContext login state
-        login();
-
-        // Redirect to dashboard ("/")
-        navigate('/');
+      // console.log(data);
+       if (response.ok) {
+        const token = data.token;
+        if (!token) {
+          setError('No token received');
+          return;
+        }
+      login(token); // Removed the navigate call from here
       } else {
         setError(data.message || 'Login failed');
       }
@@ -254,7 +259,7 @@ export default function LoginClassic() {
           <div className="relative z-10 flex flex-col h-full">
             <div className="flex-grow flex flex-col justify-center space-y-6">
               <img 
-                src='/Skeleton.jpg'
+                src={skeletonImage}
                 alt="Skeleton at laptop" 
                 className="w-80 mx-auto transform -rotate-6"
               />
@@ -362,7 +367,7 @@ export default function LoginClassic() {
               <div className="mt-1">
                 <span className="text-gray-600 italic">We would love you Onboard you</span>
                 {' → '}
-                <Link to="/register" className="font-medium text-[#4A154B] hover:text-[#3D1D38]">
+                <Link to="/signup" className="font-medium text-[#4A154B] hover:text-[#3D1D38]">
                   Create an account
                 </Link>
               </div>

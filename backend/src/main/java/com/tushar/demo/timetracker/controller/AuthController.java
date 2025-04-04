@@ -5,6 +5,10 @@ import com.tushar.demo.timetracker.dto.LoginRequest;
 import com.tushar.demo.timetracker.dto.SignupRequest;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.UserRepository;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -43,6 +47,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    	
         System.out.println("Login - Backend Called ! " + loginRequest.toString());
         System.out.println("Email: " + loginRequest.email());
         System.out.println("Password: " + loginRequest.password());
@@ -58,6 +63,10 @@ public class AuthController {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String jwt = jwtUtils.generateToken(userDetails);
 
-        return ResponseEntity.ok().header("Authorization", "Bearer " + jwt).body("Login successful");
+        Map<String, String> response = new HashMap<>();
+        response.put("token", jwt);
+        return ResponseEntity.ok(response);
+        
+//        return ResponseEntity.ok().header("Authorization", "Bearer " + jwt).body("Login successful");
     }
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import skeletonImg from '../images/Skeleton1.jpg'
 
 
 export default function SignupClassic() {
@@ -11,6 +12,7 @@ export default function SignupClassic() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     console.log("Create Account -> handleSubmit Called !")
@@ -43,8 +45,16 @@ export default function SignupClassic() {
       const data = await response.json();
       
       if (response.ok) {
-        localStorage.setItem('authToken', data.token);
-        navigate('/welcome');
+        // Remove the token storage if you don't want auto-login after signup
+        // localStorage.setItem('authToken', data.token);
+        
+        // Redirect to login with success state
+        navigate('/login', { 
+          state: { 
+            signupSuccess: true,
+            email: email // Optional: pass the email to pre-fill login
+          } 
+        });
       } else {
         setError(data.message || 'Registration failed');
       }
@@ -53,11 +63,6 @@ export default function SignupClassic() {
     } finally {
       setLoading(false);
     }
-    {error && (
-      <div className="text-red-500 text-sm text-center mb-4">
-        {error}
-      </div>
-    )}
   };
 
   // Add Google OAuth handler
@@ -80,7 +85,7 @@ export default function SignupClassic() {
           <div className="relative z-10 flex flex-col h-full">
             <div className="flex-grow flex flex-col justify-center">
               <img 
-                src="public/Skeleton.jpg" 
+                src={skeletonImg} 
                 alt="Skeleton at laptop" 
                 className="w-96 mx-auto mb-12"
               />

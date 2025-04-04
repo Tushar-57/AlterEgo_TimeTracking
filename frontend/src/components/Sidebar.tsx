@@ -14,6 +14,7 @@ import {
   WatchIcon,
   CalendarRangeIcon
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const NavItem = ({ icon: Icon, label, to }: { icon: any; label: string; to: string }) => {
   const location = useLocation();
@@ -35,6 +36,7 @@ const NavItem = ({ icon: Icon, label, to }: { icon: any; label: string; to: stri
 };
 
 const Sidebar = () => {
+  const { logout } = useAuth();
   return (
     <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r border-gray-100 p-6">
       <div className="flex items-center space-x-3 mb-8">
@@ -69,10 +71,25 @@ const Sidebar = () => {
           <NavItem icon={Tag} label="Tags" to="/tags" />
         </div>
 
-        <div className="absolute bottom-6 left-6 right-6">
+        <div className="absolute bottom-4 left-6 right-6 space-y-1">
           <NavItem icon={Settings} label="Settings" to="/settings" />
+          <div
+            onClick={logout}
+            className="flex items-center space-x-3 px-4 py-3 text-gray-500 hover:bg-gray-100 rounded-lg transition-all duration-200 cursor-pointer"
+          >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-5 w-5" 
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M5 22q-.825 0-1.413-.588T3 20V4q0-.825.588-1.413T5 2h7v2H5v16h7v2H5Zm11-4l-1.375-1.45l2.55-2.55H9v-2h8.175l-2.55-2.55L16 7l5 5l-5 5Z"/>
+            </svg>
+            <span className="font-light">Log Out</span>
+          </div>
         </div>
       </div>
+
     </div>
   );
 };

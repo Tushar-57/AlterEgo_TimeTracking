@@ -84,23 +84,23 @@ const App = () => (
   <AuthProvider>
     <Router>
       <Routes>
-        {/* Public Routes without sidebar */}
+        {/* Public routes */}
         <Route path="/login" element={<LoginClassic />} />
         <Route path="/signup" element={<SignupClassic />} />
-        <Route path="/welcome" element={<Welcome />} />
 
-        {/* Protected Routes (only accessible if authenticated) */}
+        {/* Protected routes - Handles ALL paths including root */}
         <Route path="/*" element={<ProtectedRoutes />} />
       </Routes>
     </Router>
   </AuthProvider>
 );
 
+
 const ProtectedRoutes = () => {
-  const { isAuthenticated } = useAuth();  // Use the authentication context
+  const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;  // Redirect to login if not authenticated
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -108,6 +108,7 @@ const ProtectedRoutes = () => {
       <Sidebar />
       <main className="flex-1">
         <Routes>
+          <Route index element={<TimeTracker />} />
           <Route path="/" element={<TimeTracker />} />
           <Route path="/tasks" element={<TaskManager />} />
           <Route path="/analytics" element={<Analytics />} />
@@ -118,11 +119,40 @@ const ProtectedRoutes = () => {
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/tags" element={<Tags />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* <Route path="*" element={<Navigate to="/" replace />} */}
         </Routes>
       </main>
     </div>
   );
 };
+
+// const ProtectedRoutes = () => {
+//   const { isAuthenticated } = useAuth();  // Use the authentication context
+//   console.log('Is authenticated:', isAuthenticated); 
+//   if (!isAuthenticated) {
+//     return <Navigate to="/login" replace />;  // Redirect to login if not authenticated
+//   }
+
+//   return (
+//     <div className="flex">
+//       <Sidebar />
+//       <main className="flex-1">
+//         <Routes>
+//           <Route path="/" element={<TimeTracker />} />
+//           <Route path="/tasks" element={<TaskManager />} />
+//           <Route path="/analytics" element={<Analytics />} />
+//           <Route path="/calendar" element={<Calendar />} />
+//           <Route path="/reports" element={<Reports />} />
+//           <Route path="/projects" element={<Projects />} />
+//           <Route path="/clients" element={<Clients />} />
+//           <Route path="/invoices" element={<Invoices />} />
+//           <Route path="/tags" element={<Tags />} />
+//           <Route path="/settings" element={<Settings />} />
+//           <Route path="*" element={<Navigate to="/" replace />} />
+//         </Routes>
+//       </main>
+//     </div>
+//   );
+// };
 
 export default App;

@@ -1,30 +1,39 @@
-// context/AuthContext.tsx
-import React, { createContext, useState, useContext, ReactNode } from 'react';
-
-// Define the shape of the context
+import React, { createContext, useState, useContext, ReactNode, } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { isValidToken } from '../utils/auth';
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: () => void;
+  login: (token: string) => void; // Explicit token parameter
   logout: () => void;
 }
 
-// Default values for the context
 const defaultState: AuthContextType = {
   isAuthenticated: false,
-  login: () => {},
+  login: (token: string) => {}, // Match interface
   logout: () => {}
 };
 
-// Create the context
 const AuthContext = createContext<AuthContextType>(defaultState);
 
+// Export the hook properly
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    const token = localStorage.getItem('authToken');
+    return !!token && isValidToken(token); // Add token validation
+  });
 
-  const login = () => setIsAuthenticated(true);
-  const logout = () => setIsAuthenticated(false);
+  const login = (token: string) => {
+    localStorage.setItem('authToken', token);
+    setIsAuthenticated(true); // This triggers re-render
+  };
+
+  const logout = () => {
+    localStorage.removeItem('authToken');
+    setIsAuthenticated(false);
+  };
+  
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
