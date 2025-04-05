@@ -235,6 +235,7 @@ export default function LoginClassic() {
           setError('No token received');
           return;
         }
+      console.log(token);
       login(token); // Removed the navigate call from here
       } else {
         setError(data.message || 'Login failed');

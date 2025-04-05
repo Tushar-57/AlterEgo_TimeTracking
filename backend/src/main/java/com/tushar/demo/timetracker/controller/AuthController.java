@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -69,4 +70,14 @@ public class AuthController {
         
 //        return ResponseEntity.ok().header("Authorization", "Bearer " + jwt).body("Login successful");
     }
+    
+    @GetMapping("/validate")
+    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        if (jwtUtils.validateToken(token)) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+    
 }
