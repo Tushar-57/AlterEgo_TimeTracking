@@ -2,9 +2,16 @@
 package com.tushar.demo.timetracker.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.PastOrPresent;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.Duration;
 
 @Entity
@@ -19,6 +26,8 @@ public class TimeEntry {
     @NotNull(message = "Start time is required")
     private LocalDateTime startTime;
 
+    @Column(nullable = false)
+    @FutureOrPresent(message = "End time must be in the future")
     private LocalDateTime endTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -27,12 +36,27 @@ public class TimeEntry {
 
     private String category;
     private Long duration; // In seconds
+    @ElementCollection
+    private List<String> tags = new ArrayList<>();
 
+    @ManyToOne
+    private Project project;
+
+    private boolean billable;
+    private String client;
+    
+    @AssertTrue(message = "End time must be after start time")
+    public boolean isEndTimeValid() {
+        return endTime == null || endTime.isAfter(startTime);
+    }
+    
     @PrePersist
     @PreUpdate
     private void calculateDuration() {
-        if(startTime != null && endTime != null) {
+        if (startTime != null && endTime != null && endTime.isAfter(startTime)) {
             this.duration = Duration.between(startTime, endTime).getSeconds();
+        } else {
+            this.duration = 0L;
         }
     }
 

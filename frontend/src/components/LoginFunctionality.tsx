@@ -212,6 +212,18 @@ export default function LoginClassic() {
     setLoading(true);
     setError('');
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
+  
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      setLoading(false);
+      return;
+    }
+
     try {
       console.log("From FrontEnd - login functionality called...");
       // console.log(email);
@@ -227,23 +239,57 @@ export default function LoginClassic() {
           password,
         }),
       });
-      const data = await response.json();
-      // console.log(data);
-       if (response.ok) {
-        const token = data.token;
-        if (!token) {
-          setError('No token received');
-          return;
-        }
-      console.log(token);
-      login(token); // Removed the navigate call from here
+      const contentType = response.headers.get('content-type');
+      const isJson = contentType?.includes('application/json');
+      let data1;
+
+      if (isJson) {
+        data1 = await response.json();
       } else {
-        setError(data.message || 'Login failed');
+        const text = await response.text();
+        throw new Error(text || 'Unknown error occurred');
       }
-    } catch (err) {
-      setError('Network error - please try again later');
-    } finally {
-      setLoading(false);
+
+      if (!response.ok) {
+        // Use server message if available, otherwise generic message
+        
+        setError(data1?.message || data1?.error || `Login failed (${response.status})`);
+        return;
+      }
+      if (response.ok) {
+        const { token, refreshToken } = data1; // Destructure both tokens
+        login(token, refreshToken); // Pass both to context
+        window.location.href = '/';
+        localStorage.setItem('token', data1.token); // Ensure backend returns { token }
+        window.location.reload();
+        // Redirect to protected route
+      }
+      // if (data1.token) {
+      //   login(data1.token, );
+      //   navigate('/');
+      // }
+
+      console.log(response.status)
+      // const data = await response.json();
+      console.log('[266@handleSubmit@LoginFunctionality] | JWT Token ->',data1.token);
+      // if(data.token){
+      //   login(token); // Removed the navigate call from here
+      //   navigate('/')
+      // }
+      }
+      catch (err) {
+        const error = err as Error;
+        // Handle JSON parse errors specifically
+        if (error.name === 'SyntaxError') {
+          setError('Invalid server response');
+        } else if (error.message.includes('Failed to fetch')) {
+          setError('Server connection failed. Please try again later');
+        } else {
+          setError(error.message);
+        }
+      }
+      finally {
+        setLoading(false);
     }
   };
 
@@ -272,7 +318,7 @@ export default function LoginClassic() {
                 <p className="text-lg text-[#4A154B] opacity-80">
                   Still making changes to your schedule<br/>
                   to make time for people you love ?
-                </p>
+                </p><br/>
                 <p className="text-2xl font-handwriting text-[#4A154B] mt-8">
                   Be Human, 3rd:9:0.
                 </p>
@@ -350,7 +396,35 @@ export default function LoginClassic() {
                   Forgot Password?
                 </a>
               </div>
-
+              {/* {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-800 rounded text-sm">
+                {error.includes('Network Error') ? (
+                  <>
+                    Connection failed. Check your internet or try again later.
+                    <button 
+                      onClick={handleSubmit}
+                      className="ml-2 text-red-800 font-medium hover:text-red-900"
+                    >
+                      Retry
+                    </button>
+                  </>
+                ) : error}
+              </div>
+            )} */}
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 text-red-800 rounded text-sm">
+                  {error === 'Invalid credentials' ? (
+                    <div className="space-y-2">
+                      <p>Invalid email or password</p>
+                      <div className="text-xs">
+                        <Link to="/forgot-password" className="text-red-800 hover:text-red-900">
+                          Forgot your password?
+                        </Link>
+                      </div>
+                    </div>
+                  ) : error}
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={loading}
