@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import skeletonImg from '../images/Skeleton1.jpg'
+import { api } from '../utils/client';
 
 
 export default function SignupClassic() {
@@ -12,22 +13,52 @@ export default function SignupClassic() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
+  const isFormValid = 
+  name.trim() !== '' &&
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
+  password.length >= 6 &&
+  password === confirmPassword &&
+  agreedToTerms;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log("Create Account -> handleSubmit Called !")
+    console.log("Create Account -> handleSubmit@SignupFunctionality !")
     e.preventDefault();
     setError('');
+    setFormSubmitted(true);
+
+    if (!isFormValid) {
+      // Don't proceed if form is invalid
+      return;
+    }
     
+    if (!name.trim()) {
+      setError('Name is required');
+      return;
+    }
+    
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('Invalid email format');
+      return;
+    }
+    
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+  
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-
+  
     if (!agreedToTerms) {
       setError('You must agree to the terms and conditions');
       return;
     }
+  
     try {
       setLoading(true);
       const response = await fetch('http://localhost:8080/api/auth/signup', {
@@ -38,25 +69,57 @@ export default function SignupClassic() {
         body: JSON.stringify({
           email,
           password,
-          name // Add this if your backend supports name
+          name
         }),
       });
 
+      // Handle empty response
+    if (response.status === 204) {
+      throw new Error('No content received');
+    }
+    if (response.status === 400) {
+      throw new Error('Account already exist, Please login');
+      // setTimeout(() => {
+      //   navigate('/login', { 
+      //     state: { 
+      //       signupSuccess: true,
+      //       email: email
+      //     } 
+      //   });
+      // }, 2000);
+    }
       const data = await response.json();
-      
+      // console.log('Parsed data:', response.body); 
+      // const data = await response.json();
+      // const contentType = response.headers.get('content-type');
+      // if (!contentType || !contentType.includes('application/json')) {
+      //   throw new Error('Received non-JSON response');
+      // }
+      // console.log('Parsed data:', data); 
       if (response.ok) {
-        // Remove the token storage if you don't want auto-login after signup
-        // localStorage.setItem('authToken', data.token);
+        // Reset form fields
+        setEmail('');
+        setName('');
+        setPassword('');
+        setConfirmPassword('');
+        setAgreedToTerms(false);
+  
+        if (data.token) {
+          console.log(data.token)
+          localStorage.setItem('authToken', data.token);
+        }
+        setSuccessMessage('Account Created, Redirecting...');
         
-        // Redirect to login with success state
-        navigate('/login', { 
-          state: { 
-            signupSuccess: true,
-            email: email // Optional: pass the email to pre-fill login
-          } 
-        });
+        setTimeout(() => {
+          navigate('/login', { 
+            state: { 
+              signupSuccess: true,
+              email: email
+            } 
+          });
+        }, 2000);
       } else {
-        setError(data.message || 'Registration failed');
+        setError(data.message || 'User Registration failed !');
       }
     } catch (err) {
       setError('Network error - please try again later');
@@ -131,17 +194,20 @@ export default function SignupClassic() {
               </div>
             </div>
 
-            <form className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
-                  placeholder="John Doe"
-                />
-              </div>
+            <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
+                placeholder="John Doe"
+              />
+              {formSubmitted && name.trim() === '' && (
+                <p className="text-red-500 text-xs mt-1">Name is required</p>
+              )}
+            </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -152,6 +218,9 @@ export default function SignupClassic() {
                   className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
                   placeholder="your.email@example.com"
                 />
+                {email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && (
+                  <p className="text-red-500 text-xs mt-1">Invalid email format</p>
+                )}
               </div>
 
               <div>
@@ -163,6 +232,9 @@ export default function SignupClassic() {
                   className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
                   placeholder="••••••••"
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  Password must be at least 6 characters
+                </div>
               </div>
 
               <div>
@@ -174,6 +246,9 @@ export default function SignupClassic() {
                   className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
                   placeholder="••••••••"
                 />
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-red-500 text-xs mt-1">Passwords do not match</p>
+                )}
               </div>
 
               <div className="flex items-center">
@@ -190,17 +265,24 @@ export default function SignupClassic() {
                   <a href="#" className="text-[#4A154B] hover:text-[#3D1D38]">Privacy Policy</a>
                 </label>
               </div>
+              {formSubmitted && !agreedToTerms && (
+                <p className="text-red-500 text-xs mt-1">You must agree to the terms and conditions</p>
+              )}
 
               <button
                 type="submit"
-                onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || !isFormValid}
                 className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#4A154B] ${
-                    loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#3D1D38]'
+                  loading || !isFormValid ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#3D1D38]'
                 }`}
               >
                 {loading ? 'Creating Account...' : 'Create Account'}
               </button>
+              {successMessage && (
+                <div className="mb-4 p-3 bg-green-100 text-green-800 rounded">
+                  {successMessage}
+                </div>
+                )}
             </form>
 
             <div className="mt-8 text-center text-sm">
