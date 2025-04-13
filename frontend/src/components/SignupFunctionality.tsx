@@ -106,7 +106,7 @@ export default function SignupClassic() {
   
         if (data.token) {
           console.log(data.token)
-          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('token', data.token);
         }
         setSuccessMessage('Account Created, Redirecting...');
         

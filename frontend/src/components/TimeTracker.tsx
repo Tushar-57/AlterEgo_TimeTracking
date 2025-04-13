@@ -4,6 +4,7 @@ import FocusTrap from 'focus-trap-react';
 import { Play, Pause, RotateCcw, Expand, Clock, Volume2, Hourglass, Sun, Laptop, Moon, Brain, Sparkles, X, TimerIcon } from 'lucide-react';
 import { TimerPopup } from './TimerPopUp';
 import { useAuth } from '../context/AuthContext';
+import VoiceAIMode from './AIModeComponent';
 
 type TimerMode = 'stopwatch' | 'countdown';
 type TimerStatus = 'stopped' | 'running' | 'paused';
@@ -52,7 +53,9 @@ export default function TimeTracker() {
     category: 'work'
   });
   const [activeTimerId, setActiveTimerId] = useState<number | null>(null);
-
+  // New state for AI interactions
+  const [aiActivities, setAiActivities] = useState<string[]>([]);
+  const [aiStatus, setAiStatus] = useState<'idle' | 'processing' | 'success'>('idle');
 
 
 
@@ -155,7 +158,10 @@ export default function TimeTracker() {
 
   const handleTimerComplete = () => {
     // setStatus('stopped');
-    timerState.status = 'stopped'
+    setTimerState(prev => ({
+      ...prev,
+      status: 'stopped'
+    }));
     if (soundEnabled) audioRef.current?.play();
   };
 
@@ -321,7 +327,7 @@ export default function TimeTracker() {
   };
   
   useEffect(() => {
-    if (status === 'running') {
+    if (timerState.status === 'running') {
       const interval = setInterval(() => {
         setTimerState(prev => ({
           ...prev,
@@ -333,7 +339,7 @@ export default function TimeTracker() {
   
       return () => clearInterval(interval);
     }
-  }, [status, timerMode]);
+  }, [timerState.status, timerMode]);
   
   // Persist timer state
   useEffect(() => {
@@ -387,11 +393,11 @@ export default function TimeTracker() {
 
   return (
     <div className="min-h-screen transition-all duration-500 ${aiMode ? 'bg-gradient-to-br from-gray-50 to-gray-100' : 'luxury-gradient'}">
-      <div className="max-w-4xl mx-auto p-8">
-        <div className="grid grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto p-8 md:p-6 lg:p-8">
+        <div className="grid grid-cols-3 gap-8 lg:grid-cols-5 gap-6">
           {/* Timer Section */}
-          <div className="col-span-3 lg:col-span-2">
-            <div className="glass-morphism rounded-2xl p-8 space-y-8">
+          <div className="lg:col-span-3">
+            <div className="glass-morphism rounded-2xl p-6 space-y-6">
               {/* Global Expand Button with Status Indicator */}
               
               <button
@@ -555,9 +561,9 @@ export default function TimeTracker() {
           </div>
 
           {/* Sidebar */}
-          <div className="col-span-3 lg:col-span-1 space-y-6">
+          <div className="lg:col-span-2 flex flex-col gap-6">
             {/* AI Assistant Toggle */}
-            <div className="glass-morphism rounded-2xl p-6">
+            <div className="glass-morphism rounded-2xl p-6 h-fit">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Brain className="w-6 h-6 text-gray-600" aria-hidden="true" />
@@ -573,6 +579,48 @@ export default function TimeTracker() {
                 >
                   <div className="w-5 h-5 rounded-full bg-white shadow-sm transform translate-x-0.5"></div>
                 </button>
+              </div>
+            </div>
+            {/* Add Voice AI Mode Section */}
+            <div className="glass-morphism rounded-2xl p-6 flex-1 flex flex-col min-h-[500px]">
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <h3 className="space-y-6 flex-1 overflow-y-auto pb-4">
+                  <span className="relative flex h-3 w-3">
+                    {aiStatus !== 'idle' && (
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${
+                        aiStatus === 'processing' ? 'bg-yellow-400' : 'bg-green-400'
+                      } opacity-75`} />
+                    )}
+                    <span className={`relative inline-flex rounded-full h-3 w-3 ${
+                      aiStatus === 'idle' ? 'bg-gray-300' : 
+                      aiStatus === 'processing' ? 'bg-yellow-500' : 'bg-green-500'
+                    }`} />
+                  </span>
+                  Voice Assistant
+                </h3>
+              </div>
+              
+              <VoiceAIMode 
+                onProcessingStart={() => setAiStatus('processing')}
+                onProcessingEnd={(success) => setAiStatus(success ? 'success' : 'idle')}
+                onActivityLog={(activity) => setAiActivities(prev => [activity, ...prev])}
+                className="mb-6"
+              />
+
+              {/* AI Activity Feed */}
+              <div className="border-t pt-4 flex-1">
+                <h4 className="text-sm font-medium text-gray-600 mb-2">Recent Activities</h4>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {aiActivities.map((activity, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm p-2 bg-gray-50 rounded-lg">
+                      <span className="text-gray-400">⌘</span>
+                      {activity}
+                    </div>
+                  ))}
+                  {aiActivities.length === 0 && (
+                    <p className="text-gray-400 text-sm">No activities yet. Try giving a voice command!</p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -591,8 +639,8 @@ export default function TimeTracker() {
             </div>
 
             {/* Calendar Integration */}
-            <div className="glass-morphism rounded-2xl p-6">
-              {/* CalendarOverlay placeholder */}
+            <div className="glass-morphism rounded-2xl p-6 flex-1">
+              {/* { CalendarOverlay placeholder } */}
             </div>
           </div>
         </div>

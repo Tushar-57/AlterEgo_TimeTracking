@@ -258,10 +258,10 @@ export default function LoginClassic() {
       }
       if (response.ok) {
         const { token, refreshToken } = data1; // Destructure both tokens
-        login(token, refreshToken); // Pass both to context
-        window.location.href = '/';
-        localStorage.setItem('token', data1.token); // Ensure backend returns { token }
-        window.location.reload();
+        await login(token, refreshToken); // Pass both to context
+        navigate('/');
+        // localStorage.setItem('token', data1.token); // Ensure backend returns { token }
+        // window.location.reload();
         // Redirect to protected route
       }
       // if (data1.token) {
