@@ -12,6 +12,9 @@ import jakarta.validation.constraints.PastOrPresent;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.time.Duration;
 
 @Entity
@@ -24,9 +27,11 @@ public class TimeEntry {
     private String taskDescription;
 
     @NotNull(message = "Start time is required")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
 
     @Column(nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @FutureOrPresent(message = "End time must be in the future")
     private LocalDateTime endTime;
 
@@ -49,6 +54,7 @@ public class TimeEntry {
     public boolean isEndTimeValid() {
         return endTime == null || endTime.isAfter(startTime);
     }
+
     
     @PrePersist
     @PreUpdate
@@ -62,15 +68,15 @@ public class TimeEntry {
 
     // Getters and Setters
     public Long getId() { return id; }
-    public String getTaskDescription() { return taskDescription; }
-    public void setTaskDescription(String taskDescription) { this.taskDescription = taskDescription; }
-    public LocalDateTime getStartTime() { return startTime; }
-    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
-    public LocalDateTime getEndTime() { return endTime; }
-    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
-    public Users getUser() { return user; }
-    public void setUser(Users user) { this.user = user; }
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
-    public Long getDuration() { return duration; }
+	public String getTaskDescription() { return taskDescription; }
+	public void setTaskDescription(String taskDescription) { this.taskDescription = taskDescription; }
+	public LocalDateTime getStartTime() { return startTime; }
+	public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+	public LocalDateTime getEndTime() { return endTime; }
+	public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+	public Users getUser() { return user; }
+	public void setUser(Users user) { this.user = user; }
+	public String getCategory() { return category; }
+	public void setCategory(String category) { this.category = category; }
+	public Long getDuration() { return duration; }
 }

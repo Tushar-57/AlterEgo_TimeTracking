@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import FocusTrap from 'focus-trap-react';
 // import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Play, Pause, RotateCcw, Expand, Clock, Volume2, Hourglass, Sun, Laptop, Moon, Brain, Sparkles, X, TimerIcon } from 'lucide-react';
+import { Play, Pause, RotateCcw, Expand, Volume2, Hourglass, Sun, Laptop, Moon, Brain, Sparkles, TimerIcon } from 'lucide-react';
 import { TimerPopup } from './TimerPopUp';
 import { useAuth } from '../context/AuthContext';
+import VoiceAIMode from './AIModeComponent';
 
 type TimerMode = 'stopwatch' | 'countdown';
 type TimerStatus = 'stopped' | 'running' | 'paused';
@@ -20,11 +22,10 @@ const presetTimes: PresetTime[] = [
 ];
 
 export default function TimeTracker() {
+  const {isAuthenticated} = useAuth();
+  const navigate = useNavigate();
   // Core timer state
   const [timerMode, setTimerMode] = useState<TimerMode>('stopwatch');
-  // const [status, setStatus] = useState<TimerStatus>('stopped');
-  // const [time, setTime] = useState(0);
-  // const [targetTime, setTargetTime] = useState(1500);
   const [showPopup, setShowPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -40,46 +41,48 @@ export default function TimeTracker() {
   const [mode, setMode] = useState('balanced');
   const [aiMode, setAiMode] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const timerRef = useRef<number>();
+  // const timerRef = useRef<number>();
   const audioRef = useRef<HTMLAudioElement>();
 
   const [taskName, setTaskName] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(['Ai','Random']);
+
+  const [activeTimerId, setActiveTimerId] = useState<number | null>(null);
+  // New state for AI interactions
+  const [aiActivities, setAiActivities] = useState<string[]>([]);
+  const [aiStatus, setAiStatus] = useState<'idle' | 'processing' | 'success'>('idle');
 
   const [currentTask, setCurrentTask] = useState({
     description: '',
-    tags: [] as string[],
-    category: 'work'
+    category: 'work',
+    tags: tags,
+    billable: false,
+    projectId: null as number | null | undefined // Allow null
   });
-  const [activeTimerId, setActiveTimerId] = useState<number | null>(null);
-
-
-
-
+  
   useEffect(() => {
-    // Load saved state
-    const savedState = localStorage.getItem('timerState');
-    if (savedState) {
-      setTimerState(JSON.parse(savedState));
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true });
     }
-  }, []);
+  }, [isAuthenticated]);
   
   useEffect(() => {
     // Save state on change
     localStorage.setItem('timerState', JSON.stringify(timerState));
   }, [timerState]);
-  
-  // Clear on logout (in your auth context)
-  const logout = () => {
-    localStorage.removeItem('timerState');
-    // ... other logout logic
-  };
 
   // Initialize audio
   useEffect(() => {
     audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
   }, []);
 
+  const handleTimerComplete = () => {
+    setTimerState(prev => ({
+      ...prev,
+      status: 'stopped'
+    }));
+    if (soundEnabled) audioRef.current?.play();
+  };
   // Timer logic
   useEffect(() => {
     let interval: number;
@@ -93,37 +96,12 @@ export default function TimeTracker() {
           if (timerMode === 'countdown' && newTime <= 0) {
             handleTimerComplete();
           }
-          
           return { ...prev, time: newTime };
         });
       }, 1000);
     }
-    return () => clearInterval(interval);
-  }, [timerState.status, timerMode]);
-
-  useEffect(() => {
-    const savedState = localStorage.getItem('timerState');
-    if (savedState) {
-      const parsed = JSON.parse(savedState);
-      // Validate stored time
-      const maxValidTime = timerMode === 'countdown' ? parsed.targetTime : Infinity;
-      setTimerState({
-        ...parsed,
-        time: Math.min(parsed.time, maxValidTime)
-      });
-    }
-  }, []);
-  
-  useEffect(() => {
-    localStorage.setItem('timerState', JSON.stringify({
-      ...timerState,
-      // Reset countdown if paused
-      time: timerState.status === 'paused' && timerMode === 'countdown' 
-        ? timerState.targetTime 
-        : timerState.time
-    }));
-  }, [timerState]);
-  
+    return () => window.clearInterval(interval);
+  }, [timerState.status, timerMode, handleTimerComplete]);
 
   // Keyboard shortcuts + Escape to close popup
   useEffect(() => {
@@ -153,20 +131,6 @@ export default function TimeTracker() {
     return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
   };
 
-  const handleTimerComplete = () => {
-    // setStatus('stopped');
-    timerState.status = 'stopped'
-    if (soundEnabled) audioRef.current?.play();
-  };
-
-  // const toggleTimer = () => {
-  //   if (status === 'stopped' || status === 'paused') {
-  //     if (timerMode === 'countdown' && time === 0) setTime(targetTime);
-  //     setStatus('running');
-  //   } else {
-  //     setStatus('paused');
-  //   }
-  // };
   const toggleTimer = () => {
     setTimerState(prev => {
       // Reset countdown to targetTime if starting from stopped/paused
@@ -191,10 +155,6 @@ export default function TimeTracker() {
       status: 'stopped'
     }));
   };
-  // const resetTimer = () => {
-  //   setStatus('stopped');
-  //   setTime(0);
-  // };
 
   const handlePresetClick = (preset: PresetTime) => {
     setTimerState(prev => ({
@@ -207,56 +167,11 @@ export default function TimeTracker() {
   const handleSaveEntry = async (entry: any) => {
     // await useAuth();
     setTaskName(entry.taskDescription);
-    // setCurrentTask({
-    //   description: entry.taskDescription,
-    //   tags: entry.tags,
-    //   category: entry.category
-    // });
     setIsSubmitting(true);
     setSubmitError(null);
-    //V1_Below
-    // try {
-    //   const resp = await fetch('http://localhost:8080/api/timers', {
-    //     method: 'POST',
-    //     headers: { 
-    //       'Content-Type': 'application/json',
-    //       'Authorization': `Bearer ${localStorage.getItem('token')}` 
-    //     },
-    //     body: JSON.stringify({
-    //       taskDescription: entry.taskDescription,
-    //       category: entry.category,
-    //       startTime: entry.startTime.toISOString(),
-    //       endTime: entry.endTime.toISOString(),
-    //       projectId: entry.projectId, // Ensure this is included
-    //       billable: entry.billable     // Ensure this is included
-    //     })
-    //   });
-
-    //   if (!resp.ok) {
-    //     const errorData = await resp.json();
-    //     let errorMessage = errorData.message || 'Save failed';
-        
-    //     if (resp.status === 409) {
-    //       errorMessage = 'Stop current timer before starting a new one';
-    //     }
-        
-    //     throw new Error(errorMessage);
-    //   }
-    //   setTimerState({
-    //     time: 0,
-    //     status: 'stopped',
-    //     mode: 'stopwatch',
-    //     targetTime: 1500
-    //   });
-    //   setShowPopup(false);
-    // } catch (e) {
-    //   setSubmitError((e as Error).message);
-    // } finally {
-    //   setIsSubmitting(false);
-    // }};
-    // Ver1_above
+    setTags(entry.tags)
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('jwtToken');
       if (!token) {
         setSubmitError('Not authenticated');
         setIsSubmitting(false);
@@ -272,7 +187,7 @@ export default function TimeTracker() {
         method,
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}` // Ensure header exists
         },
         body: JSON.stringify({
           taskDescription: entry.taskDescription,
@@ -284,7 +199,12 @@ export default function TimeTracker() {
           tags: entry.tags
         })
       });
-  
+      
+      if (resp.status === 401) {
+        localStorage.removeItem('jwtToken');
+        navigate('/login', { replace: true });
+        return;
+      }
       if (!resp.ok) {
         const errorData = await resp.json();
         const errorMessage = errorData.message || 
@@ -302,26 +222,18 @@ export default function TimeTracker() {
         mode: 'stopwatch',
         targetTime: 1500
       });
-      
       setShowPopup(false);
     } catch (e) {
-      let message = 'Unknown error';
-    if (e instanceof Error) {
-      message = e.message;
-      if (message.includes("401")) {
-        // Handle expired token
-        localStorage.removeItem('token');
-        window.location.reload();
+      if (e instanceof Error && e.message.includes('401')) {
+        localStorage.removeItem('jwtToken');
+        navigate('/login', { replace: true });
       }
-    }
-    setSubmitError(message);
-  } finally {
+    } finally {
       setIsSubmitting(false);
     }
   };
-  
   useEffect(() => {
-    if (status === 'running') {
+    if (timerState.status === 'running') {
       const interval = setInterval(() => {
         setTimerState(prev => ({
           ...prev,
@@ -333,7 +245,7 @@ export default function TimeTracker() {
   
       return () => clearInterval(interval);
     }
-  }, [status, timerMode]);
+  }, [timerState.status, timerMode]);
   
   // Persist timer state
   useEffect(() => {
@@ -360,12 +272,24 @@ export default function TimeTracker() {
   useEffect(() => {
     const checkActiveTimer = async () => {
       try {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
         const resp = await fetch('http://localhost:8080/api/timers/active', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}` // Add auth header
           }
         });
-        
+        if (resp.status === 404) return; // Handle 404 gracefully
+        if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+        if (resp.status === 401) {
+          localStorage.removeItem('jwtToken');
+          navigate('/login', { replace: true }); // Use navigate instead of reload
+          return;
+        }
+  
         if (resp.ok) {
           const data = await resp.json();
           setActiveTimerId(data.id);
@@ -379,19 +303,22 @@ export default function TimeTracker() {
         }
       } catch (error) {
         console.error('Error checking active timer:', error);
+        localStorage.removeItem('jwtToken');
+        // navigate('/login', { replace: true });
       }
     };
-    
-    checkActiveTimer();
-  }, []);
+    if (isAuthenticated) { // Only check if authenticated
+      checkActiveTimer();
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="min-h-screen transition-all duration-500 ${aiMode ? 'bg-gradient-to-br from-gray-50 to-gray-100' : 'luxury-gradient'}">
-      <div className="max-w-4xl mx-auto p-8">
-        <div className="grid grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto p-8 md:p-6 lg:p-8">
+        <div className="grid grid-cols-3 gap-8 lg:grid-cols-5 gap-6">
           {/* Timer Section */}
-          <div className="col-span-3 lg:col-span-2">
-            <div className="glass-morphism rounded-2xl p-8 space-y-8">
+          <div className="lg:col-span-3">
+            <div className="glass-morphism rounded-2xl p-6 space-y-6">
               {/* Global Expand Button with Status Indicator */}
               
               <button
@@ -400,11 +327,10 @@ export default function TimeTracker() {
                 className="fixed bottom-8 right-8 p-4 bg-black text-white rounded-full shadow-xl hover:scale-105 transition-transform"
               >
                 <Expand className="w-6 h-6" />
-                <span
-                  aria-hidden="true"
-                  className={`absolute top-1 right-1 w-2 h-2 rounded-full animate-pulse ${
-                    timerState.status === 'running' ? 'bg-green-400' : 'bg-gray-400'
-                  }`}
+                <span className={`absolute top-1 right-1 w-2 h-2 rounded-full animate-pulse ${
+                  timerState.status === 'running' ? 'bg-green-400' : 
+                  timerState.status === 'paused' ? 'bg-yellow-400' : 'bg-gray-400'
+                }`}
                 />
               </button>
 
@@ -508,25 +434,45 @@ export default function TimeTracker() {
                   <FocusTrap focusTrapOptions={{ clickOutsideDeactivates: true }}>
                     <div onKeyDown={e => e.stopPropagation()} tabIndex={0}>
                       <TimerPopup
-                    time={timerState.time}
-                    taskName={taskName}
-                    setTaskName={setTaskName}
-                    timerState={timerState}
-                    setTimerState={setTimerState}
-                    soundEnabled={soundEnabled}
-                    aiMode={aiMode}
-                    timerMode={timerMode}
-                    presetTimes={presetTimes}
-                    formatTime={formatTime}
-                    toggleTimer={toggleTimer}
-                    resetTimer={resetTimer}
-                    handlePresetClick={handlePresetClick}
-                    setSoundEnabled={setSoundEnabled}
-                    setAiMode={setAiMode}
-                    onClose={() => setShowPopup(false)}
-                    onSave={handleSaveEntry}
-                    isSubmitting={isSubmitting}
-                    submitError={submitError} status={'stopped'}                      />
+                        status={timerState.status}
+                        // Update type annotations for setters
+                        setTaskDescription={(val: string) => setCurrentTask(prev => ({...prev, description: val}))}
+                        setCategory={(val: string) => setCurrentTask(prev => ({...prev, category: val}))}
+                        setTags={(val: string[]) => setCurrentTask(prev => ({...prev, tags: val}))}
+                        setIsBillable={(val: boolean) => setCurrentTask(prev => ({...prev, billable: val}))}
+                        // setSelectedProjectId={(val: number | null) => setCurrentTask(prev => ({...prev, projectId: val}))}
+                        setSelectedProjectId={(val: number | undefined) => 
+                          setCurrentTask(prev => ({...prev, projectId: val}))
+                        }
+                        taskDescription={currentTask.description}
+                        // setTaskDescription={(val) => setCurrentTask(prev => ({...prev, description: val}))}
+                        category={currentTask.category}
+                        // setCategory={(val) => setCurrentTask(prev => ({...prev, category: val}))}
+                        tags={currentTask.tags}
+                        // setTags={(val) => setCurrentTask(prev => ({...prev, tags: val}))}
+                        isBillable={currentTask.billable}
+                        // setIsBillable={(val) => setCurrentTask(prev => ({...prev, billable: val}))}
+                        selectedProjectId={undefined}
+                        // setSelectedProjectId={(val) => setCurrentTask(prev => ({...prev, projectId: val}))}
+                        time={timerState.time}
+                        taskName={taskName}
+                        setTaskName={setTaskName}
+                        timerState={timerState}
+                        setTimerState={setTimerState}
+                        soundEnabled={soundEnabled}
+                        aiMode={aiMode}
+                        timerMode={timerMode}
+                        presetTimes={presetTimes}
+                        formatTime={formatTime}
+                        toggleTimer={toggleTimer}
+                        resetTimer={resetTimer}
+                        handlePresetClick={handlePresetClick}
+                        setSoundEnabled={setSoundEnabled}
+                        setAiMode={setAiMode}
+                        onClose={() => setShowPopup(false)}
+                        onSave={handleSaveEntry}
+                        isSubmitting={isSubmitting}
+                        submitError={submitError} />
                     </div>
                   </FocusTrap>
                 )}
@@ -555,9 +501,9 @@ export default function TimeTracker() {
           </div>
 
           {/* Sidebar */}
-          <div className="col-span-3 lg:col-span-1 space-y-6">
+          <div className="lg:col-span-2 flex flex-col gap-6">
             {/* AI Assistant Toggle */}
-            <div className="glass-morphism rounded-2xl p-6">
+            <div className="glass-morphism rounded-2xl p-6 h-fit">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Brain className="w-6 h-6 text-gray-600" aria-hidden="true" />
@@ -573,6 +519,33 @@ export default function TimeTracker() {
                 >
                   <div className="w-5 h-5 rounded-full bg-white shadow-sm transform translate-x-0.5"></div>
                 </button>
+              </div>
+            </div>
+            {/* Add Voice AI Mode Section */}
+            <div className="glass-morphism rounded-2xl p-6 flex-1 flex flex-col min-h-[500px]">
+              <VoiceAIMode 
+                onProcessingStart={() => setAiStatus('processing')}
+                onProcessingEnd={(success) => setAiStatus(success ? 'success' : 'idle')}
+                onActivityLog={(transcript: string) =>  // Add type annotation
+                  setAiActivities((prev: string[]) => [transcript, ...prev.slice(0, 5)])
+                }
+                className="mb-6"
+              />
+
+              {/* AI Activity Feed */}
+              <div className="border-t pt-4 flex-1">
+                <h4 className="text-sm font-medium text-gray-600 mb-2">Recent Activities</h4>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {aiActivities.map((activity, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm p-2 bg-gray-50 rounded-lg">
+                      <span className="text-gray-400">⌘</span>
+                      {activity}
+                    </div>
+                  ))}
+                  {aiActivities.length === 0 && (
+                    <p className="text-gray-400 text-sm">No activities yet. Try giving a voice command!</p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -591,8 +564,8 @@ export default function TimeTracker() {
             </div>
 
             {/* Calendar Integration */}
-            <div className="glass-morphism rounded-2xl p-6">
-              {/* CalendarOverlay placeholder */}
+            <div className="glass-morphism rounded-2xl p-6 flex-1">
+              {/* { CalendarOverlay placeholder } */}
             </div>
           </div>
         </div>
