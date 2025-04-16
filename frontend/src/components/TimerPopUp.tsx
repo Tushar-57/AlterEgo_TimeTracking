@@ -13,8 +13,20 @@ interface TimeEntry {
   billable: boolean;
 }
 interface TimerPopupProps {
-  time: number;
+
+  taskDescription: string;
+  setTaskDescription: (val: string) => void;
+  category: string;
+  setCategory: (val: string) => void;
+  tags: string[];
+  setTags: (val: string[]) => void;
+  isBillable: boolean;
+  setIsBillable: (val: boolean) => void;
+  selectedProjectId?: number | undefined;
+  setSelectedProjectId: (val: number | undefined) => void;
   status: 'stopped' | 'running' | 'paused';
+  // ... rest of existing props
+  time: number;
   soundEnabled: boolean;
   aiMode: boolean;
   timerMode: 'stopwatch' | 'countdown';
@@ -55,7 +67,6 @@ export const TimerPopup = ({
   isSubmitting,
   submitError,
   time,
-  status,
   soundEnabled,
   aiMode,
   timerMode,
@@ -96,19 +107,28 @@ export const TimerPopup = ({
 
   useEffect(() => {
     const fetchProjects = async () => {
-      setIsLoadingProjects(true);
+      const token = localStorage.getItem('jwtToken');
+      if (!token) return;
+      // setIsLoadingProjects(true);
       try {
         const response = await fetch('/api/projects', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${token}`
           }
         });
+        if (response.status === 401) {
+          localStorage.removeItem('jwtToken');
+          window.location.href = '/login'; // Hard redirect breaks recursion
+          return;
+        }
         if (!response.ok) throw new Error('Failed to fetch');
           const data = await response.json();
           setProjects(data);
         } catch (error) {
-          console.error('Failed to fetch projects:', error);
-          // setSubmitError('Failed to load projects');
+          if (error instanceof Error && error.message.includes('401')) {
+            localStorage.removeItem('jwtToken');
+            window.location.href = '/login';
+          }
         } finally {
           setIsLoadingProjects(false);
         }
@@ -116,7 +136,7 @@ export const TimerPopup = ({
     fetchProjects();}, []);
 
   const handleComplete = () => {
-    console.log('Token:', localStorage.getItem('token'));
+    console.log('Token:', localStorage.getItem('jwtToken'));
     let sTime = startTime;
     let eTime = new Date();
     if (manualMode) {

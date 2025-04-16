@@ -57,6 +57,7 @@ public class TimeEntryService {
     }
 
     public List<String> getDescriptionSuggestions(String query, Users user) {
-        return List.of("Meeting", "Development", "Research"); // Placeholder
+        return timeEntryRepository.findSimilarDescriptions(user, query + "%");
     }
+    
 }

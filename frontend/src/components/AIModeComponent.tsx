@@ -1,191 +1,3 @@
-// import React, { useState, useEffect } from 'react';
-// import { Mic, Sparkles, X, Check, Bot, Volume2, Hourglass } from 'lucide-react';
-// import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-
-// interface VoiceAIModeProps {
-//   onProcessingStart?: () => void;
-//   onProcessingEnd?: (success: boolean) => void;
-//   onActivityLog?: (activity: string) => void;
-//   className?: string;
-// }
-
-// // New state for voice feedback
-// // const [voiceFeedback, setVoiceFeedback] = useState<string>('');
-// // const [isAnimating, setIsAnimating] = useState(false);
-
-
-// const VoiceAIMode: React.FC<VoiceAIModeProps> = ({ 
-//   onProcessingStart,
-//   onProcessingEnd,
-//   onActivityLog,
-//   className
-// }) => {
-//   const [aiStatus, setAiStatus] = useState<'idle' | 'processing' | 'success'>('idle');
-//   const [error, setError] = useState<string | null>(null);
-  
-//   const {
-//     transcript,
-//     listening,
-//     resetTranscript,
-//     browserSupportsSpeechRecognition
-//   } = useSpeechRecognition();
-
-//   useEffect(() => {
-//     if (!browserSupportsSpeechRecognition) {
-//       setError('Browser does not support speech recognition');
-//     }
-//   }, []);
-
-//   const toggleListening = () => {
-//     if (listening) {
-//       SpeechRecognition.stopListening();
-//       resetTranscript();
-//     } else {
-//         // setVoiceFeedback("Listening...");
-//         // setIsAnimating(true);
-//         setError(null);
-//         onProcessingStart?.();
-//         SpeechRecognition.startListening({
-//             continuous: false,
-//             language: 'en-US'
-//         });
-//     }
-//   };
-
-//   const sendToAI = async (text: string) => {
-//     try {
-//       setAiStatus('processing');
-//       onActivityLog?.(`Processing: "${text}"`);
-      
-//       const response = await fetch('/api/ai/parseCommand', {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({ command: text }),
-//       });
-
-//       if (!response.ok) throw new Error('AI processing failed');
-
-//       const data = await response.json();
-//       onActivityLog?.(`Action: ${data.action} (${text})`);
-//       setAiStatus('success');
-//       onProcessingEnd?.(true);
-
-//       if (data.action === 'createEntry' && data.payload) {
-//         await fetch('/api/time-entries', {
-//           method: 'POST',
-//           headers: { 'Content-Type': 'application/json' },
-//           body: JSON.stringify(data.payload),
-//         });
-//       }
-
-//     } catch (err) {
-//       console.error('AI error:', err);
-//       setError(err instanceof Error ? err.message : 'Failed to process command');
-//       setAiStatus('idle');
-//       onProcessingEnd?.(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     if (transcript) sendToAI(transcript);
-//   }, [transcript]);
-
-//   if (!browserSupportsSpeechRecognition) {
-//     return (
-//       <div className={`bg-red-50 p-4 rounded-lg ${className}`}>
-//         <div className="flex items-center gap-2 text-red-600">
-//           <X className="w-5 h-5" />
-//           Browser does not support speech recognition
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className={`bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 shadow-lg ${className}`}>
-//       {/* Keep the same UI structure as before, but simplified */}
-//       <div className="flex items-center justify-between mb-6">
-//         {/* ... existing header ... */}
-//         <button
-//           onClick={toggleListening}
-//           className={`p-3 rounded-full transition-all transform ${
-//             listening 
-//               ? 'bg-red-500 hover:bg-red-600 scale-110' 
-//               : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
-//           } shadow-lg hover:shadow-xl`}
-//         >
-//           {listening ? (
-//             <div className="flex items-center space-x-2">
-//               <div className="flex space-x-1">
-//                 <span className="w-2 h-2 bg-white rounded-full animate-bounce" />
-//                 <span className="w-2 h-2 bg-white rounded-full animate-bounce delay-100" />
-//                 <span className="w-2 h-2 bg-white rounded-full animate-bounce delay-200" />
-//               </div>
-//             </div>
-//           ) : (
-//             <Mic className="w-5 h-5 text-white" />
-//           )}
-//         </button>
-//       </div>
-
-//       {transcript && (
-//         <div className="mb-4 p-4 bg-white rounded-lg border border-purple-100 animate-fade-in">
-//           <div className="flex items-center space-x-2 text-purple-600">
-//             <Volume2 className="w-4 h-4" />
-//             <p className="font-medium">{transcript}</p>
-//           </div>
-//         </div>
-//       )}
-
-//       {error && (
-//         <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-100 animate-shake">
-//           <div className="flex items-center space-x-2 text-red-600">
-//             <X className="w-4 h-4" />
-//             <p>{error}</p>
-//           </div>
-//         </div>
-//       )}
-
-//       <div className="space-y-4">
-//         <div className="p-4 bg-white rounded-lg">
-//           <h3 className="text-sm font-medium text-gray-500 mb-2">Try saying:</h3>
-//           <div className="grid grid-cols-2 gap-2">
-//             {[
-//               'Start 30 minute meeting timer',
-//               'Log 2 hours on Project X',
-//               'Track 45 mins for client call',
-//               'Set pomodoro timer'
-//             ].map((example, i) => (
-//               <div key={i} className="p-2 text-sm bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
-//                 "{example}"
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-
-//         <div className="p-4 bg-white rounded-lg">
-//           <h3 className="text-sm font-medium text-gray-500 mb-2">Recent Activities</h3>
-//           <div className="space-y-2 h-32 overflow-y-auto">
-//             {[
-//               'Started team meeting timer',
-//               'Logged 1.5h development',
-//               'Created client call entry'
-//             ].map((activity, i) => (
-//               <div key={i} className="flex items-center space-x-2 text-sm p-2 bg-gray-50 rounded-md">
-//                 <Sparkles className="w-4 h-4 text-purple-500" />
-//                 <span>{activity}</span>
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default VoiceAIMode;
-
-// VERSION 1 Above
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, Sparkles, X, Check, Bot, Volume2, Hourglass, Loader } from 'lucide-react';
@@ -231,7 +43,8 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
   activeTimer,
   selectedProjectId
 }) => {
-    const { user } = useAuth();
+    // const { user } = useAuth();
+    const { isAuthenticated } = useAuth();
     const [aiStatus, setAiStatus] = useState<'idle' | 'processing' | 'success'>('idle');
     const [error, setError] = useState<AIError | null>(null);
     const [voiceFeedback, setVoiceFeedback] = useState('');
@@ -292,11 +105,26 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
   // Dynamic suggestions
   const fetchSuggestions = async () => {
     try {
-      const res = await fetch('/api/ai/suggestions');
+      const res = await fetch('http://localhost:8080/api/ai/suggestions?query=', { // Add empty query param
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+  
+      if (res.status === 401) {
+        localStorage.removeItem('jwtToken');
+        window.location.reload();
+        return;
+      }
+  
+      if (!res.ok) throw new Error(`Suggestions failed: ${res.status}`);
+  
       const data = await res.json();
       setSmartSuggestions(data.suggestions);
     } catch (err) {
       console.error('Failed to load suggestions:', err);
+      setSmartSuggestions([]);
     }
   };
 
@@ -310,15 +138,20 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
   }, []);
 
   // Performance: Debounced processing
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      if (transcript) {
-        const cleanText = sanitizeInput(transcript);
-        sendToAI(cleanText);
-      }
-    }, DEBOUNCE_TIME);
+  const DEBOUNCE_TIME = 1000; // Increased from 500ms
 
-    return () => clearTimeout(handler);
+// Modify the processing useEffect
+  useEffect(() => {
+      if (!transcript) return;
+
+      const handler = setTimeout(() => {
+          const cleanText = sanitizeInput(transcript);
+          setVoiceFeedback("Processing your command...");
+          sendToAI(cleanText);
+          resetTranscript();
+      }, DEBOUNCE_TIME);
+
+      return () => clearTimeout(handler);
   }, [transcript]);
 
   const trackEvent = useCallback((event: string, metadata?: object) => {
@@ -328,32 +161,27 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
   }, []);
 
   const toggleListening = useCallback(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       setError({ type: 'auth', message: 'Please login to use voice commands', recoverable: false });
       return;
     }
 
     if (listening) {
       SpeechRecognition.stopListening();
-      resetTranscript();
+      resetTranscript(); // Reset transcript
       setIsAnimating(false);
-      setVoiceFeedback('');
+      setVoiceFeedback(''); // Clear feedback
     } else {
       abortController.current.abort();
       abortController.current = new AbortController();
-      
       setError(null);
       setVoiceFeedback("Listening...");
       setIsAnimating(true);
       onProcessingStart?.();
       trackEvent('Voice Command Started');
-      
-      SpeechRecognition.startListening({
-        continuous: false,
-        language: 'en-US'
-      });
+      SpeechRecognition.startListening({ continuous: false, language: 'en-US' });
     }
-  }, [user, listening, onProcessingStart, trackEvent]);
+  }, [isAuthenticated, listening, onProcessingStart, trackEvent, resetTranscript]);
 
   const executePendingAction = useCallback(async () => {
     if (!pendingAction) return;
@@ -489,7 +317,7 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
           onClick={toggleListening}
           aria-label={listening ? 'Stop listening' : 'Start voice command'}
           aria-live="polite"
-          disabled={!user}
+          disabled={!isAuthenticated}
           className={`p-3 rounded-full transition-all transform ${
             listening 
               ? 'bg-red-500 hover:bg-red-600 scale-110' 
@@ -558,8 +386,7 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
           </div>
         </div>
       )}
-
-      <div className="space-y-4">
+      {/* <div className="space-y-4">
         <div className="p-4 bg-white rounded-lg">
           <h3 className="text-sm font-medium text-gray-500 mb-2">Suggested Commands</h3>
           <div className="grid grid-cols-2 gap-2">
@@ -601,7 +428,7 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
             ))}
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

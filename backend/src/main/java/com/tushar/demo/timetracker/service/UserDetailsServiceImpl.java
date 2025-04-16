@@ -24,6 +24,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) {
         Users user = userRepository.findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found");
+        }
         
         if (user.isTokenInvalidated()) {  // Now valid after adding the method
             throw new TokenExpiredException("Session expired");
