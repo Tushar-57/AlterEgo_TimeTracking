@@ -34,28 +34,27 @@ public class TimeEntry {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @FutureOrPresent(message = "End time must be in the future")
     private LocalDateTime endTime;
+    
+    private String category;
+    private Long duration;
+    @ElementCollection
+    private List<String> tags = new ArrayList<>();
+
+    private boolean billable;
+    private String client;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private Users user;
-
-    private String category;
-    private Long duration; // In seconds
-    @ElementCollection
-    private List<String> tags = new ArrayList<>();
-
+    
+    
     @ManyToOne
     private Project project;
 
-    private boolean billable;
-    private String client;
-    
     @AssertTrue(message = "End time must be after start time")
     public boolean isEndTimeValid() {
         return endTime == null || endTime.isAfter(startTime);
     }
-
-    
     @PrePersist
     @PreUpdate
     private void calculateDuration() {
@@ -66,7 +65,7 @@ public class TimeEntry {
         }
     }
 
-    // Getters and Setters
+    public Project getProject() { return project;}
     public Long getId() { return id; }
 	public String getTaskDescription() { return taskDescription; }
 	public void setTaskDescription(String taskDescription) { this.taskDescription = taskDescription; }

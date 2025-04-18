@@ -6,11 +6,11 @@ import TimeTracker from './components/TimeTracker';
 import Analytics from './components/Analytics';
 import LoginClassic from './components/LoginFunctionality';
 import SignupClassic from './components/SignupFunctionality';
-import Welcome from './components/Welcome';
+import ProjectPage from './components/Project/ProjectPage';
 import Calendar from './components/Calendar';
 import TaskManager from './components/TaskManager';
 import { AuthProvider, useAuth, LoadingSpinner } from './context/AuthContext'; 
-import { Loader2Icon } from 'lucide-react';
+import { PlannerForm } from './components/Planner/Planner';
 
 // Placeholder components for other routes
 // const TaskManager = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Tasks Page</div>;
@@ -57,46 +57,18 @@ const ProtectedRoutes = () => {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/reports" element={<Reports />} />
-          <Route path="/projects" element={<Projects />} />
+          <Route path="/projects" element={<ProjectPage />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/tags" element={<Tags />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/planner" element={<PlannerForm />} />
           {/* <Route path="*" element={<Navigate to="/" replace />} */}
         </Routes>
       </main>
     </div>
   ): <Navigate to="/login" replace />;
 };
-
-// const ProtectedRoutes = () => {
-//   const { isAuthenticated } = useAuth();  // Use the authentication context
-//   console.log('Is authenticated:', isAuthenticated); 
-//   if (!isAuthenticated) {
-//     return <Navigate to="/login" replace />;  // Redirect to login if not authenticated
-//   }
-
-//   return (
-//     <div className="flex">
-//       <Sidebar />
-//       <main className="flex-1">
-//         <Routes>
-//           <Route path="/" element={<TimeTracker />} />
-//           <Route path="/tasks" element={<TaskManager />} />
-//           <Route path="/analytics" element={<Analytics />} />
-//           <Route path="/calendar" element={<Calendar />} />
-//           <Route path="/reports" element={<Reports />} />
-//           <Route path="/projects" element={<Projects />} />
-//           <Route path="/clients" element={<Clients />} />
-//           <Route path="/invoices" element={<Invoices />} />
-//           <Route path="/tags" element={<Tags />} />
-//           <Route path="/settings" element={<Settings />} />
-//           <Route path="*" element={<Navigate to="/" replace />} />
-//         </Routes>
-//       </main>
-//     </div>
-//   );
-// };
 
 export default App;  
 // App.tsx

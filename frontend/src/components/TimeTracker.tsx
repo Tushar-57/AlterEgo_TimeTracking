@@ -282,7 +282,10 @@ export default function TimeTracker() {
             'Authorization': `Bearer ${localStorage.getItem('jwtToken')}` // Add auth header
           }
         });
-        if (resp.status === 404) return; // Handle 404 gracefully
+        if (resp.status === 404) {
+          setActiveTimerId(null); // Handle no active timer
+          return;
+        }
         if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
         if (resp.status === 401) {
           localStorage.removeItem('jwtToken');

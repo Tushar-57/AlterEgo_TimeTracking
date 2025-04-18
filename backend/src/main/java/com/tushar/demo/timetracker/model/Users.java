@@ -18,8 +18,11 @@ public class Users {
     @Column(unique = true)
     private String email;
     private String password;
+    
+    @Column(name = "email_verified")
+    private boolean emailVerified;
+    private boolean tokenInvalidated = false;
 
-    //V_2
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -27,19 +30,14 @@ public class Users {
     @Column(name = "timezone", nullable = false, updatable = false)
     private String timezone;
 
-    // other fields...
-
     @PrePersist
     protected void onCreate() {
         this.timezone = ZoneId.systemDefault().toString();
     }
-    private boolean emailVerified;
-    private boolean tokenInvalidated = false;
-    
+   
     @OneToMany(mappedBy = "user")
     private List<TimeEntry> timeEntries;
 
-    // Add getters
     public String getEmail() {
         return email;
     }
@@ -93,8 +91,4 @@ public class Users {
 		
 		return true;
 	}
-	
-
-    // Setters and other fields/methods...
-    
 }
