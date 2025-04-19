@@ -12,7 +12,7 @@ import {
   UserPlus,
   LucideCalendarCheck2,
   WatchIcon,
-  CalendarRangeIcon
+  CalendarRangeIcon, LayoutDashboard
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -47,8 +47,11 @@ const Sidebar = () => {
 
       <div className="space-y-1">
         <div className="mb-6">
-          <div className="text-xs font-medium text-gray-400 mb-3 px-4">TRACK</div>
+        <div className="text-xs font-medium text-gray-400 mb-3 px-4">OVERVIEW</div>
           <NavItem icon={Timer} label="Timer" to="/" />
+          <NavItem icon={LayoutDashboard} label="Dashboard" to="/dashboard" />
+          <div className="mb-6">
+          </div>
         </div>
         <div className="mb-6">
           <div className="text-xs font-medium text-gray-400 mb-3 px-4">PLANNER</div>

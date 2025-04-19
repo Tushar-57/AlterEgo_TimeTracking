@@ -129,16 +129,7 @@ export default function LoginClassic() {
         <div className="w-1/2 p-12 flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full">
             <div className="text-center mb-12">
-              <div className="w-8 h-8 mx-auto mb-6">
-                <svg viewBox="0 0 24 24" className="w-full h-full text-[#4A154B]">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" 
-                        stroke="currentColor" 
-                        fill="none" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round"/>
-                </svg>
-              </div>
+              
               <h2 className="text-3xl font-bold text-[#4A154B] mb-3">Login to your Account</h2>
               <p className="text-[#4A154B]/80">See, how you can live and grow more, Powered with AI</p>
             </div>

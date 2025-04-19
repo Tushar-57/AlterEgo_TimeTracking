@@ -37,7 +37,7 @@ export default function TimeTracker() {
   });
 
   // UI state
-  const [productivity, setProductivity] = useState(65);
+  // const [productivity, setProductivity] = useState(65);
   const [mode, setMode] = useState('balanced');
   const [aiMode, setAiMode] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -552,7 +552,7 @@ export default function TimeTracker() {
               </div>
             </div>
 
-            {/* Productivity Meter */}
+            {/* Productivity Meter
             <div className="glass-morphism rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
@@ -564,7 +564,7 @@ export default function TimeTracker() {
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full bg-black transition-all duration-300" style={{ width: `${productivity}%` }} />
               </div>
-            </div>
+            </div> */}
 
             {/* Calendar Integration */}
             <div className="glass-morphism rounded-2xl p-6 flex-1">
