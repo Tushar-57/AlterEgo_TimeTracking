@@ -42,6 +42,7 @@ public class TimeEntry {
 
     private boolean billable;
     private String client;
+    private boolean isActive;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -78,4 +79,7 @@ public class TimeEntry {
 	public String getCategory() { return category; }
 	public void setCategory(String category) { this.category = category; }
 	public Long getDuration() { return duration; }
+	public void setIsActive(boolean b) {	this.isActive = b;	}
+	public boolean getIsActive() {	return isActive; }
+	
 }

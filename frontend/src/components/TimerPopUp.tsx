@@ -1,9 +1,10 @@
+// timerPopUp.tsx
 import { X, Play, Pause, RotateCcw, Volume2, Hourglass, Timer as TimerIcon, Edit2, MessageCircle, Mic, Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import type { Project } from '../store/projectStore'; 
 
-interface TimeEntry {
+export interface TimeEntry {
   taskDescription: string;
   category: string;
   tags: string[];
@@ -25,6 +26,12 @@ interface TimerPopupProps {
   selectedProjectId?: number | undefined;
   setSelectedProjectId: (val: number | undefined) => void;
   status: 'stopped' | 'running' | 'paused';
+  onTaskChange: (task: {
+    description: string;
+    project: string;
+    tags: string[];
+    billable: boolean;
+  }) => void;
   // ... rest of existing props
   time: number;
   soundEnabled: boolean;

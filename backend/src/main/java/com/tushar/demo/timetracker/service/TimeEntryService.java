@@ -1,6 +1,7 @@
 // TimeEntryService.java
 package com.tushar.demo.timetracker.service;
 
+import com.tushar.demo.timetracker.dto.StartTimeEntryRequest;
 import com.tushar.demo.timetracker.dto.addTimeEntryRequest;
 import com.tushar.demo.timetracker.exception.NoActiveTimerException;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
@@ -19,8 +20,8 @@ public class TimeEntryService {
     public TimeEntryService(TimeEntryRepository timeEntryRepository) {
         this.timeEntryRepository = timeEntryRepository;
     }
-
-    public TimeEntry createTimeEntry(addTimeEntryRequest request, Users user) throws NoActiveTimerException {
+    
+    public TimeEntry startTimeEntry(StartTimeEntryRequest request, Users user) throws NoActiveTimerException {
     	if (!user.isEnabled()) {
             throw new SecurityException("User account disabled");
         }
@@ -30,11 +31,27 @@ public class TimeEntryService {
         TimeEntry entry = new TimeEntry();
         entry.setTaskDescription(request.taskDescription());
         entry.setStartTime(request.startTime());
-        entry.setEndTime(request.endTime());
         entry.setCategory(request.category());
         entry.setUser(user);
+        entry.setIsActive(true);
         return timeEntryRepository.save(entry);
     }
+    
+//    public TimeEntry createTimeEntry(addTimeEntryRequest request, Users user) throws NoActiveTimerException {
+//    	if (!user.isEnabled()) {
+//            throw new SecurityException("User account disabled");
+//        }
+//    	if (request.startTime() == null && hasActiveTimer(user)) {
+//            throw new NoActiveTimerException();
+//        }
+//        TimeEntry entry = new TimeEntry();
+//        entry.setTaskDescription(request.taskDescription());
+//        entry.setStartTime(request.startTime());
+//        entry.setEndTime(request.endTime());
+//        entry.setCategory(request.category());
+//        entry.setUser(user);
+//        return timeEntryRepository.save(entry);
+//    }
 
     public List<TimeEntry> getTimeEntriesBetweenDates(Users user, LocalDateTime start, LocalDateTime end) {
         return timeEntryRepository.findByUserAndStartTimeBetween(user, start, end);
@@ -43,7 +60,7 @@ public class TimeEntryService {
         return timeEntryRepository.findByUserAndEndTimeIsNull(user)
             .orElseThrow(NoActiveTimerException::new);
     }
-
+    
     public TimeEntry stopTimer(Long id, Users user, LocalDateTime manualEnd) {
         return timeEntryRepository.findByIdAndUser(id, user)
             .map(entry -> {

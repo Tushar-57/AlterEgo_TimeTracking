@@ -1,36 +1,34 @@
 // ProjectPage.tsx
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { Button, Input, Table } from '../ui';
+import { useAuth } from '../context/AuthContext';
+import { Button, Input, Table } from '../components/ui';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 
-type Project = {
+type Tags = {
   id: number;
   name: string;
   color: string;
-  client: string;
 };
 
-const ProjectPage = () => {
+export const UserTagPage = () => {
   const { isAuthenticated } = useAuth();
   const COLORS = [
     '#4f46e5', '#10b981', '#ef4444', '#f59e0b', 
     '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899'
   ];
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [newProject, setNewProject] = useState<Omit<Project, 'id'>>({
+  const [tags, setTags] = useState<Tags[]>([]);
+  const [newTags, setNewTags] = useState<Omit<Tags, 'id'>>({
     name: '',
     color: '#4f46e5',
-    client: ''
   });
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editingTags, setEditingTags] = useState<Tags | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchProjects = async () => {
+  const fetchTags = async () => {
     setLoading(true);
     try {
       console.log(localStorage.getItem('jwtToken'))
-      const res = await fetch('http://localhost:8080/api/projects', {
+      const res = await fetch('http://localhost:8080/api/tags', {
         headers: { 
           Authorization: `Bearer ${localStorage.getItem('jwtToken')}` 
         }
@@ -43,12 +41,12 @@ const ProjectPage = () => {
       //   return;
       // }
   
-      if (!res.ok) throw new Error('Failed to fetch projects');
+      if (!res.ok) throw new Error('Failed to fetch tags');
       
       const data = await res.json();
-      setProjects(data);
+      setTags(data);
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error('Error fetching tags:', error);
     } finally {
       setLoading(false);
     }
@@ -57,11 +55,11 @@ const ProjectPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const url = editingProject 
-        ? `http://localhost:8080/api/projects/${editingProject.id}`
-        : 'http://localhost:8080/api/projects';
+      const url = editingTags 
+        ? `http://localhost:8080/api/tags/${editingTags.id}`
+        : 'http://localhost:8080/api/tags';
       
-      const method = editingProject ? 'PUT' : 'POST';
+      const method = editingTags ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
         method,
@@ -69,13 +67,13 @@ const ProjectPage = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
         },
-        body: JSON.stringify(editingProject || newProject)
+        body: JSON.stringify(editingTags || newTags)
       });
 
       if (res.ok) {
-        await fetchProjects();
-        setNewProject({ name: '', color: '#4f46e5', client: '' });
-        if (editingProject) setEditingProject(null);
+        await fetchTags();
+        setNewTags({ name: '', color: '#4f46e5'});
+        if (editingTags) setEditingTags(null);
       }
     } catch (error) {
       console.error('Error saving project:', error);
@@ -83,35 +81,35 @@ const ProjectPage = () => {
   };
 
   const deleteProject = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this project?')) return;
+    if (!window.confirm('Are you sure you want to delete this Tag?')) return;
     
     try {
-      const res = await fetch(`http://localhost:8080/api/projects/${id}`, {
+      const res = await fetch(`http://localhost:8080/api/tags/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` }
       });
-      if (res.ok) await fetchProjects();
+      if (res.ok) await fetchTags();
     } catch (error) {
       console.error('Error deleting project:', error);
     }
   };
 
   useEffect(() => {
-    if (isAuthenticated) fetchProjects();
+    if (isAuthenticated) fetchTags();
   }, [isAuthenticated]);
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">Project Management</h1>
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">Tags Management 🏷️</h1>
       
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-8">
         <div className="grid grid-cols-3 gap-4 mb-4">
           <Input
-            label="Project Name"
-            value={editingProject?.name || newProject.name}
-            onChange={e => editingProject 
-              ? setEditingProject({...editingProject, name: e.target.value})
-              : setNewProject({...newProject, name: e.target.value})}
+            label="Tag Name"
+            value={editingTags?.name || newTags.name}
+            onChange={e => editingTags 
+              ? setEditingTags({...editingTags, name: e.target.value})
+              : setNewTags({...newTags, name: e.target.value})}
             required
           />
           
@@ -123,12 +121,12 @@ const ProjectPage = () => {
                     key={color}
                     type="button"
                     onClick={() => 
-                    editingProject
-                        ? setEditingProject({...editingProject, color})
-                        : setNewProject({...newProject, color})
+                    editingTags
+                        ? setEditingTags({...editingTags, color})
+                        : setNewTags({...newTags, color})
                     }
                     className={`w-8 h-8 rounded-full border-2 ${
-                    (editingProject?.color === color || newProject.color === color) 
+                    (editingTags?.color === color || newTags.color === color) 
                         ? 'border-black' 
                         : 'border-transparent'
                     }`}
@@ -139,8 +137,8 @@ const ProjectPage = () => {
                     <div 
                         className="w-8 h-8 rounded-full border-2 border-dashed flex items-center justify-center"
                         style={{ 
-                        borderColor: editingProject?.color || newProject.color,
-                        backgroundColor: (editingProject?.color === 'custom' || newProject.color === 'custom') 
+                        borderColor: editingTags?.color || newTags.color,
+                        backgroundColor: (editingTags?.color === 'custom' || newTags.color === 'custom') 
                             ? 'transparent' 
                             : 'white'
                         }}
@@ -148,19 +146,19 @@ const ProjectPage = () => {
                         <Plus 
                         className="w-4 h-4" 
                         style={{ 
-                            color: editingProject?.color || newProject.color 
+                            color: editingTags?.color || newTags.color 
                         }}
                         />
                     </div>
                     <input
                         type="color"
-                        value={editingProject?.color || newProject.color}
+                        value={editingTags?.color || newTags.color}
                         onChange={(e) => {
                         const color = e.target.value;
-                        if (editingProject) {
-                            setEditingProject({...editingProject, color});
+                        if (editingTags) {
+                            setEditingTags({...editingTags, color});
                         } else {
-                            setNewProject({...newProject, color});
+                            setNewTags({...newTags, color});
                         }
                         }}
                         className="absolute opacity-0 w-0 h-0"
@@ -168,13 +166,6 @@ const ProjectPage = () => {
                     </label>
                 </div>
             </div>
-          <Input
-            label="Client"
-            value={editingProject?.client || newProject.client}
-            onChange={e => editingProject
-              ? setEditingProject({...editingProject, client: e.target.value})
-              : setNewProject({...newProject, client: e.target.value})}
-          />
         </div>
         <div className="flex gap-2">
           <Button 
@@ -182,22 +173,22 @@ const ProjectPage = () => {
             variant="primary"
             className="flex items-center gap-2"
           >
-            {editingProject ? (
+            {editingTags ? (
               <>
                 <Pencil className="w-4 h-4" />
-                Update Project
+                Update Tag
               </>
             ) : (
               <>
                 <Plus className="w-4 h-4" />
-                Create Project
+                Create Tag
               </>
             )}
           </Button>
-          {editingProject && (
+          {editingTags && (
             <Button 
               variant="ghost" 
-              onClick={() => setEditingProject(null)}
+              onClick={() => setEditingTags(null)}
               className="hover:bg-red-50 hover:text-red-600"
             >
               Cancel
@@ -216,12 +207,11 @@ const ProjectPage = () => {
                 <Table.Row>
                 <Table.Head>Name</Table.Head>
                 <Table.Head>Color</Table.Head>
-                <Table.Head>Client</Table.Head>
                 <Table.Head>Actions</Table.Head>
                 </Table.Row>
             </Table.Header>
             <Table.Body>
-                {projects.map((project) => (
+                {tags.map((project) => (
                 <Table.Row key={project.id} className="hover:bg-gray-50">
                     <Table.Cell className="font-medium">{project.name}</Table.Cell>
                     <Table.Cell>
@@ -230,13 +220,12 @@ const ProjectPage = () => {
                         style={{ backgroundColor: project.color || '#4f46e5' }}
                     />
                     </Table.Cell>
-                    <Table.Cell>{project.client || '-'}</Table.Cell>
                     <Table.Cell>
                     <div className="flex gap-2">
                         <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={() => setEditingProject(project)}
+                        onClick={() => setEditingTags(project)}
                         >
                         <Pencil className="w-4 h-4" />
                         </Button>
@@ -258,4 +247,3 @@ const ProjectPage = () => {
     </div>
   );
 };
-export default ProjectPage;

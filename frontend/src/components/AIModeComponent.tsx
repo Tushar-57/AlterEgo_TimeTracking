@@ -53,6 +53,11 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
     const [requiresConfirmation, setRequiresConfirmation] = useState(false);
     const [pendingAction, setPendingAction] = useState<ActionPayload | null>(null);
     const [conversation, setConversation] = useState<ConversationState | null>(null);
+    const [projectConfirmation, setProjectConfirmation] = useState<{
+      required: boolean;
+      projectName: string;
+      tempCommand: string;
+    }>({ required: false, projectName: '', tempCommand: '' });
     
     const abortController = useRef(new AbortController());
     const timeoutRef = useRef<number>();
@@ -66,9 +71,10 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
 
     // Analytics
     useEffect(() => {
+      if (isAuthenticated) {
         trackEvent('AI Component Mounted');
-        fetchSuggestions();
-    }, []);
+      }
+    }, [isAuthenticated]);
 
     const handleFollowUp = useCallback((input: string) => {
         if (!conversation) return;
@@ -101,27 +107,6 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
     }
     return { type: 'parsing', message: 'Unknown error', recoverable: false };
   }, []);
-
-  // Dynamic suggestions
-  const fetchSuggestions = async () => {
-    try {
-      const res = await fetch('http://localhost:8080/api/ai/suggestions?query=', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` }
-      });
-      
-      if (res.status === 401) {
-        localStorage.removeItem('jwtToken');
-        window.location.reload();
-        return;
-      }
-      
-      const data = await res.json();
-      setSmartSuggestions(data.suggestions || []); // Handle null responses
-    } catch (err) {
-      setSmartSuggestions([]);
-    }
-  };
-
   // Security: Input sanitization
   const sanitizeInput = useCallback((text: string) => {
     let sanitized = text;
@@ -177,28 +162,28 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
     }
   }, [isAuthenticated, listening, onProcessingStart, trackEvent, resetTranscript]);
 
-  const executePendingAction = useCallback(async () => {
-    if (!pendingAction) return;
+  // const executePendingAction = useCallback(async () => {
+  //   if (!pendingAction) return;
 
-    try {
-      setRequiresConfirmation(false);
-      setAiStatus('processing');
+  //   try {
+  //     setRequiresConfirmation(false);
+  //     setAiStatus('processing');
       
-      const response = await fetch('/api/time-entries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pendingAction.payload),
-      });
+  //     const response = await fetch('/api/time-entries', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify(pendingAction.payload),
+  //     });
 
-      if (!response.ok) throw new Error('Action failed');
+  //     if (!response.ok) throw new Error('Action failed');
       
-      onActivityLog?.(`Confirmed: ${pendingAction.payload.taskDescription}`);
-      setAiStatus('success');
-      setPendingAction(null);
-    } catch (err) {
-      setError(classifyError(err));
-    }
-  }, [pendingAction, onActivityLog]);
+  //     onActivityLog?.(`Confirmed: ${pendingAction.payload.taskDescription}`);
+  //     setAiStatus('success');
+  //     setPendingAction(null);
+  //   } catch (err) {
+  //     setError(classifyError(err));
+  //   }
+  // }, [pendingAction, onActivityLog]);
 
   const cancelAction = useCallback(() => {
     setRequiresConfirmation(false);
@@ -206,11 +191,8 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
     setVoiceFeedback('Action cancelled');
     setTimeout(() => setVoiceFeedback(''), 2000);
   }, []);
-  const [projectConfirmation, setProjectConfirmation] = useState<{
-    required: boolean;
-    projectName: string;
-    tempCommand: string;
-  }>({ required: false, projectName: '', tempCommand: '' });
+  
+  
   
   const handleProjectConfirmation = async (confirmed: boolean) => {
     if (confirmed) {
@@ -244,23 +226,6 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
         timeOfDay: new Date().getHours()
       };
 
-      // const response = await fetch('/api/ai/parseCommand', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ command: text, context }),
-      //   signal: abortController.current.signal
-      // });
-
-      // if (!response.ok) throw new Error('AI processing failed');
-
-      // const data = await response.json();
-      
-      // if (data.requiresConfirmation) {
-      //   setRequiresConfirmation(true);
-      //   setPendingAction(data);
-      //   setVoiceFeedback(data.confirmationQuestion);
-      //   return;
-      // }
       const response = await fetch('/api/ai/parseCommand', {
         method: 'POST',
         headers: { 

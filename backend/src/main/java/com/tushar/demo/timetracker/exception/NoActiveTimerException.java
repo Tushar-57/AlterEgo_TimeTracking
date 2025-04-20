@@ -3,6 +3,6 @@ package com.tushar.demo.timetracker.exception;
 
 public class NoActiveTimerException extends RuntimeException {
     public NoActiveTimerException() {
-        super("No active timer found");
+        super("From BE -> No Active Timer Currently.");
     }
 }
