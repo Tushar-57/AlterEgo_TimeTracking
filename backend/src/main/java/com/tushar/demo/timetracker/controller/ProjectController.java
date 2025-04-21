@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -76,11 +77,11 @@ public class ProjectController {
      return ResponseEntity.ok(projectRepository.save(existing));
  }
 
+ @PreAuthorize("#authentication.principal.username == @userRepository.findById(#id).get().email")
  @DeleteMapping("/{id}")
  public ResponseEntity<Void> deleteProject(
      @PathVariable Long id,
-     Authentication authentication
- ) {
+     Authentication authentication) {
      Users user = userRepository.findByEmail(authentication.getName())
              .orElseThrow(() -> new ResourceNotFoundException("User not found"));
      Project project = projectRepository.findByIdAndUser(id, user)

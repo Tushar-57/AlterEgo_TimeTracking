@@ -8,6 +8,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface UserRepository extends JpaRepository<Users, Long> {
 	boolean existsByEmail(String email);
 	Optional<Users> findByEmail(String email); // Add this method
-	
-//	Optional<TimeEntry> findByUserAndEndTimeIsNull(Users user);
 }

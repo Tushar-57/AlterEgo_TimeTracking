@@ -1,57 +1,108 @@
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "../../../../components/ui/toggle-group";
+import { CalendarEvent } from "../../Fantastical";
 
-// Data for days of the week
-const weekDays = [
-  { day: "SUN", date: "21", isWeekend: true },
-  { day: "MON", date: "22", isWeekend: false },
-  { day: "TUE", date: "23", isWeekend: false },
-  { day: "WED", date: "24", isWeekend: false },
-  { day: "THU", date: "25", isWeekend: false, isToday: true },
-  { day: "FRI", date: "26", isWeekend: false },
-  { day: "SAT", date: "27", isWeekend: true },
-];
-
-// Time slots
 const timeSlots = Array.from({ length: 24 }, (_, i) => {
-  const hour = i % 12 || 12; // Convert 0 to 12
+  const hour = i % 12 || 12;
   const period = i < 12 ? 'AM' : 'PM';
   return `${hour} ${period}`;
 });
 
-// Month data
-const monthData = Array.from({ length: 35 }, (_, i) => ({
-  date: i + 1,
-  isCurrentMonth: i < 31,
-  isToday: i === 24,
-  isWeekend: i % 7 === 0 || i % 7 === 6,
-}));
-
-// Year data
 const monthNames = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
 ];
 
-export const CalendarSection = (): JSX.Element => {
+export const CalendarSection = ({ events }: { events: CalendarEvent[] }): JSX.Element => {
   const [view, setView] = useState<"day" | "week" | "month" | "year">("week");
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const getWeekDays = (date: Date) => {
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(date.getDate() - date.getDay());
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(startOfWeek);
+      day.setDate(startOfWeek.getDate() + i);
+      return {
+        day: day.toLocaleString('en-US', { weekday: 'short' }).toUpperCase(),
+        date: day.getDate().toString(),
+        isWeekend: i === 0 || i === 6,
+        isToday: day.toDateString() === new Date().toDateString()
+      };
+    });
+  };
+
+  const getMonthData = (date: Date) => {
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    const startDay = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    const totalSlots = Math.ceil((daysInMonth + startDay) / 7) * 7;
+
+    return Array.from({ length: totalSlots }, (_, i) => {
+      const day = i - startDay + 1;
+      const isCurrentMonth = day > 0 && day <= daysInMonth;
+      const currentDate = isCurrentMonth ? day : i < startDay ? day + lastDay.getDate() - startDay : day - daysInMonth;
+      return {
+        date: currentDate.toString(),
+        isCurrentMonth,
+        isToday: isCurrentMonth && new Date(date.getFullYear(), date.getMonth(), day).toDateString() === new Date().toDateString(),
+        isWeekend: (i % 7 === 0 || i % 7 === 6) && isCurrentMonth,
+        events: isCurrentMonth ? events.filter(e => new Date(e.position.top).getDate() === day) : []
+      };
+    });
+  };
+
+  const getYearData = (date: Date) => {
+    return monthNames.map((month, index) => {
+      const lastDay = new Date(date.getFullYear(), index + 1, 0).getDate();
+      return {
+        month,
+        days: Array.from({ length: 35 }, (_, i) => {
+          const day = (i % lastDay) + 1;
+          return {
+            date: day.toString(),
+            events: events.filter(e => new Date(e.position.top).getMonth() === index && new Date(e.position.top).getDate() === day)
+          };
+        })
+      };
+    });
+  };
+
+  const handleNavigation = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate);
+    if (view === 'day') {
+      newDate.setDate(currentDate.getDate() + (direction === 'prev' ? -1 : 1));
+    } else if (view === 'week') {
+      newDate.setDate(currentDate.getDate() + (direction === 'prev' ? -7 : 7));
+    } else if (view === 'month') {
+      newDate.setMonth(currentDate.getMonth() + (direction === 'prev' ? -1 : 1));
+    } else if (view === 'year') {
+      newDate.setFullYear(currentDate.getFullYear() + (direction === 'prev' ? -1 : 1));
+    }
+    setCurrentDate(newDate);
+  };
+
+  const weekDays = getWeekDays(currentDate);
+  const monthData = getMonthData(currentDate);
+  const yearData = getYearData(currentDate);
 
   const renderDayView = () => (
     <div className="flex flex-col w-full h-full items-start">
       <div className="flex w-full items-start pl-12 pr-0 py-0 gap-3">
         <div className="flex flex-1">
-          <div className={`flex flex-col flex-1 items-start pt-1 pb-4 px-2 shadow-[inset_-1px_-1px_0px_#e0e0e0] ${weekDays[4].isToday ? "bg-blue-50" : "bg-white"}`}>
+          <div className={`flex flex-col flex-1 items-start pt-1 pb-4 px-2 shadow-[inset_-1px_-1px_0px_#e0e0e0] ${weekDays.find(d => d.isToday)?.isToday ? "bg-blue-50" : "bg-white"}`}>
             <div className="relative self-stretch mt-[-1.00px] font-bold text-gray-500 text-[10px] tracking-[0] leading-3">
-              {weekDays[4].day}
+              {currentDate.toLocaleString('en-US', { weekday: 'short' }).toUpperCase()}
             </div>
             <div className="self-stretch font-medium text-black text-[22px] leading-8 tracking-[0]">
-              {weekDays[4].date}
+              {currentDate.getDate()}
             </div>
           </div>
         </div>
@@ -162,6 +213,11 @@ export const CalendarSection = (): JSX.Element => {
             <span className={`text-sm ${day.isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}>
               {day.date}
             </span>
+            <div className="flex gap-1 mt-1">
+              {day.events.map(event => (
+                <div key={event.id} className={`w-2 h-2 rounded-full bg-${event.color}-500`} />
+              ))}
+            </div>
           </div>
         ))}
       </div>
@@ -170,10 +226,10 @@ export const CalendarSection = (): JSX.Element => {
 
   const renderYearView = () => (
     <div className="grid grid-cols-4 gap-4 p-4">
-      {monthNames.map((month, index) => (
-        <div key={month} className="border rounded-lg overflow-hidden">
+      {yearData.map((month) => (
+        <div key={month.month} className="border rounded-lg overflow-hidden">
           <div className="bg-gray-100 p-2 border-b">
-            <h3 className="text-sm font-semibold text-gray-900">{month}</h3>
+            <h3 className="text-sm font-semibold text-gray-900">{month.month}</h3>
           </div>
           <div className="p-2">
             <div className="grid grid-cols-7 gap-1">
@@ -182,12 +238,19 @@ export const CalendarSection = (): JSX.Element => {
                   {day.day[0]}
                 </div>
               ))}
-              {Array.from({ length: 35 }, (_, i) => (
+              {month.days.map((day, i) => (
                 <div
                   key={i}
-                  className="text-[10px] text-center text-gray-400 aspect-square flex items-center justify-center"
+                  className="text-[10px] text-center text-gray-900 aspect-square flex items-center justify-center"
                 >
-                  {((i % 31) + 1)}
+                  <div>
+                    {day.date}
+                    <div className="flex gap-0.5 justify-center">
+                      {day.events.map(event => (
+                        <div key={event.id} className={`w-1 h-1 rounded-full bg-${event.color}-500`} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -202,58 +265,55 @@ export const CalendarSection = (): JSX.Element => {
       <div className="sticky top-0 z-10 bg-white pt-4 pb-2 px-4 border-b">
         <div className="flex items-start justify-between relative self-stretch w-full">
           <div className="flex items-start gap-px">
-            <div className="flex items-start">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-[6px_0px_0px_6px] p-1 bg-gray-100 h-auto"
-              >
-                <ChevronLeftIcon className="h-5 w-5" />
-              </Button>
-            </div>
-            <div className="flex items-start">
-              <Button
-                variant="ghost"
-                className="px-4 py-1.5 bg-gray-100 rounded-none h-auto"
-              >
-                <span className="text-xs text-gray-900">Today</span>
-              </Button>
-            </div>
-            <div className="flex items-start">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-[0px_6px_6px_0px] p-1 bg-gray-100 h-auto"
-              >
-                <ChevronRightIcon className="h-5 w-5" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-[6px_0px_0px_6px] p-1 bg-gray-100 h-auto"
+              onClick={() => handleNavigation('prev')}
+            >
+              <ChevronLeftIcon className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              className="px-4 py-1.5 bg-gray-100 rounded-none h-auto"
+              onClick={() => setCurrentDate(new Date())}
+            >
+              <span className="text-xs text-gray-900">Today</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-[0px_6px_6px_0px] p-1 bg-gray-100 h-auto"
+              onClick={() => handleNavigation('next')}
+            >
+              <ChevronRightIcon className="h-5 w-5" />
+            </Button>
           </div>
 
-        <ToggleGroup type="single" value={view} onValueChange={(v) => setView(v as any)}>
-        <ToggleGroupItem value="day" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
-            <span className="text-sm font-medium">Daily</span>
-          </ToggleGroupItem>
-          <ToggleGroupItem value="week" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
-            <span className="text-sm font-medium">Weekly</span>
-          </ToggleGroupItem>
-          <ToggleGroupItem value="month" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
-            <span className="text-sm font-medium">Monthly</span>
-          </ToggleGroupItem>  
-          <ToggleGroupItem value="year" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
-            <span className="text-sm font-medium">Yearly</span>
-          </ToggleGroupItem>
-        </ToggleGroup>
+          <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as any)}>
+            <ToggleGroupItem value="day" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
+              <span className="text-sm font-medium">Daily</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="week" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
+              <span className="text-sm font-medium">Weekly</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="month" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
+              <span className="text-sm font-medium">Monthly</span>
+            </ToggleGroupItem>  
+            <ToggleGroupItem value="year" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
+              <span className="text-sm font-medium">Yearly</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
 
-        <div className="w-[184px] flex items-start">
-          <div className="flex items-center gap-2 p-1 flex-1 bg-gray-100 rounded">
-            <SearchIcon className="w-5 h-5" />
-            <Input
-              className="flex-1 border-0 bg-transparent p-0 text-xs text-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0 h-auto"
-              placeholder="Search"
-            />
+          <div className="w-[184px] flex items-start">
+            <div className="flex items-center gap-2 p-1 flex-1 bg-gray-100 rounded">
+              <SearchIcon className="w-5 h-5" />
+              <Input
+                className="flex-1 border-0 bg-transparent p-0 text-xs text-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0 h-auto"
+                placeholder="Search"
+              />
+            </div>
           </div>
-        </div>
         </div>
       </div>
       <div className="flex-1 overflow-auto">

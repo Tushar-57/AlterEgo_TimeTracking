@@ -1,13 +1,10 @@
-// TimeEntry.java
 package com.tushar.demo.timetracker.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.FutureOrPresent;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,38 +21,37 @@ public class TimeEntry {
     private Long id;
 
     @NotBlank(message = "Task description is required")
-    private String taskDescription;
+    private String description;
 
     @NotNull(message = "Start time is required")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
 
-    @Column(nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @FutureOrPresent(message = "End time must be in the future")
     private LocalDateTime endTime;
-    
-    private String category;
+
     private Long duration;
+    
+    @ManyToOne
+    private Project project;
+
     @ElementCollection
-    private List<String> tags = new ArrayList<>();
+    private List<Long> tagIds = new ArrayList<>(); // Changed from List<String> tags to List<Long> tagIds
 
     private boolean billable;
     private String client;
-    private boolean isActive;
+    private boolean active;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private Users user;
-    
-    
-    @ManyToOne
-    private Project project;
 
     @AssertTrue(message = "End time must be after start time")
     public boolean isEndTimeValid() {
         return endTime == null || endTime.isAfter(startTime);
     }
+
     @PrePersist
     @PreUpdate
     private void calculateDuration() {
@@ -66,20 +62,20 @@ public class TimeEntry {
         }
     }
 
-    public Project getProject() { return project;}
+    public Project getProject() { return project; }
     public Long getId() { return id; }
-	public String getTaskDescription() { return taskDescription; }
-	public void setTaskDescription(String taskDescription) { this.taskDescription = taskDescription; }
-	public LocalDateTime getStartTime() { return startTime; }
-	public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
-	public LocalDateTime getEndTime() { return endTime; }
-	public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
-	public Users getUser() { return user; }
-	public void setUser(Users user) { this.user = user; }
-	public String getCategory() { return category; }
-	public void setCategory(String category) { this.category = category; }
-	public Long getDuration() { return duration; }
-	public void setIsActive(boolean b) {	this.isActive = b;	}
-	public boolean getIsActive() {	return isActive; }
-	
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public LocalDateTime getStartTime() { return startTime; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+    public LocalDateTime getEndTime() { return endTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+    public Users getUser() { return user; }
+    public void setUser(Users user) { this.user = user; }
+    public Long getDuration() { return duration; }
+    public void setIsActive(boolean active) { this.active = active; }
+    public boolean getIsActive() { return active; }
+    public List<Long> getTagIds() { return tagIds; } // Updated getter
+    public void setTagIds(List<Long> tagIds) { this.tagIds = tagIds; } // Updated setter
+    public void setProject(Project project ) {this.project = project;}
 }

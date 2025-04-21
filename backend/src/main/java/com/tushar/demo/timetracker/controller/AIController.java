@@ -1,6 +1,6 @@
 package com.tushar.demo.timetracker.controller;
 
-import com.tushar.demo.timetracker.dto.AI_CommandRequest;
+import com.tushar.demo.timetracker.dto.request.AI_CommandRequest;
 import com.tushar.demo.timetracker.exception.NoActiveTimerException;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
 import com.tushar.demo.timetracker.model.TimeEntry;
@@ -26,7 +26,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ai")
-public class AI_TaskController {
+public class AIController {
 
 //	private final Users UserRepository;
 
@@ -39,7 +39,7 @@ public class AI_TaskController {
 						.body(Map.of("error", "Time entry creation failed", "message", "AI service returned null"));
 			}
 			return ResponseEntity
-					.ok(Map.of("task", entry.getTaskDescription() != null ? entry.getTaskDescription() : "", "start",
+					.ok(Map.of("task", entry.getDescription() != null ? entry.getDescription() : "", "start",
 							entry.getStartTime() != null ? entry.getStartTime().toString() : "", "end",
 							entry.getEndTime() != null ? entry.getEndTime().toString() : "", "duration",
 							entry.getDuration() != null ? entry.getDuration() : 0));
@@ -56,82 +56,13 @@ public class AI_TaskController {
 	private final ProjectRepository projectRepository;
 
 	@Autowired
-	public AI_TaskController(AI_TimeEntryService aiService, ChatLanguageModel chatModel, UserRepository userRepo,
+	public AIController(AI_TimeEntryService aiService, ChatLanguageModel chatModel, UserRepository userRepo,
 			TimeEntryRepository timeEntryRepo, ProjectRepository projectRepository) {
 		this.aiService = aiService;
 		this.userRepo = userRepo;
 		this.timeEntryRepo = timeEntryRepo;
 		this.chatLangModel = chatModel;
 		this.projectRepository = projectRepository;
-	}
-
-	@PostMapping("/taskC")
-	public ResponseEntity<?> createTaskFromCommand(@RequestBody AI_CommandRequest request) {
-		try {
-			TimeEntry entry = aiService.createTimeEntryFromCommand(request.command());
-			return ResponseEntity.ok(entry);
-		} catch (Exception e) {
-			return ResponseEntity.badRequest().body(Map.of("error", "Task creation failed", "message", e.getMessage()));
-		}
-	}
-
-//	@GetMapping("/suggestions")
-//	public ResponseEntity<?> getSuggestions(@RequestParam(required = false) String query,
-//			Authentication authentication) {
-//		System.out.print("Authentication object: " + authentication);
-//		if (query == null)
-//			query = "";
-//		// Authentication check
-//		if (authentication == null || !authentication.isAuthenticated()) {
-//			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Authentication required"));
-//		}
-//
-//		try {
-//			List<String> suggestions = aiService.getDescriptionSuggestions(query, authentication);
-//			return ResponseEntity.ok(suggestions);
-//		} catch (SecurityException e) {
-//			// Handle token expiration explicitly
-//			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-//					.body(Map.of("error", "Unauthorized", "message", "Token expired"));
-//		} catch (Exception e) {
-//			// General server errors
-//			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//					.body(Map.of("error", "Server Error", "message", e.getMessage()));
-//		}
-//	}
-	@GetMapping("/suggestions")
-	public ResponseEntity<?> getSuggestions(@RequestParam(required = false) String query,
-			Authentication authentication) {
-		try {
-			if (authentication == null || !authentication.isAuthenticated()) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-			}
-
-			List<String> suggestions = aiService.getDescriptionSuggestions(query, authentication);
-			return ResponseEntity.ok(Collections.singletonMap("suggestions",
-					suggestions != null ? suggestions : Collections.emptyList()));
-		} catch (Exception e) {
-			return ResponseEntity.internalServerError().body(Map.of("error", "Failed to get suggestions"));
-		}
-	}
-
-	@GetMapping("/timers/active")
-	public ResponseEntity<TimeEntry> getActiveTimer(Authentication authentication) {
-		String email = authentication.getName();
-		Users user = null;
-		try {
-			user = userRepo.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-		} catch (Exception e) {
-
-			e.printStackTrace();
-		}
-		if (user != null) {
-			TimeEntry activeTimer = timeEntryRepo.findByUserAndEndTimeIsNull(user)
-					.orElseThrow(() -> new NoActiveTimerException());
-
-			return ResponseEntity.ok(activeTimer);
-		}
-		return null;
 	}
 
 	@PostMapping("/parseCommand")

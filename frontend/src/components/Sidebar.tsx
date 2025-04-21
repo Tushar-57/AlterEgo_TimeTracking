@@ -23,14 +23,14 @@ const NavItem = ({ icon: Icon, label, to }: { icon: any; label: string; to: stri
   return (
     <Link 
       to={to}
-      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 ${
         isActive 
-          ? 'bg-black text-white' 
-          : 'text-gray-500 hover:bg-gray-100'
+          ? 'bg-black text-white shadow-md' 
+          : 'text-gray-500 hover:bg-gray-100 hover:shadow-sm'
       }`}
     >
-      <Icon className="w-5 h-5" />
-      <span className="font-light">{label}</span>
+      <Icon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-12" />
+      <span className="font-light group-hover:font-medium">{label}</span>
     </Link>
   );
 };

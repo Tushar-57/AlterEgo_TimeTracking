@@ -36,16 +36,28 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.Dashboard = void 0;
+exports.Dashboard = exports.calculatePosition = exports.getColorForProject = void 0;
 var react_1 = require("react");
 var button_1 = require("../components/Calendar_updated/components/ui/button"); // Add button component
 var lucide_react_1 = require("lucide-react"); // Add mic icon
+var Skeleton_1 = require("./ui/Skeleton");
 var AuthContext_1 = require("../context/AuthContext");
 var Fantastical_1 = require("./Calendar_updated/screens/Fantastical/Fantastical");
 var EnhancedVoiceCommandPopup_1 = require("./Calendar_updated/components/EnhancedVoiceCommandPopup");
-var getColorForProject = function (projectId) {
+var react_router_dom_1 = require("react-router-dom");
+var use_toast_1 = require("./Calendar_updated/components/hooks/use-toast");
+exports.getColorForProject = function (projectId) {
     var colors = ['lightblue', 'violet', 'amber', 'rose', 'emerald']; // Use actual color values
     return colors[projectId ? projectId % colors.length : 0];
+};
+exports.calculatePosition = function (startTime, duration) {
+    var start = new Date(startTime);
+    var dayOfWeek = start.getDay(); // 0 = Sunday
+    var minutesFromTop = (start.getHours() * 60) + start.getMinutes();
+    return {
+        top: minutesFromTop + "px",
+        left: 209 + (dayOfWeek * 143) + "px" // 143px per day column
+    };
 };
 exports.Dashboard = function () {
     var _a = react_1.useState(new Date()), currentDate = _a[0], setCurrentDate = _a[1];
@@ -53,6 +65,8 @@ exports.Dashboard = function () {
     var _c = react_1.useState(false), showAIOverlay = _c[0], setShowAIOverlay = _c[1];
     var isAuthenticated = AuthContext_1.useAuth().isAuthenticated;
     var _d = react_1.useState(false), loading = _d[0], setLoading = _d[1];
+    var navigate = react_router_dom_1.useNavigate();
+    var toast = use_toast_1.useToast().toast;
     react_1.useEffect(function () {
         if (isAuthenticated) {
             var fetchData = function () { return __awaiter(void 0, void 0, void 0, function () {
@@ -82,26 +96,6 @@ exports.Dashboard = function () {
             fetchData();
         }
     }, [currentDate, isAuthenticated]);
-    // const fetchTimeEntries = async (start: Date, end: Date) => {
-    //   try {
-    //     const res = await fetch(`http://localhost:8080/api/time-entries?start=${start.toISOString()}&end=${end.toISOString()}`, {
-    //       headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` }
-    //     });
-    //     const data = await res.json();
-    //     const transformed = data.map((entry: any) => ({
-    //       id: entry.id,
-    //       startTime: entry.startTime,
-    //       duration: entry.duration,
-    //       taskDescription: entry.taskDescription,
-    //       projectId: entry.projectId,
-    //       position: calculatePosition(entry.startTime, entry.duration),
-    //       height: `${Math.max(30, (entry.duration / 3600) * 60)}px`
-    //     }));
-    //     setCalendarEvents(transformed);
-    //   } catch (error) {
-    //     console.error('Error fetching entries:', error);
-    //   }
-    // };
     var fetchTimeEntries = function (start, end) { return __awaiter(void 0, void 0, void 0, function () {
         var token, res, data, transformed, error_1;
         return __generator(this, function (_a) {
@@ -110,8 +104,7 @@ exports.Dashboard = function () {
                     _a.trys.push([0, 3, , 4]);
                     token = localStorage.getItem('jwtToken');
                     if (!token) {
-                        console.error('No JWT token found');
-                        return [2 /*return*/];
+                        throw new Error('No authentication token found');
                     }
                     return [4 /*yield*/, fetch("http://localhost:8080/api/time-entries?start=" + start.toISOString() + "&end=" + end.toISOString(), {
                             headers: { Authorization: "Bearer " + token }
@@ -119,10 +112,12 @@ exports.Dashboard = function () {
                 case 1:
                     res = _a.sent();
                     if (res.status === 401) {
-                        console.log(res.status);
-                        // localStorage.removeItem('jwtToken');
-                        // window.location.href = '/login';
-                        return [2 /*return*/];
+                        toast({
+                            title: 'Warning',
+                            description: 'Session may have expired. Please try refreshing or logging in again.',
+                            variant: 'default'
+                        });
+                        return [2 /*return*/, []];
                     }
                     if (!res.ok) {
                         throw new Error("HTTP error! status: " + res.status);
@@ -138,44 +133,33 @@ exports.Dashboard = function () {
                             time: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                             period: hours >= 12 ? 'PM' : 'AM',
                             title: entry.taskDescription,
-                            color: getColorForProject(entry.projectId),
-                            position: calculatePosition(entry.startTime, entry.duration),
+                            color: exports.getColorForProject(entry.projectId),
+                            position: exports.calculatePosition(entry.startTime, entry.duration),
                             width: "143px",
                             height: Math.max(30, (entry.duration / 3600) * 60) + "px",
                             hasVideo: false
                         };
                     });
                     setCalendarEvents(transformed);
-                    return [3 /*break*/, 4];
+                    return [2 /*return*/, transformed];
                 case 3:
                     error_1 = _a.sent();
                     console.error('Error fetching entries:', error_1);
-                    return [3 /*break*/, 4];
+                    toast({
+                        title: 'Warning',
+                        description: 'Failed to fetch time entries. Displaying cached data.',
+                        variant: 'default'
+                    });
+                    return [2 /*return*/, []];
                 case 4: return [2 /*return*/];
             }
         });
     }); };
-    var calculatePosition = function (startTime, duration) {
-        var start = new Date(startTime);
-        var dayOfWeek = start.getDay(); // 0 = Sunday
-        var minutesFromTop = (start.getHours() * 60) + start.getMinutes();
-        return {
-            top: minutesFromTop + "px",
-            left: 209 + (dayOfWeek * 143) + "px" // 143px per day column
-        };
-    };
-    react_1.useEffect(function () {
-        if (isAuthenticated) {
-            var start = new Date();
-            start.setDate(1);
-            var end = new Date(start);
-            end.setMonth(start.getMonth() + 1);
-            end.setDate(0); // Last day of current month
-            fetchTimeEntries(start, end);
-        }
-    }, [currentDate, isAuthenticated]);
     return (React.createElement("div", { className: "bg-white flex flex-row justify-center w-full relative" },
-        loading ? (React.createElement("div", { className: "flex justify-center p-8" }, "Loading entries...")) : (React.createElement(Fantastical_1.Fantastical, null)),
+        loading ? (React.createElement("div", { className: "flex flex-col gap-4 p-8 w-full" },
+            React.createElement(Skeleton_1.Skeleton, { className: "h-12 w-full" }),
+            React.createElement(Skeleton_1.Skeleton, { className: "h-64 w-full" }),
+            React.createElement(Skeleton_1.Skeleton, { className: "h-32 w-full" }))) : (React.createElement(Fantastical_1.Fantastical, { events: calendarEvents })),
         React.createElement("div", { className: "fixed bottom-8 right-8 z-50" },
             React.createElement(button_1.Button, { className: "p-6 rounded-full shadow-lg transform transition-all " + (showAIOverlay ? 'bg-primary scale-110' : 'bg-gray-900 hover:bg-gray-800'), onClick: function () { return setShowAIOverlay(!showAIOverlay); } },
                 React.createElement(lucide_react_1.Mic, { className: "h-6 w-6" }),

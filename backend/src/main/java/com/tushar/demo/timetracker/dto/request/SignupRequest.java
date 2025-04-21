@@ -1,4 +1,4 @@
-package com.tushar.demo.timetracker.dto;
+package com.tushar.demo.timetracker.dto.request;
 
 import jakarta.validation.constraints.*;
 

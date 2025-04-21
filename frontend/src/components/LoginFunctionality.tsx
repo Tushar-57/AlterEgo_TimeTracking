@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';  // Import the useAuth hook to access context
 import skeletonImage from '../images/Skeleton1.jpg';
+import { useToast } from './Calendar_updated/components/hooks/use-toast';
 
 export default function LoginClassic() {
 
@@ -12,10 +13,9 @@ export default function LoginClassic() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { isAuthenticated, login } = useAuth();  // Destructure the login function from the context
+  const { toast } = useToast();
 
   const location = useLocation();
-  const signupSuccess = location.state?.signupSuccess;
-  const emailFromSignup = location.state?.email;
   
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -41,54 +41,34 @@ export default function LoginClassic() {
     try {
       const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
-      const contentType = response.headers.get('content-type');
-      const isJson = contentType?.includes('application/json');
-      let data1;
-  
-      if (isJson) {
-        data1 = await response.json();
-        console.info("FROM FE -> JSON Response from Backend for login ! ",data1)
-      } 
-      else {
-        const text = await response.text();
-        console.error('Non-JSON response received:', text);
-        throw new Error('Invalid server response');
-      }
+
       if (!response.ok) {
-        // Use server message if available, otherwise generic message
-        setError(data1?.message || data1?.error || `Login failed (${response.status})`);
-        return;
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
       }
-      
-      const token = data1.token;
+
+      const data = await response.json(); // Parse response once
+      console.info('FROM FE -> JSON Response from Backend for login ! ', data);
+      const token = data.token;
+      console.log('FROM FE -> JWT Token received: ', token);
+
       localStorage.setItem('jwtToken', token.trim());
-      console.log('FROM FE -> JWT Token received: ',token);
-      if(token != null){
-        login(token);
-        navigate('/');}
-      
-    } 
-    catch (err) {
-      const error = err as Error;
-      // Handle JSON parse errors specifically
-      if (error.name === 'SyntaxError') {
-        setError('Invalid server response');
-      } else if (error.message.includes('Failed to fetch')) {
-          setError('Server connection failed. Please try again later');
-        } else {
-          setError(error.message);
-        }
-      }
-      finally {
-        setLoading(false);
+      login(token, { email: data.user?.email, name: data.user?.name });
+      toast({ title: 'Success', description: 'Logged in successfully!' });
+      navigate('/', { replace: true });
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to log in.',
+        variant: 'destructive',
+      });
+      setError(error.message || 'Failed to log in.');
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -100,23 +80,23 @@ export default function LoginClassic() {
           <div className="absolute top-32 -right-8 w-16 h-16 bg-[#FFC7B4] rounded-full opacity-40"></div>
           <div className="absolute bottom-24 left-24 w-32 h-32 bg-[#B32C1A] rounded-full opacity-10"></div>
 
-          {/* Content */}
           <div className="relative z-10 flex flex-col h-full">
             <div className="flex-grow flex flex-col justify-center space-y-6">
-              <img 
+              <img
                 src={skeletonImage}
-                alt="Skeleton at laptop" 
+                alt="Skeleton at laptop"
                 className="w-80 mx-auto transform -rotate-6"
               />
               <div className="space-y-4 pl-12">
                 <h1 className="text-4xl font-bold text-[#4A154B] leading-tight">
-                  Making time to do<br/>
+                  Making time to do<br />
                   things you love ?
                 </h1>
                 <p className="text-lg text-[#4A154B] opacity-80">
-                  Still making changes to your schedule<br/>
+                  Still making changes to your schedule<br />
                   to make time for people you love ?
-                </p><br/>
+                </p>
+                <br />
                 <p className="text-2xl font-handwriting text-[#4A154B] mt-8">
                   Be Human, 3rd:9:0.
                 </p>
@@ -129,12 +109,10 @@ export default function LoginClassic() {
         <div className="w-1/2 p-12 flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full">
             <div className="text-center mb-12">
-              
               <h2 className="text-3xl font-bold text-[#4A154B] mb-3">Login to your Account</h2>
               <p className="text-[#4A154B]/80">See, how you can live and grow more, Powered with AI</p>
             </div>
 
-            {/* Google login button */}
             <button className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2.5 mb-6 hover:bg-gray-50 transition-colors">
               <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
               <span className="text-gray-700">Continue with Google</span>
@@ -149,7 +127,6 @@ export default function LoginClassic() {
               </div>
             </div>
 
-            {/* Login Form */}
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -185,21 +162,7 @@ export default function LoginClassic() {
                   Forgot Password?
                 </a>
               </div>
-              {/* {error && (
-                <div className="mb-4 p-3 bg-red-100 text-red-800 rounded text-sm">
-                  {error.includes('Network Error') ? (
-                    <>
-                      Connection failed. Check your internet or try again later.
-                      <button 
-                        onClick={handleSubmit}
-                        className="ml-2 text-red-800 font-medium hover:text-red-900"
-                      >
-                        Retry
-                      </button>
-                    </>
-                  ) : error}
-                </div>
-              )} */}
+
               {error && (
                 <div className="mb-4 p-3 bg-red-100 text-red-800 rounded text-sm">
                   {error === 'Invalid credentials' ? (
@@ -214,6 +177,7 @@ export default function LoginClassic() {
                   ) : error}
                 </div>
               )}
+
               <button
                 type="submit"
                 disabled={loading}
@@ -225,7 +189,6 @@ export default function LoginClassic() {
               </button>
             </form>
 
-            {/* Sign Up Redirect */}
             <div className="mt-8 text-center text-sm">
               <span className="text-gray-600">Still Planning Life By Yourself ?</span>
               <div className="mt-1">
@@ -243,3 +206,93 @@ export default function LoginClassic() {
   );
 }
 
+// LoginClassic.tsx
+// import React, { useState } from 'react';
+// import { Button } from '../components/Calendar_updated/components/ui/button';
+// import { Input } from '../components/Calendar_updated/components/ui/input';
+// import { useToast } from '../components/Calendar_updated/components/hooks/use-toast';
+// import { useAuth } from '../context/AuthContext';
+// import { useNavigate, Link } from 'react-router-dom';
+
+// export default function LoginClassic() {
+//   const [formData, setFormData] = useState({ email: '', password: '' });
+//   const [loading, setLoading] = useState(false);
+//   const { login } = useAuth();
+//   const { toast } = useToast();
+//   const navigate = useNavigate();
+
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+//     setLoading(true);
+//     try {
+//       const response = await fetch('http://localhost:8080/api/auth/login', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(formData),
+//       });
+
+//       if (!response.ok) {
+//         const errorData = await response.json();
+//         throw new Error(errorData.message || 'Login failed');
+//       }
+
+//       const data = await response.json();
+//       login(data.token, { email: formData.email, name: data.user?.name });
+//       toast({ title: 'Success', description: 'Logged in successfully!' });
+//       navigate('/', { replace: true });
+//     } catch (error: any) {
+//       toast({
+//         title: 'Error',
+//         description: error.message || 'Failed to log in.',
+//         variant: 'destructive',
+//       });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
+//       <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+//         <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">Log In</h2>
+//         <form onSubmit={handleSubmit} className="space-y-4">
+//           <div>
+//             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+//               Email
+//             </label>
+//             <Input
+//               id="email"
+//               type="email"
+//               value={formData.email}
+//               onChange={e => setFormData({ ...formData, email: e.target.value })}
+//               required
+//               className="mt-1"
+//             />
+//           </div>
+//           <div>
+//             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+//               Password
+//             </label>
+//             <Input
+//               id="password"
+//               type="password"
+//               value={formData.password}
+//               onChange={e => setFormData({ ...formData, password: e.target.value })}
+//               required
+//               className="mt-1"
+//             />
+//           </div>
+//           <Button type="submit" disabled={loading} className="w-full">
+//             {loading ? 'Logging in...' : 'Log In'}
+//           </Button>
+//         </form>
+//         <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+//           Don't have an account?{' '}
+//           <Link to="/signup" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+//             Sign up
+//           </Link>
+//         </p>
+//       </div>
+//     </div>
+//   );
+// }

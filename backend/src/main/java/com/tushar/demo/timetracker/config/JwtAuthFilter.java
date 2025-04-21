@@ -12,13 +12,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.tushar.demo.timetracker.service.UserDetailsServiceImpl;
+import com.tushar.demo.timetracker.service.impl.UserDetailsServiceImpl;
 
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
     private final JwtUtils jwtUtils;
     private final UserDetailsServiceImpl userDetailsService;
 
@@ -26,6 +29,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         this.jwtUtils = jwtUtils;
         this.userDetailsService = userDetailsService;
     }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, 
                                     HttpServletResponse response, 
@@ -34,11 +38,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         
         try {
             String jwt = parseJwt(request);
-            System.out.println("JWT Token: " + jwt); // Debug token extraction
+            logger.info("Request URL: {}, JWT Token: {}", request.getRequestURI(), jwt);
             if (jwt != null && !jwt.isEmpty() && jwtUtils.validateToken(jwt)) {
                 String email = jwtUtils.getUsernameFromToken(jwt);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                System.out.println("Authenticated user: " + email);
+                logger.info("Authenticated user: {}", email);
                 
                 UsernamePasswordAuthenticationToken authentication = 
                     new UsernamePasswordAuthenticationToken(
@@ -50,9 +54,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     new WebAuthenticationDetailsSource().buildDetails(request));
                 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+            } else {
+                logger.warn("No valid JWT token found for request: {}", request.getRequestURI());
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}", e);
+            logger.error("Cannot set user authentication for request {}: {}", request.getRequestURI(), e.getMessage());
         }
         
         filterChain.doFilter(request, response);
