@@ -78,4 +78,9 @@ public class TimeEntry {
     public List<Long> getTagIds() { return tagIds; } // Updated getter
     public void setTagIds(List<Long> tagIds) { this.tagIds = tagIds; } // Updated setter
     public void setProject(Project project ) {this.project = project;}
+
+	public void setDuration(long seconds) {
+		this.duration = seconds;
+		
+	}
 }

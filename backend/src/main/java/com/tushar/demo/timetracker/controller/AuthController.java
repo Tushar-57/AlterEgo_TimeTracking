@@ -3,8 +3,11 @@ package com.tushar.demo.timetracker.controller;
 import com.tushar.demo.timetracker.config.JwtUtils;
 import com.tushar.demo.timetracker.dto.request.LoginRequest;
 import com.tushar.demo.timetracker.dto.request.SignupRequest;
+import com.tushar.demo.timetracker.model.Project;
 import com.tushar.demo.timetracker.model.Users;
+import com.tushar.demo.timetracker.repository.ProjectRepository;
 import com.tushar.demo.timetracker.repository.UserRepository;
+import com.tushar.demo.timetracker.service.ProjectService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,14 +39,16 @@ public class AuthController {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtUtils jwtUtils;
+	private final ProjectService projectService;
 
 	@Autowired
 	public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository,
-			PasswordEncoder passwordEncoder, JwtUtils jwtUtils) {
+			PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ProjectService projectService) {
 		this.authenticationManager = authenticationManager;
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtUtils = jwtUtils;
+		this.projectService = projectService;
 	}
 
 	@PostMapping("/signup")
@@ -60,28 +65,19 @@ public class AuthController {
 		newUser.setEmail(normalizedEmail);
 		newUser.setPassword(passwordEncoder.encode(signupRequest.password()));
 		newUser.setEmailVerified(false);
-
 		try {
 			Users savedUser = userRepository.save(newUser);
 			logger.info("New user registered: {}", savedUser.getEmail());
 
-//			If Auto Login after signup
-//			UserDetails userDetails = userDetailsService.loadUserByUsername(normalizedEmail);
-//	        String jwt = jwtUtils.generateToken(userDetails);
-//
-//	        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-//	            "message", "Registration successful",
-//	            "userId", savedUser.getId(),
-//	            "token", jwt,
-//	            "user", Map.of("id", savedUser.getId(), "name", savedUser.getName(), "email", savedUser.getEmail())
-//	        ));
-			
-			return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message",
-					"Registration successful - please verify your email", "userId", savedUser.getId()));
-		} catch (DataIntegrityViolationException e) {
-			logger.error("Database error during registration", e);
-			return ResponseEntity.internalServerError().body(Map.of("error", "REGISTRATION_FAILED"));
-		}
+			projectService.createDefaultProject(savedUser);
+	        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+	            "message", "Registration successful - please verify your email",
+	            "userId", savedUser.getId()
+	        ));
+	    } catch (DataIntegrityViolationException e) {
+	        logger.error("Database error during registration", e);
+	        return ResponseEntity.internalServerError().body(Map.of("error", "REGISTRATION_FAILED"));
+	    }
 	}
 
 	// V1

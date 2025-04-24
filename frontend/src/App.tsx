@@ -80,7 +80,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import TimeTracker from './components/TimeTracker';
+import TimeTracker from './components/TimeTracker/TimeTracker';
 import Analytics from './components/Analytics';
 import LoginClassic from './components/LoginFunctionality';
 import SignupClassic from './components/SignupFunctionality';

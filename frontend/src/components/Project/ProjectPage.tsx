@@ -30,7 +30,7 @@ const ProjectPage = () => {
     setLoading(true);
     try {
       console.log(localStorage.getItem('jwtToken'))
-      const res = await fetch('http://localhost:8080/api/projects', {
+      const res = await fetch('http://localhost:8080/api/projects/userProjects', {
         headers: { 
           Authorization: `Bearer ${localStorage.getItem('jwtToken')}` 
         }

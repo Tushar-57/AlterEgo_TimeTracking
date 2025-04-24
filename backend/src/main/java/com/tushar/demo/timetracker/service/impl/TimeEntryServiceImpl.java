@@ -14,7 +14,10 @@ import com.tushar.demo.timetracker.repository.TimeEntryRepository;
 import com.tushar.demo.timetracker.service.TimeEntryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.web.session.RequestedUrlRedirectInvalidSessionStrategy;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +42,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     @Override
     public TimeEntry startTimeEntry(StartTimeEntryRequest request, Users user) {
         logger.info("Starting time entry for user: {}, projectId: {}, description: {}", 
-                    user.getEmail(), request.projectId(), request.getDescription());
+                    user.getEmail(), request.getProjectId(), request.getDescription());
 
         // Check if user already has an active timer
         Optional<TimeEntry> activeTimer = timeEntryRepository.findByUserIdAndEndTimeIsNull(user.getId());
@@ -48,12 +51,15 @@ public class TimeEntryServiceImpl implements TimeEntryService {
             throw new ConflictException("Cannot start a new timer. An active timer already exists.");
         }
 
-        // Validate project
-        Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> {
-                    logger.error("Project with ID {} not found for user: {}", request.getProjectId(), user.getEmail());
-                    return new ResourceNotFoundException("Project not found with ID: " + request.getProjectId());
-                });
+        // Validate project (allow null)
+        Project project = null;
+        if (request.getProjectId() != null) {
+            project = projectRepository.findById(request.getProjectId())
+                    .orElseThrow(() -> {
+                        logger.error("Project with ID {} not found for user: {}", request.getProjectId(), user.getEmail());
+                        return new ResourceNotFoundException("Project not found with ID: " + request.getProjectId());
+                    });
+        }
 
         // Validate tags
         List<Long> tagIds = new ArrayList<>();
@@ -70,10 +76,11 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         TimeEntry timeEntry = new TimeEntry();
         timeEntry.setUser(user);
         timeEntry.setProject(project);
-        timeEntry.setTagIds(tagIds); // Use tagIds directly
+        timeEntry.setTagIds(tagIds);
         timeEntry.setDescription(request.getDescription());
         timeEntry.setStartTime(LocalDateTime.now());
-        timeEntry.setEndTime(null); // Active timer has no end time yet
+        timeEntry.setIsActive(true);
+        timeEntry.setEndTime(null);
 
         TimeEntry savedEntry = timeEntryRepository.save(timeEntry);
         logger.info("Successfully started time entry with ID: {} for user: {}", savedEntry.getId(), user.getEmail());
@@ -84,26 +91,22 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     public TimeEntry stopTimer(Long id, Users user, LocalDateTime manualEnd) {
         logger.info("Stopping time entry with ID: {} for user: {}", id, user.getEmail());
 
-        // Find the time entry
         TimeEntry timeEntry = timeEntryRepository.findById(id)
                 .orElseThrow(() -> {
                     logger.error("Time entry with ID {} not found for user: {}", id, user.getEmail());
                     return new ResourceNotFoundException("Time entry not found with ID: " + id);
                 });
 
-        // Verify ownership
         if (!timeEntry.getUser().getId().equals(user.getId())) {
             logger.error("User {} attempted to stop time entry {} that they do not own", user.getEmail(), id);
             throw new ResourceNotFoundException("Time entry not found with ID: " + id);
         }
 
-        // Check if already stopped
         if (timeEntry.getEndTime() != null) {
             logger.warn("Time entry {} for user {} is already stopped", id, user.getEmail());
             throw new ConflictException("Time entry is already stopped");
         }
 
-        // Set end time
         LocalDateTime endTime = (manualEnd != null && manualEnd.isAfter(timeEntry.getStartTime())) 
                                ? manualEnd 
                                : LocalDateTime.now();
@@ -112,8 +115,15 @@ public class TimeEntryServiceImpl implements TimeEntryService {
                          endTime, timeEntry.getStartTime(), id);
             throw new IllegalArgumentException("End time cannot be before start time");
         }
-
-        timeEntry.setEndTime(endTime);
+        if (manualEnd == null) {
+            timeEntry.setEndTime(LocalDateTime.now());
+        } else {
+            timeEntry.setEndTime(manualEnd);
+        }
+        
+        // Calculate duration
+        timeEntry.setDuration(Duration.between(timeEntry.getStartTime(), timeEntry.getEndTime()).getSeconds());
+        timeEntry.setIsActive(false);
         TimeEntry updatedEntry = timeEntryRepository.save(timeEntry);
         logger.info("Successfully stopped time entry with ID: {} for user: {}", id, user.getEmail());
         return updatedEntry;

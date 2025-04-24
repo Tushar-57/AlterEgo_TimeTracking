@@ -4,37 +4,49 @@ import {
   Play, Pause, Save, RotateCcw, Tag, Briefcase, DollarSign, Clock, X, Plus,
   Calendar, ChevronDown, AlarmClock, Timer, Bell, Volume2, Settings, SkipForward, ArrowRight, CheckCircle, HelpCircle, Coffee
 } from 'lucide-react';
-import { useToast } from '../components/Calendar_updated/components/hooks/use-toast';
-import { Button } from '../components/Calendar_updated/components/ui/button';
-import { Input } from '../components/Calendar_updated/components/ui/input';
+import { useToast } from '../Calendar_updated/components/hooks/use-toast';
+import { Button } from '../Calendar_updated/components/ui/button';
+import { Input } from '../Calendar_updated/components/ui/input';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../components/ui/select';
+} from '../ui/select';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from './Calendar_updated/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './Calendar_updated/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './Calendar_updated/components/ui/tooltip';
+} from '../Calendar_updated/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../Calendar_updated/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../Calendar_updated/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Slider } from './Calendar_updated/components/ui/slider';
-import { Switch } from './Calendar_updated/components/ui/switch';
-import { Badge } from './Calendar_updated/components/ui/badge';
-import { useAuth } from '../context/AuthContext';
+import { Slider } from '../Calendar_updated/components/ui/slider';
+import { Switch } from '../Calendar_updated/components/ui/switch';
+import { Badge } from '../Calendar_updated/components/ui/badge';
+import { useAuth } from '../../context/AuthContext';
+import { fetchWithToken } from '../../utils/auth';
 
 // Types
 type TimerStatus = 'stopped' | 'running' | 'paused';
 type TimerMode = 'stopwatch' | 'countdown' | 'pomodoro';
-type Project = { id: number; name: string };
-type Tag = { id: number; name: string; color: string };
-type TimeEntry = {
+interface Project {
   id: number;
-  taskDescription: string;
-  projectId?: number;
-  tags: Tag[];
-  duration: number;
+  name: string;
+  color: string;
+  client?: string;  // Add to match backend
+}
+
+interface Tag {
+  id: number;
+  name: string;
+  color: string;
+}
+interface TimeEntry {
+  id: number;
+  description: string;
   startTime: string;
-  billable: boolean;
-};
+  endTime?: string;
+  duration: number;
+  project?: Project;
+  tags?: Tag[];
+  billable: boolean; // Add this line
+}
 
 type PomodoroSettings = {
   workDuration: number;
@@ -52,6 +64,22 @@ type UserPreferences = {
   countdownPresets: number[];
 };
 
+// Progress Indicator Component
+const TimerProgressIndicator = ({ progress }: { progress: number }) => {
+  return (
+    <div className="relative h-8 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mt-4">
+      <motion.div
+        className="absolute top-0 left-0 h-full w-8 bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center"
+        initial={{ x: '-100%' }}
+        animate={{ x: `${progress * 100 - 100}%` }}
+        transition={{ duration: 0.5 }}
+      >
+        <ArrowRight className="h-4 w-4 text-white" />
+      </motion.div>
+    </div>
+  );
+};
+
 export default function TimeTracker() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
@@ -66,14 +94,8 @@ export default function TimeTracker() {
 
   // Mode-related states
   const [timerMode, setTimerMode] = useState<TimerMode>('stopwatch');
-  const [pomodoroState, setPomodoroState] = useState({
-    currentSession: 0,
-    isBreak: false,
-    totalSessions: 0,
-  });
+  const [pomodoroState, setPomodoroState] = useState({currentSession: 0,isBreak: false, totalSessions: 0,});
   const [countdownTime, setCountdownTime] = useState(1500);
-
-  // Task details state
   const [currentTask, setCurrentTask] = useState({
     description: '',
     projectId: 'noproject',
@@ -81,19 +103,22 @@ export default function TimeTracker() {
     billable: false,
     newTag: '',
   });
-
   // Data states
   const [projects, setProjects] = useState<Project[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [newTag, setNewTag] = useState('');
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
-
+  const [isRunning, setIsRunning] = useState(false);
+  const [customMinutes, setCustomMinutes] = useState<number>(25);
+  
   // UI states
   const [showTagInput, setShowTagInput] = useState(false);
   const [showProjectSelect, setShowProjectSelect] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showKeyboardShortcutsDialog, setShowKeyboardShortcutsDialog] = useState(false);
+  const [errors, setErrors] = useState<{ description?: string; tag?: string; general?: string }>({});
 
   // User preferences
   const [preferences, setPreferences] = useState<UserPreferences>({
@@ -167,64 +192,54 @@ export default function TimeTracker() {
     };
   }, []);
 
+  // const tagsResponse = await fetchWithToken('http://localhost:8080/api/tags')
+  //           .catch(error => {
+  //             console.error('Error fetching tags:', error);
+  //             toast({
+  //               title: 'Error',
+  //               description: 'Failed to load tags',
+  //               variant: 'destructive',
+  //             });
+  //             return { data: [] };
+  //           });
+
   // Fetch projects, tags, and time entries
-  // TimeTracker.tsx
   useEffect(() => {
     const fetchData = async () => {
-        setLoading(true);
-        setFetchError(null);
-        try {
-            const token = localStorage.getItem('jwtToken');
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
-            const fetchWithAuth = async (url: string) => {
-                const res = await fetch(url, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                if (res.status === 401) {
-                    setFetchError('Authentication failed. Please try refreshing or logging in again.');
-                    throw new Error('Authentication token expired');
-                }
-                if (!res.ok) {
-                    throw new Error(`Failed to fetch data from ${url}: ${res.status}`);
-                }
-                return res.json();
-            };
-
-            const [projectData, tagData, entryData] = await Promise.all([
-                fetchWithAuth('http://localhost:8080/api/projects'),
-                fetchWithAuth('http://localhost:8080/api/tags'),
-                fetchWithAuth('http://localhost:8080/api/time-entries?limit=5'),
-            ]);
-
-            setProjects(projectData || []);
-            setTags(tagData || []);
-            setTimeEntries(entryData || []);
-
-            // Cache data
-            localStorage.setItem('cached_projects', JSON.stringify(projectData || []));
-            localStorage.setItem('cached_tags', JSON.stringify(tagData || []));
-            localStorage.setItem('cached_time_entries', JSON.stringify(entryData || []));
-        } catch (error: any) {
-            setFetchError(error.message);
-            toast({
-                title: 'Warning',
-                description: 'Failed to load some data. Using cached data.',
-                variant: 'default',
-            });
-            // Load cached data
-            setProjects(JSON.parse(localStorage.getItem('cached_projects') || '[]'));
-            setTags(JSON.parse(localStorage.getItem('cached_tags') || '[]'));
-            setTimeEntries(JSON.parse(localStorage.getItem('cached_time_entries') || '[]'));
-        } finally {
-            setLoading(false);
+      setLoading(true);
+      setFetchError(null);
+      try {
+        const projectsData = await fetchWithToken<Project[]>('http://localhost:8080/api/projects/userProjects');
+        setProjects(projectsData);
+    
+        const entriesResponse = await fetchWithToken<{
+          success: boolean;
+          message: string;
+          data: TimeEntry[];
+          errors: Record<string, string> | null;
+        }>('http://localhost:8080/api/timers?limit=5');
+        if (!entriesResponse.success) {
+          throw new Error(entriesResponse.message || 'Failed to fetch time entries');
         }
+        setTimeEntries(entriesResponse.data || []);
+    
+        const tagsData = await fetchWithToken<Tag[]>('http://localhost:8080/api/tags');
+        setTags(tagsData);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        console.error('Fetch error:', error);
+        setFetchError(errorMessage);
+        toast({
+          title: 'Data Loading Error',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
     };
-
     if (isAuthenticated) fetchData();
-}, [isAuthenticated, toast]);
+  }, [isAuthenticated, toast, fetchWithToken]);
 
   // Check for active timer
   useEffect(() => {
@@ -267,7 +282,7 @@ export default function TimeTracker() {
             time: elapsed,
           }));
           setCurrentTask({
-            description: response.data.taskDescription,
+            description: response.data.description,
             projectId: response.data.projectId?.toString() || 'noproject',
             tags: response.data.tags || [],
             billable: response.data.billable,
@@ -283,7 +298,6 @@ export default function TimeTracker() {
         });
       }
     };
-
     if (isAuthenticated) checkActiveTimer();
   }, [isAuthenticated, toast, logout]);
 
@@ -506,17 +520,16 @@ export default function TimeTracker() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          taskDescription: currentTask.description,
+          description: currentTask.description,
           startTime: new Date().toISOString(),
-          category: null,
-          tags: currentTask.tags.map(tag => tag.name),
-          projectId,
+          projectId: projectId,
+          tagIds: currentTask.tags.map(tag => tag.id),
           billable: currentTask.billable,
         }),
       });
       if (res.status === 401) {
-        localStorage.removeItem('jwtToken');
-        logout();
+        // localStorage.removeItem('jwtToken');
+        // logout();
         toast({
           title: 'Authentication Error',
           description: 'Your session has expired. Please log in again.',
@@ -555,12 +568,22 @@ export default function TimeTracker() {
   const stopTimer = async () => {
     if ((timerMode === 'countdown') || (timerMode === 'pomodoro' && pomodoroState.isBreak)) {
       setTimerState(prev => ({ ...prev, status: 'stopped' }));
+      resetTimer();
       return;
     }
-    if (!timerState.activeTimerId || timerState.time < 60) {
+    if (!timerState.activeTimerId) {
       toast({
-        title: 'Validation Error',
-        description: 'Timer duration must be at least 60 seconds to save.',
+        title: 'No Active Timer',
+        description: 'There is no timer to stop',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (timerState.time < 60) {
+      toast({
+        title: 'Minimum Duration',
+        description: 'Timer must run for at least 60 seconds to save',
         variant: 'destructive',
       });
       resetTimer();
@@ -574,7 +597,7 @@ export default function TimeTracker() {
           description: 'Please log in to stop the timer.',
           variant: 'destructive',
         });
-        logout();
+        // logout();
         return;
       }
       const res = await fetch(`http://localhost:8080/api/timers/${timerState.activeTimerId}/stop`, {
@@ -584,8 +607,8 @@ export default function TimeTracker() {
         },
       });
       if (res.status === 401) {
-        localStorage.removeItem('jwtToken');
-        logout();
+        // localStorage.removeItem('jwtToken');
+        // logout();
         toast({
           title: 'Authentication Error',
           description: 'Your session has expired. Please log in again.',
@@ -697,6 +720,14 @@ export default function TimeTracker() {
         });
         return;
       }
+      if (res.status === 409) {
+        toast({
+          title: 'Tag Exists',
+          description: `Tag "${currentTask.newTag}" already exists.`,
+          variant: 'destructive',
+        });
+        return;
+      }
       if (!res.ok) throw new Error('Failed to create tag');
       const newTag = await res.json();
       setCurrentTask(prev => ({
@@ -704,7 +735,11 @@ export default function TimeTracker() {
         tags: [...prev.tags, newTag],
         newTag: '',
       }));
-      setTags(prev => [...prev, newTag]);
+      setTags(prevTags => {
+        const updatedTags = [...prevTags, newTag];
+        localStorage.setItem('cached_tags', JSON.stringify(updatedTags));
+        return updatedTags;
+      });
       setShowTagInput(false);
       toast({
         title: 'Tag Created',
@@ -751,15 +786,31 @@ export default function TimeTracker() {
 
   const renderTimer = () => {
     const formattedTime = formatTime(timerState.time);
+    const totalTime = timerMode === 'countdown'
+      ? countdownTime
+      : timerMode === 'pomodoro'
+        ? pomodoroState.isBreak
+          ? (pomodoroState.currentSession % preferences.pomodoroSettings.sessionsUntilLongBreak === 0
+              ? preferences.pomodoroSettings.longBreakDuration
+              : preferences.pomodoroSettings.shortBreakDuration) * 60
+          : preferences.pomodoroSettings.workDuration * 60
+        : 0;
+    const progress = totalTime > 0 ? (totalTime - timerState.time) / totalTime : 0;
+
     return (
-      <motion.div
-        className="text-4xl lg:text-5xl font-mono font-bold text-center my-4"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        {formattedTime}
-      </motion.div>
+      <div>
+        <motion.div
+          className="text-4xl lg:text-5xl font-mono font-bold text-center my-4"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          {formattedTime}
+        </motion.div>
+        {(timerMode === 'countdown' || timerMode === 'pomodoro') && (
+          <TimerProgressIndicator progress={progress} />
+        )}
+      </div>
     );
   };
 
@@ -907,14 +958,24 @@ export default function TimeTracker() {
                       <DialogDescription>Enter the number of minutes for your timer.</DialogDescription>
                     </DialogHeader>
                     <div className="flex items-center space-x-4 py-4">
-                      <Input type="number" min="1" max="180" placeholder="Minutes" defaultValue="25" className="flex-1" id="custom-minutes" />
+                      {/* <Input type="number" min="1" max="180" placeholder="Minutes" defaultValue="25" className="flex-1" id="custom-minutes" /> */}
+                      <Input
+                        type="number"
+                        min="1"
+                        max="180"
+                        placeholder="Minutes"
+                        value={customMinutes}
+                        onChange={(e) => setCustomMinutes(Number(e.target.value))}
+                        className="flex-1"
+                        id="custom-minutes"
+                      />
                     </div>
                     <DialogFooter>
                       <Button
                         onClick={() => {
-                          const input = document.getElementById('custom-minutes') as HTMLInputElement;
-                          const minutes = parseInt(input.value || '25');
-                          handleSetCustomCountdown(minutes);
+                          // const input = document.getElementById('custom-minutes') as HTMLInputElement;
+                          // const minutes = parseInt(input.value || '25');
+                          handleSetCustomCountdown(customMinutes);
                         }}
                       >
                         Set Timer
@@ -949,195 +1010,171 @@ export default function TimeTracker() {
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 p-6">
           {renderTimer()}
-          {(timerMode === 'countdown' || timerMode === 'pomodoro') && (
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-6">
-              <motion.div
-                className={`h-2 rounded-full ${
-                  timerMode === 'pomodoro' && pomodoroState.isBreak ? 'bg-blue-500 dark:bg-blue-600' : 'bg-indigo-600 dark:bg-indigo-500'
-                }`}
-                style={{
-                  width: `${
-                    timerMode === 'countdown'
-                      ? (timerState.time / countdownTime) * 100
-                      : pomodoroState.isBreak
-                      ? (timerState.time / (preferences.pomodoroSettings[pomodoroState.currentSession % preferences.pomodoroSettings.sessionsUntilLongBreak === 0 ? 'longBreakDuration' : 'shortBreakDuration'] * 60)) * 100
-                      : (timerState.time / (preferences.pomodoroSettings.workDuration * 60)) * 100
-                  }%`,
-                }}
-                initial={{ width: '0%' }}
-                animate={{
-                  width: `${
-                    timerMode === 'countdown'
-                      ? (timerState.time / countdownTime) * 100
-                      : pomodoroState.isBreak
-                      ? (timerState.time / (preferences.pomodoroSettings[pomodoroState.currentSession % preferences.pomodoroSettings.sessionsUntilLongBreak === 0 ? 'longBreakDuration' : 'shortBreakDuration'] * 60)) * 100
-                      : (timerState.time / (preferences.pomodoroSettings.workDuration * 60)) * 100
-                  }%`,
-                }}
-                transition={{ duration: 0.5 }}
-              />
-            </div>
-          )}
-          {(timerMode !== 'countdown' && !(timerMode === 'pomodoro' && pomodoroState.isBreak)) && (
-            <div className="mb-4">
-              <Input
-                type="text"
-                placeholder="What are you working on?"
-                value={currentTask.description}
-                onChange={e => setCurrentTask(prev => ({ ...prev, description: e.target.value }))}
+        </div>
+          <div className="mb-4">
+            <Input
+              type="text"
+              placeholder="What are you working on?"
+              value={currentTask.description}
+              onChange={e => setCurrentTask(prev => ({ ...prev, description: e.target.value }))}
+              className={`w-full p-3 text-lg border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4 ${
+                errors.description ? 'border-red-500' : 'border-gray-300'
+              }`}
+              disabled={timerState.status === 'running'}
+            />
+             {errors.description && (
+              <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-3 mb-6">
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowProjectSelect(!showProjectSelect)}
                 disabled={timerState.status === 'running'}
-                className="w-full text-lg"
-              />
-            </div>
-          )}
-          {(timerMode !== 'countdown' && !(timerMode === 'pomodoro' && pomodoroState.isBreak)) && (
-            <div className="flex flex-wrap gap-3 mb-6">
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowProjectSelect(!showProjectSelect)}
-                  disabled={timerState.status === 'running'}
-                  className="flex items-center gap-2"
+                // className="flex items-center gap-2 px-4 py-2"
+                className="flex items-center gap-2 px-4 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                <Briefcase className="h-4 w-4" />
+                {currentTask.projectId === 'noproject' ? 'No Project' : getProjectNameById(parseInt(currentTask.projectId))}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+              {showProjectSelect && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute z-50 mt-1 w-56 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
                 >
-                  <Briefcase className="h-4 w-4" />
-                  {currentTask.projectId === 'noproject' ? 'No Project' : getProjectNameById(parseInt(currentTask.projectId))}
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-                {showProjectSelect && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute z-50 mt-1 w-56 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                  >
-                    <div className="py-1 max-h-60 overflow-auto">
+                  <div className="py-1 max-h-60 overflow-auto">
+                    <button
+                      onClick={() => {
+                        setCurrentTask(prev => ({ ...prev, projectId: 'noproject' }));
+                        setShowProjectSelect(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm ${
+                        currentTask.projectId === 'noproject'
+                          ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-300'
+                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      No Project
+                    </button>
+                    {projects.map(project => (
                       <button
+                        key={project.id}
                         onClick={() => {
-                          setCurrentTask(prev => ({ ...prev, projectId: 'noproject' }));
+                          setCurrentTask(prev => ({ ...prev, projectId: project.id.toString() }));
                           setShowProjectSelect(false);
                         }}
                         className={`w-full text-left px-4 py-2 text-sm ${
-                          currentTask.projectId === 'noproject'
+                          currentTask.projectId === project.id.toString()
                             ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-300'
                             : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                         }`}
                       >
-                        No Project
+                        {project.name}
                       </button>
-                      {projects.map(project => (
-                        <button
-                          key={project.id}
-                          onClick={() => {
-                            setCurrentTask(prev => ({ ...prev, projectId: project.id.toString() }));
-                            setShowProjectSelect(false);
-                          }}
-                          className={`w-full text-left px-4 py-2 text-sm ${
-                            currentTask.projectId === project.id.toString()
-                              ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-300'
-                              : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                          }`}
-                        >
-                          {project.name}
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowTagInput(!showTagInput)}
-                  disabled={timerState.status === 'running'}
-                  className="flex items-center gap-2"
-                >
-                  <Tag className="h-4 w-4" />
-                  Tags
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-                {showTagInput && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute z-50 mt-1 w-64 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                  >
-                    <div className="p-3">
-                      <div className="flex gap-2 mb-3">
-                        <Input
-                          ref={tagInputRef}
-                          placeholder="Add new tag"
-                          value={currentTask.newTag}
-                          onChange={e => setCurrentTask(prev => ({ ...prev, newTag: e.target.value }))}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleAddTag();
-                            }
-                          }}
-                          className="flex-1"
-                        />
-                        <Button size="sm" onClick={handleAddTag}>
-                          Add
-                        </Button>
-                      </div>
-                      <div className="max-h-40 overflow-y-auto py-1">
-                        {tags.map(tag => (
-                          <div
-                            key={tag.id}
-                            onClick={() => handleSelectTag(tag)}
-                            className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                          >
-                            <div className="flex items-center">
-                              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tag.color }} />
-                              <span className="text-sm">{tag.name}</span>
-                            </div>
-                            {currentTask.tags.some(t => t.id === tag.id) && <CheckCircle className="h-4 w-4 text-green-500" />}
-                          </div>
-                        ))}
-                        {tags.length === 0 && (
-                          <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">No tags yet. Create one above.</div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {currentTask.tags.map(tag => (
-                  <Badge
-                    key={tag.id}
-                    variant="secondary"
-                    className="flex items-center gap-1 pl-1 pr-2 py-1"
-                    style={{ backgroundColor: `${tag.color}20` }}
-                  >
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
-                    <span>{tag.name}</span>
-                    <button
-                      onClick={() => setCurrentTask(prev => ({ ...prev, tags: prev.tags.filter(t => t.id !== tag.id) }))}
-                      disabled={timerState.status === 'running'}
-                      className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                      <X size={12} />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 ml-auto">
-                <DollarSign className={`h-4 w-4 ${currentTask.billable ? 'text-green-500' : 'text-gray-400'}`} />
-                <span className="text-sm">Billable</span>
-                <Switch
-                  checked={currentTask.billable}
-                  onCheckedChange={checked => setCurrentTask(prev => ({ ...prev, billable: checked }))}
-                  disabled={timerState.status === 'running'}
-                />
-              </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
             </div>
-          )}
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTagInput(!showTagInput)}
+                disabled={timerState.status === 'running'}
+                // className="flex items-center gap-2"
+                className="flex items-center gap-2 px-4 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                <Tag className="h-4 w-4" />
+                Tags
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+              {showTagInput && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute z-50 mt-1 w-64 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                >
+                  <div className="p-3">
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        ref={tagInputRef}
+                        placeholder="Add new tag"
+                        value={currentTask.newTag}
+                        onChange={e => setCurrentTask(prev => ({ ...prev, newTag: e.target.value }))}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTag();
+                          }
+                        }}
+                        className="flex-1"
+                        
+                      />
+                      <Button size="sm" onClick={handleAddTag} className="px-4">
+                        Add
+                      </Button>
+                    </div>
+                    <div className="max-h-40 overflow-y-auto py-1">
+                      {tags.map(tag => (
+                        <div
+                          key={tag.id}
+                          onClick={() => handleSelectTag(tag)}
+                          className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                        >
+                          <div className="flex items-center">
+                          <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tag.color || '#ccc' }} />
+                            <span className="text-sm">{tag.name}</span>
+                          </div>
+                          {currentTask.tags.some(t => t.id === tag.id) && <CheckCircle className="h-4 w-4 text-green-500" />}
+                        </div>
+                      ))}
+                      {tags.length === 0 && (
+                        <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">No tags yet. Create one above.</div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {currentTask.tags.map(tag => (
+                <Badge
+                  key={tag.id}
+                  variant="secondary"
+                  className="flex items-center gap-1 pl-1 pr-2 py-1"
+                  style={{ backgroundColor: `${tag.color}20` }}
+                >
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                  <span>{tag.name}</span>
+                  <button
+                    onClick={() => setCurrentTask(prev => ({ ...prev, tags: prev.tags.filter(t => t.id !== tag.id) }))}
+                    disabled={timerState.status === 'running'}
+                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <X size={12} />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 ml-auto">
+              <DollarSign className={`h-4 w-4 ${currentTask.billable ? 'text-green-500' : 'text-gray-400'}`} />
+              <span className="text-sm">Billable</span>
+              <Switch
+                checked={currentTask.billable || false}
+                onCheckedChange={checked => setCurrentTask(prev => ({ ...prev, billable: checked }))}
+                disabled={timerState.status === 'running'}
+              />
+            </div>
+          </div>
           <div className="flex justify-center gap-4">
             <TooltipProvider>
               <Tooltip>
@@ -1147,26 +1184,41 @@ export default function TimeTracker() {
                     size="icon"
                     onClick={resetTimer}
                     disabled={timerState.status === 'running'}
-                    className="rounded-full h-12 w-12"
+                    className="rounded-full h-12 w-12 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
                   >
-                    <RotateCcw className="h-5 w-5" />
+                    <RotateCcw className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Reset timer (R)</TooltipContent>
               </Tooltip>
             </TooltipProvider>
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={toggleTimer}
-                    className="rounded-full h-14 w-14 flex items-center justify-center"
+                    className="rounded-full h-14 w-14 flex items-center justify-center 
+                      transition-colors duration-200"
+                    style={{
+                      '--main-color': timerState.status === 'running' ? '#ef4444' : '#3b82f6',
+                      '--hover-color': timerState.status === 'running' ? '#dc2626' : '#2563eb',
+                    } as React.CSSProperties}
                     variant={timerState.status === 'running' ? 'secondary' : 'default'}
                   >
-                    {timerState.status === 'running' ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
+                    <div className="[&>*]:text-white h-full w-full flex items-center justify-center 
+                      hover:bg-[var(--hover-color)] bg-[var(--main-color)]">
+                      {timerState.status === 'running' ? (
+                        <Pause className="h-6 w-6" />
+                      ) : (
+                        <Play className="h-6 w-6 ml-1" />
+                      )}
+                    </div>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>{timerState.status === 'running' ? 'Pause timer (Space)' : 'Start timer (Space)'}</TooltipContent>
+                <TooltipContent>
+                  {timerState.status === 'running' ? 'Pause timer (Space)' : 'Start timer (Space)'}
+                </TooltipContent>
               </Tooltip>
             </TooltipProvider>
             <TooltipProvider>
@@ -1177,16 +1229,24 @@ export default function TimeTracker() {
                     size="icon"
                     onClick={stopTimer}
                     disabled={timerState.status === 'stopped' || timerState.time < 60}
-                    className="rounded-full h-12 w-12"
+                    className="rounded-full h-12 w-12 bg-green-100 hover:bg-green-200 dark:bg-green-800 dark:hover:bg-green-700"
                   >
-                    <Save className="h-5 w-5" />
+                    <Save className="h-5 w-5 text-green-700 dark:text-green-300" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Stop and save (S)</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-        </div>
+          {loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-center items-center py-4"
+            >
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
+            </motion.div>
+          )}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Calendar className="mr-2 h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -1212,12 +1272,12 @@ export default function TimeTracker() {
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-medium">{entry.taskDescription || 'Untitled Task'}</h3>
+                        <h3 className="font-medium">{entry.description || 'Untitled Task'}</h3>
                         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          {entry.projectId && (
+                          {entry.project && (
                             <span className="flex items-center mr-3">
                               <Briefcase className="h-3 w-3 mr-1" />
-                              {getProjectNameById(entry.projectId)}
+                              {getProjectNameById(entry.project.id)}
                             </span>
                           )}
                           <span className="flex items-center">
@@ -1225,13 +1285,16 @@ export default function TimeTracker() {
                             {new Date(entry.startTime).toLocaleDateString()}
                           </span>
                         </div>
-                        {entry.tags.length > 0 && (
+                        {entry.tags && entry.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {entry.tags.map(tag => (
                               <div
                                 key={tag.id}
                                 className="px-2 py-0.5 text-xs rounded-full"
-                                style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+                                style={{ 
+                                  backgroundColor: `${tag.color}20`, 
+                                  color: tag.color 
+                                }}
                               >
                                 {tag.name}
                               </div>
@@ -1338,12 +1401,14 @@ export default function TimeTracker() {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="flex items-center gap-2 min-w-[120px]"
                       onClick={() => {
                         setPreferences(prev => ({
                           ...prev,
                           countdownPresets: [...prev.countdownPresets, 1800],
                         }));
                       }}
+                      
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       Add
@@ -1507,7 +1572,39 @@ export default function TimeTracker() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Keyboard Shortcuts</DialogTitle>
-            <DialogDescription>Use theseshortcuts to navigate and control the TimeTracker efficiently.</DialogDescription>
-</DialogHeader>
-
-<div className="space-y-4 py-4"> <div className="flex justify-between"> <span className="text-sm font-medium">Start/Pause Timer</span> <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">Space</kbd> </div> <div className="flex justify-between"> <span className="text-sm font-medium">Stop and Save Timer</span> <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">S</kbd> </div> <div className="flex justify-between"> <span className="text-sm font-medium">Reset Timer</span> <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">R</kbd> </div> <div className="flex justify-between"> <span className="text-sm font-medium">Switch to Stopwatch</span> <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">1</kbd> </div> <div className="flex justify-between"> <span className="text-sm font-medium">Switch to Countdown</span> <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">2</kbd> </div> <div className="flex justify-between"> <span className="text-sm font-medium">Switch to Pomodoro</span> <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">3</kbd> </div> </div> <DialogFooter> <Button onClick={() => setShowKeyboardShortcutsDialog(false)}>Close</Button> </DialogFooter> </DialogContent> </Dialog> </div> ); }
+            <DialogDescription>Use these shortcuts to navigate and control the TimeTracker efficiently.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Start/Pause Timer</span>
+              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">Space</kbd>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Stop and Save Timer</span>
+              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">S</kbd>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Reset Timer</span>
+              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">R</kbd>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Switch to Stopwatch</span>
+              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">1</kbd>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Switch to Countdown</span>
+              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">2</kbd>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm font-medium">Switch to Pomodoro</span>
+              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">3</kbd>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowKeyboardShortcutsDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
