@@ -42,7 +42,7 @@ const StatCard = ({
   </div>
 );
 
-const Analytics = () => {
+  const Analytics = () => {
   return (
     <div className="min-h-screen bg-gray-50 pl-64">
       <div className="p-8">

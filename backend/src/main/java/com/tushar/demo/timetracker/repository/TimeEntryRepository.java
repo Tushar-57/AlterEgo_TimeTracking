@@ -12,13 +12,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
-    List<TimeEntry> findByUserAndStartTimeBetween(Users user, LocalDateTime start, LocalDateTime end);
+	List<TimeEntry> findByUserIdAndStartTimeBetween(Long userId, LocalDateTime start, LocalDateTime end);
+    Optional<TimeEntry> findByUserIdAndEndTimeIsNull(Long userId);
 
-    Optional<TimeEntry> findByUserAndEndTimeIsNull(Users user);
-    
-    // Add missing method
-    Optional<TimeEntry> findByIdAndUser(Long id, Users user);
-    
-    @Query("SELECT DISTINCT t.taskDescription FROM TimeEntry t WHERE t.user = :user AND LOWER(t.taskDescription) LIKE LOWER(CONCAT('%', :query, '%'))")
-    List<String> findSimilarDescriptions(@Param("user") Users user, @Param("query") String query);
+    @Query("SELECT te FROM TimeEntry te WHERE te.user.id = :userId ORDER BY te.startTime DESC")
+    List<TimeEntry> findByUserIdOrderByStartTimeDesc(Long userId, int limit);
 }

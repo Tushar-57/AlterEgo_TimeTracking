@@ -1,9 +1,10 @@
+// timerPopUp.tsx
 import { X, Play, Pause, RotateCcw, Volume2, Hourglass, Timer as TimerIcon, Edit2, MessageCircle, Mic, Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import type { Project } from '../store/projectStore'; 
 
-interface TimeEntry {
+export interface TimeEntry {
   taskDescription: string;
   category: string;
   tags: string[];
@@ -25,6 +26,12 @@ interface TimerPopupProps {
   selectedProjectId?: number | undefined;
   setSelectedProjectId: (val: number | undefined) => void;
   status: 'stopped' | 'running' | 'paused';
+  onTaskChange: (task: {
+    description: string;
+    project: string;
+    tags: string[];
+    billable: boolean;
+  }) => void;
   // ... rest of existing props
   time: number;
   soundEnabled: boolean;
@@ -105,35 +112,39 @@ export const TimerPopup = ({
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      const token = localStorage.getItem('jwtToken');
-      if (!token) return;
-      // setIsLoadingProjects(true);
+  const fetchProjects = async () => {
+      setIsLoadingProjects(true);
       try {
-        const response = await fetch('/api/projects', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (response.status === 401) {
-          localStorage.removeItem('jwtToken');
-          window.location.href = '/login'; // Hard redirect breaks recursion
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+          window.location.href = '/login';
           return;
         }
-        if (!response.ok) throw new Error('Failed to fetch');
-          const data = await response.json();
-          setProjects(data);
-        } catch (error) {
-          if (error instanceof Error && error.message.includes('401')) {
-            localStorage.removeItem('jwtToken');
-            window.location.href = '/login';
-          }
-        } finally {
-          setIsLoadingProjects(false);
+    
+        const res = await fetch('http://localhost:8080/api/projects', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+    
+        if (res.status === 401) {
+          localStorage.removeItem('jwtToken');
+          window.location.href = '/login';
+          return;
         }
-      };
-    fetchProjects();}, []);
+    
+        if (!res.ok) throw new Error('Failed to fetch projects');
+        
+        const data = await res.json();
+        setProjects(data);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+        if (error instanceof Error && error.message.includes('401')) {
+          localStorage.removeItem('jwtToken');
+          window.location.href = '/login';
+        }
+      } finally {
+        setIsLoadingProjects(false);
+      }
+    };
 
   const handleComplete = () => {
     console.log('Token:', localStorage.getItem('jwtToken'));
@@ -175,15 +186,6 @@ export const TimerPopup = ({
       projectId: selectedProjectId ?? undefined,
       billable: isBillable
     });
-    // onSave({
-    //   taskDescription: taskDescription.trim(),
-    //   category,
-    //   tags,
-    //   startTime: sTime,
-    //   endTime: eTime,
-    //   projectId: selectedProjectId ?? undefined,
-    //   billable: isBillable
-    // });
     onSave({
       taskDescription: taskDescription.trim(),
       category,
@@ -317,15 +319,19 @@ export const TimerPopup = ({
               <label className="block text-sm text-gray-600">Project</label>
               <select
                 value={selectedProjectId ?? ''}
-                onChange={(e) => setSelectedProjectId(Number(e.target.value))}
+                onChange={(e) => setSelectedProjectId(e.target.value ? Number(e.target.value) : null)}
                 className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="">No project</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
+                {isLoadingProjects ? (
+                  <option disabled>Loading projects...</option>
+                ) : (
+                  projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
             
@@ -445,3 +451,4 @@ export const TimerPopup = ({
     </div>
   );
 }
+// PlannerForm.tsx

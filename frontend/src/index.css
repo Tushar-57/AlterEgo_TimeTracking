@@ -2,11 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
+/* @layer base {
   body {
     font-feature-settings: "liga" 1, "kern" 1;
     -webkit-font-smoothing: antialiased;
   }
+} */
+@layer base {
+
+  body {
+    font-feature-settings: "liga" 1, "kern" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --border: 214.3 31.8% 91.4%;
+    --radius: 0.5rem;
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+  
+  /* .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+  } */
 }
 .glass-morphism-inner {
   background: rgba(255, 255, 255, 0.15);
@@ -67,4 +89,81 @@
   opacity: 1;
   transform: translateY(0);
   transition: all 0.3s ease-out;
+}
+.ai-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 95vw;
+  height: 95vh;
+  max-width: 1600px;
+  max-height: 900px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  z-index: 9999;
+  padding: 1.5rem;
+}
+
+/* Add dark mode support */
+.dark .ai-overlay {
+  background: hsl(var(--background)) !important;
+  border-color: hsl(var(--border));
+}
+
+/* Add these transitions */
+.ai-overlay {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ai-overlay select {
+  font-family: inherit;
+  color: inherit;
+}
+/* @keyframes fade-in {
+  from { 
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+} */
+
+.calendar-grid {
+  background-image: 
+    linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+    linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+  background-size: 143px 60px;
+  /* min-height: calc(100vh - 150px); */
+  min-height: 1440px; /* 24 hours * 60px */
+}
+
+
+/* Prevent sidebar overlap */
+.ml-64 {
+  margin-left: 252px;
+}
+.project-color-lightblue { background-color: #ADD8E6; }
+.project-color-violet { background-color: #8B5CF6; }
+.project-color-amber { background-color: #F59E0B; }
+.project-color-rose { background-color: #F43F5E; }
+.project-color-emerald { background-color: #10B981; }
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.calendar-content {
+  height: calc(100vh - 150px);
+  overflow-y: auto;
 }

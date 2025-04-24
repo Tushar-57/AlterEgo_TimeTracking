@@ -12,7 +12,7 @@ import {
   UserPlus,
   LucideCalendarCheck2,
   WatchIcon,
-  CalendarRangeIcon
+  CalendarRangeIcon, LayoutDashboard
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,14 +23,14 @@ const NavItem = ({ icon: Icon, label, to }: { icon: any; label: string; to: stri
   return (
     <Link 
       to={to}
-      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 ${
         isActive 
-          ? 'bg-black text-white' 
-          : 'text-gray-500 hover:bg-gray-100'
+          ? 'bg-black text-white shadow-md' 
+          : 'text-gray-500 hover:bg-gray-100 hover:shadow-sm'
       }`}
     >
-      <Icon className="w-5 h-5" />
-      <span className="font-light">{label}</span>
+      <Icon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-12" />
+      <span className="font-light group-hover:font-medium">{label}</span>
     </Link>
   );
 };
@@ -47,8 +47,11 @@ const Sidebar = () => {
 
       <div className="space-y-1">
         <div className="mb-6">
-          <div className="text-xs font-medium text-gray-400 mb-3 px-4">TRACK</div>
+        <div className="text-xs font-medium text-gray-400 mb-3 px-4">OVERVIEW</div>
           <NavItem icon={Timer} label="Timer" to="/" />
+          <NavItem icon={LayoutDashboard} label="Dashboard" to="/dashboard" />
+          <div className="mb-6">
+          </div>
         </div>
         <div className="mb-6">
           <div className="text-xs font-medium text-gray-400 mb-3 px-4">PLANNER</div>
