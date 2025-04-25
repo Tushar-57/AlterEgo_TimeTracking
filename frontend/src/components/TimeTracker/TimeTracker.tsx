@@ -5,6 +5,7 @@ import {
   Calendar, ChevronDown, AlarmClock, Timer, Bell, Volume2, Settings, SkipForward, ArrowRight, CheckCircle, HelpCircle, Coffee
 } from 'lucide-react';
 import { useToast } from '../Calendar_updated/components/hooks/use-toast';
+// import { useToast } from '../../hooks/use-toast';
 import { Button } from '../Calendar_updated/components/ui/button';
 import { Input } from '../Calendar_updated/components/ui/input';
 import {
@@ -21,6 +22,7 @@ import { Switch } from '../Calendar_updated/components/ui/switch';
 import { Badge } from '../Calendar_updated/components/ui/badge';
 import { useAuth } from '../../context/AuthContext';
 import { fetchWithToken } from '../../utils/auth';
+import { useClickOutside } from '../../utils/useClickOutside';
 
 // Types
 type TimerStatus = 'stopped' | 'running' | 'paused';
@@ -119,6 +121,10 @@ export default function TimeTracker() {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showKeyboardShortcutsDialog, setShowKeyboardShortcutsDialog] = useState(false);
   const [errors, setErrors] = useState<{ description?: string; tag?: string; general?: string }>({});
+  const projectRef = useClickOutside(() => setShowProjectSelect(false));
+  const tagRef = useClickOutside(() => setShowTagInput(false));
+  const [currentQuote, setCurrentQuote] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'duration'>('newest');
 
   // User preferences
   const [preferences, setPreferences] = useState<UserPreferences>({
@@ -144,6 +150,21 @@ export default function TimeTracker() {
   // Refs
   const intervalRef = useRef<number>();
   const tagInputRef = useRef<HTMLInputElement>(null);
+
+  const quotes = [
+    "Productivity is being able to do things that you were never able to do before.",
+    "The key is not to prioritize what's on your schedule, but to schedule your priorities.",
+    "Time management is life management.",
+    "Focus on being productive instead of busy.",
+    "Your time is limited, so don't waste it living someone else's life."
+  ];
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentQuote(quotes[Math.floor(Math.random() * quotes.length)]);
+    }, 10000);
+  
+    return () => clearInterval(interval);
+  }, []);
 
   // Load user preferences
   useEffect(() => {
@@ -192,17 +213,6 @@ export default function TimeTracker() {
     };
   }, []);
 
-  // const tagsResponse = await fetchWithToken('http://localhost:8080/api/tags')
-  //           .catch(error => {
-  //             console.error('Error fetching tags:', error);
-  //             toast({
-  //               title: 'Error',
-  //               description: 'Failed to load tags',
-  //               variant: 'destructive',
-  //             });
-  //             return { data: [] };
-  //           });
-
   // Fetch projects, tags, and time entries
   useEffect(() => {
     const fetchData = async () => {
@@ -228,7 +238,7 @@ export default function TimeTracker() {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         console.error('Fetch error:', error);
-        setFetchError(errorMessage);
+        // setFetchError(errorMessage);
         toast({
           title: 'Data Loading Error',
           description: errorMessage,
@@ -267,8 +277,12 @@ export default function TimeTracker() {
           });
           return;
         }
+        // if (resp) {
+        //   setTimerState(prev => ({ ...prev, ...response }));
+        // }
 
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
         const response = await resp.json();
         if (response.success && response.data) {
           const startTime = new Date(response.data.startTime).getTime();
@@ -289,6 +303,10 @@ export default function TimeTracker() {
             newTag: '',
           });
         }
+        else {
+          // Handle case where response.success is false or no data
+          setTimerState(prev => ({ ...prev, activeTimerId: null }));
+        }
       } catch (error) {
         console.error('Error checking active timer:', error);
         toast({
@@ -299,7 +317,7 @@ export default function TimeTracker() {
       }
     };
     if (isAuthenticated) checkActiveTimer();
-  }, [isAuthenticated, toast, logout]);
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -495,9 +513,17 @@ export default function TimeTracker() {
     }
     if (!currentTask.description.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Task description is required.',
+        title: 'Missing Description',
+        description: 'Please enter a task description before starting the timer',
         variant: 'destructive',
+        action: (
+          <Button 
+            variant="secondary" 
+            onClick={() => document.getElementById('task-description-input')?.focus()}
+          >
+            Add Description
+          </Button>
+        )
       });
       return;
     }
@@ -582,11 +608,15 @@ export default function TimeTracker() {
 
     if (timerState.time < 60) {
       toast({
-        title: 'Minimum Duration',
-        description: 'Timer must run for at least 60 seconds to save',
+        title: 'Minimum Time Required',
+        description: 'Please track at least 1 minute to save your session',
         variant: 'destructive',
+        action: (
+          <Button variant="secondary" onClick={() => setTimerState(prev => ({ ...prev, status: 'running' }))}>
+            Continue Tracking
+          </Button>
+        )
       });
-      resetTimer();
       return;
     }
     try {
@@ -928,9 +958,17 @@ export default function TimeTracker() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="stopwatch" className="p-4">
-              <div className="text-center text-gray-500 dark:text-gray-400">
+              {/* <div className="text-center text-gray-500 dark:text-gray-400">
                 Track your work time without limits
-              </div>
+              </div> */}
+              <motion.div
+                className="text-center text-lg italic font-serif text-gray-600 dark:text-gray-400"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                key={currentQuote}
+              >
+                "{currentQuote}"
+              </motion.div>
             </TabsContent>
             <TabsContent value="countdown" className="p-4">
               <div className="flex flex-wrap gap-2 justify-center mb-4">
@@ -1011,27 +1049,25 @@ export default function TimeTracker() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 p-6">
           {renderTimer()}
         </div>
-          <div className="mb-4">
+          <div className="mb-4 max-w-3xl mx-auto">
             <Input
               type="text"
               placeholder="What are you working on?"
               value={currentTask.description}
               onChange={e => setCurrentTask(prev => ({ ...prev, description: e.target.value }))}
-              className={`w-full p-3 text-lg border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4 ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className="w-full p-6 text-2xl text-center border-2 rounded-xl focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700"
               disabled={timerState.status === 'running'}
             />
-             {errors.description && (
-              <p className="text-red-500 text-sm mt-1">{errors.description}</p>
-            )}
           </div>
           <div className="flex flex-wrap gap-3 mb-6">
             <div className="relative">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowProjectSelect(!showProjectSelect)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowProjectSelect(!showProjectSelect);
+                }}
                 disabled={timerState.status === 'running'}
                 // className="flex items-center gap-2 px-4 py-2"
                 className="flex items-center gap-2 px-4 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -1047,6 +1083,7 @@ export default function TimeTracker() {
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.2 }}
                   className="absolute z-50 mt-1 w-56 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                  ref={projectRef}
                 >
                   <div className="py-1 max-h-60 overflow-auto">
                     <button
@@ -1086,7 +1123,8 @@ export default function TimeTracker() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowTagInput(!showTagInput)}
+                onClick={(e) => {e.stopPropagation(); 
+                  setShowTagInput(!showTagInput)}}
                 disabled={timerState.status === 'running'}
                 // className="flex items-center gap-2"
                 className="flex items-center gap-2 px-4 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -1102,6 +1140,7 @@ export default function TimeTracker() {
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.2 }}
                   className="absolute z-50 mt-1 w-64 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                  ref={tagRef}
                 >
                   <div className="p-3">
                     <div className="flex gap-2 mb-3">
@@ -1192,28 +1231,24 @@ export default function TimeTracker() {
                 <TooltipContent>Reset timer (R)</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={toggleTimer}
-                    className="rounded-full h-14 w-14 flex items-center justify-center 
-                      transition-colors duration-200"
-                    style={{
-                      '--main-color': timerState.status === 'running' ? '#ef4444' : '#3b82f6',
-                      '--hover-color': timerState.status === 'running' ? '#dc2626' : '#2563eb',
-                    } as React.CSSProperties}
-                    variant={timerState.status === 'running' ? 'secondary' : 'default'}
+                    className={`rounded-full h-16 w-16 flex items-center justify-center 
+                      shadow-lg hover:shadow-xl transition-colors ${
+                        timerState.status === 'running' 
+                          ? 'bg-red-500 hover:bg-red-600' 
+                          : 'bg-blue-500 hover:bg-blue-600'
+                      }`}
+                    variant="default"
                   >
-                    <div className="[&>*]:text-white h-full w-full flex items-center justify-center 
-                      hover:bg-[var(--hover-color)] bg-[var(--main-color)]">
-                      {timerState.status === 'running' ? (
-                        <Pause className="h-6 w-6" />
-                      ) : (
-                        <Play className="h-6 w-6 ml-1" />
-                      )}
-                    </div>
+                    {timerState.status === 'running' ? (
+                      <Pause className="h-8 w-8 text-white" />
+                    ) : (
+                      <Play className="h-8 w-8 ml-1 text-white" />
+                    )}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1238,89 +1273,97 @@ export default function TimeTracker() {
               </Tooltip>
             </TooltipProvider>
           </div>
-          {loading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-center items-center py-4"
-            >
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
-            </motion.div>
-          )}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <Calendar className="mr-2 h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-            Recent Time Entries
-          </h2>
-          {loading ? (
-            <div className="py-10 text-center text-gray-500 dark:text-gray-400">Loading time entries...</div>
-          ) : timeEntries.length === 0 ? (
-            <div className="py-10 text-center text-gray-500 dark:text-gray-400">
-              <Clock className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p>No time entries yet. Start tracking your time!</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold flex items-center">
+                <Calendar className="mr-2 h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                Recent Time Entries
+              </h2>
+              <Select onValueChange={(value) => setSortBy(value as any)}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                  <SelectItem value="duration">Longest First</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <AnimatePresence>
-                {timeEntries.map((entry, index) => (
-                  <motion.div
-                    key={entry.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                    className="border dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-medium">{entry.description || 'Untitled Task'}</h3>
-                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          {entry.project && (
-                            <span className="flex items-center mr-3">
-                              <Briefcase className="h-3 w-3 mr-1" />
-                              {getProjectNameById(entry.project.id)}
-                            </span>
-                          )}
-                          <span className="flex items-center">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {new Date(entry.startTime).toLocaleDateString()}
-                          </span>
-                        </div>
-                        {entry.tags && entry.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {entry.tags.map(tag => (
-                              <div
-                                key={tag.id}
-                                className="px-2 py-0.5 text-xs rounded-full"
-                                style={{ 
-                                  backgroundColor: `${tag.color}20`, 
-                                  color: tag.color 
-                                }}
-                              >
-                                {tag.name}
+            {loading ? (
+              <div className="py-10 text-center text-gray-500 dark:text-gray-400">Loading time entries...</div>
+            ) : timeEntries.length === 0 ? (
+              <div className="py-10 text-center text-gray-500 dark:text-gray-400">
+                <Clock className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p>No time entries yet. Start tracking your time!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {<div className="text-center">Updating...</div>}
+                <AnimatePresence>
+                  {timeEntries.map((entry) => (
+                    <motion.div
+                      key={entry.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div 
+                        className="border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <div className="grid grid-cols-3 gap-4 items-center">
+                          <div className="col-span-2">
+                            <h3 className="font-semibold text-lg mb-1">{entry.description || 'Untitled Task'}</h3>
+                            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                              {entry.project && (
+                                <div className="flex items-center">
+                                  <Briefcase className="h-4 w-4 mr-1" />
+                                  {entry.project.name}
+                                </div>
+                              )}
+                              <div className="flex items-center">
+                                <Calendar className="h-4 w-4 mr-1" />
+                                {new Date(entry.startTime).toLocaleDateString()}
                               </div>
-                            ))}
+                            </div>
+                            {entry.tags && entry.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {entry.tags.map(tag => (
+                                  <Badge 
+                                    key={tag.id}
+                                    variant="outline"
+                                    className="px-3 py-1 text-sm flex items-center gap-1"
+                                  >
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                                    {tag.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <div className="flex items-center justify-end gap-2">
+                            {entry.billable && <DollarSign className="h-5 w-5 text-green-500" />}
+                            <span className="font-mono text-xl">
+                              {formatTime(entry.duration)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center">
-                        {entry.billable && <DollarSign className="h-4 w-4 text-green-500 mr-2" />}
-                        <span className="font-mono">{formatTime(entry.duration)}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+            <div className="mt-6 text-center">
+              <Button variant="link" asChild>
+                <a href="/reports" className="flex items-center justify-center">
+                  View all time entries
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </a>
+              </Button>
             </div>
-          )}
-          <div className="mt-6 text-center">
-            <Button variant="link" asChild>
-              <a href="/reports" className="flex items-center justify-center">
-                View all time entries
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </a>
-            </Button>
           </div>
-        </div>
       </main>
       <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
         <DialogContent className="sm:max-w-lg">
@@ -1606,5 +1649,6 @@ export default function TimeTracker() {
         </DialogContent>
       </Dialog>
     </div>
+    
   );
 }

@@ -27,16 +27,15 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border bg-background text-foreground",
-        destructive:
-          "destructive group border-destructive bg-destructive text-destructive-foreground",
+        default: "border bg-background text-foreground dark:bg-gray-800 dark:border-gray-700",
+        destructive: "border-destructive bg-destructive text-destructive-foreground dark:bg-red-900/20 dark:border-red-800 dark:text-red-300",
       },
     },
     defaultVariants: {
       variant: "default",
     },
   }
-)
+);
 
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
@@ -125,3 +124,5 @@ export {
   ToastClose,
   ToastAction,
 }
+export { useToast } from "../../hooks/use-toast"
+// "../hooks/use-toast"

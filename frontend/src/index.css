@@ -1,6 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 
 /* @layer base {
   body {
@@ -167,3 +169,4 @@
   height: calc(100vh - 150px);
   overflow-y: auto;
 }
+

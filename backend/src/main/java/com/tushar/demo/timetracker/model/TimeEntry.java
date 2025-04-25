@@ -2,8 +2,10 @@ package com.tushar.demo.timetracker.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.FutureOrPresent;
 
 import java.time.LocalDateTime;
@@ -28,7 +30,7 @@ public class TimeEntry {
     private LocalDateTime startTime;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    @FutureOrPresent(message = "End time must be in the future")
+    @PastOrPresent(message = "End time must be in the future")
     private LocalDateTime endTime;
 
     private Long duration;
