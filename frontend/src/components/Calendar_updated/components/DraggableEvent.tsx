@@ -36,10 +36,10 @@ export function DraggableEvent({ event, getColorClasses }: DraggableEventProps) 
         x: parseInt(event.position.left),
         y: parseInt(event.position.top)
       }}
-      grid={[1, 1]}
+      grid={[10, 10]}
     >
       <Card
-        className={`flex items-start ${getColorClasses(event.color).bg} rounded overflow-hidden absolute cursor-move`}
+        className={`flex items-start ${getColorClasses(event.color).bg} rounded overflow-hidden absolute cursor-move hover:shadow-lg transition-shadow`}
         style={{
           width: event.width,
           height: event.height,

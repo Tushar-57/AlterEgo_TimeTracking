@@ -67,20 +67,20 @@ type UserPreferences = {
 };
 
 // Progress Indicator Component
-const TimerProgressIndicator = ({ progress }: { progress: number }) => {
-  return (
-    <div className="relative h-8 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mt-4">
-      <motion.div
-        className="absolute top-0 left-0 h-full w-8 bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center"
-        initial={{ x: '-100%' }}
-        animate={{ x: `${progress * 100 - 100}%` }}
-        transition={{ duration: 0.5 }}
-      >
-        <ArrowRight className="h-4 w-4 text-white" />
-      </motion.div>
-    </div>
-  );
-};
+// const TimerProgressIndicator = ({ progress }: { progress: number }) => {
+//   return (
+//     <div className="relative h-8 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mt-4">
+//       <motion.div
+//         className="absolute top-0 left-0 h-full w-8 bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center"
+//         initial={{ x: '-100%' }}
+//         animate={{ x: `${progress * 100 - 100}%` }}
+//         transition={{ duration: 0.5 }}
+//       >
+//         <ArrowRight className="h-4 w-4 text-white" />
+//       </motion.div>
+//     </div>
+//   );
+// };
 
 export default function TimeTracker() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -813,6 +813,22 @@ export default function TimeTracker() {
     const project = projects.find(p => p.id === id);
     return project ? project.name : 'No Project';
   };
+  
+  const TimerProgressIndicator = ({ progress }: { progress: number }) => {
+    const percentage = Math.round(progress * 100);
+    return (
+      <div className="relative h-8 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mt-4">
+        <motion.div
+          className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center"
+          initial={{ width: '0%' }}
+          animate={{ width: `${percentage}%` }}
+          transition={{ duration: 0.5 }}
+        >
+          <span className="text-white text-xs font-bold">{percentage}%</span>
+        </motion.div>
+      </div>
+    );
+  };
 
   const renderTimer = () => {
     const formattedTime = formatTime(timerState.time);
@@ -826,7 +842,7 @@ export default function TimeTracker() {
           : preferences.pomodoroSettings.workDuration * 60
         : 0;
     const progress = totalTime > 0 ? (totalTime - timerState.time) / totalTime : 0;
-
+  
     return (
       <div>
         <motion.div
@@ -1055,7 +1071,7 @@ export default function TimeTracker() {
               placeholder="What are you working on?"
               value={currentTask.description}
               onChange={e => setCurrentTask(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full p-6 text-2xl text-center border-2 rounded-xl focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700"
+              className="w-full p-6 !text-2xl md:!text-2xl text-center border-2 rounded-xl focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700"
               disabled={timerState.status === 'running'}
             />
           </div>
@@ -1273,7 +1289,7 @@ export default function TimeTracker() {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+          <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 ">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold flex items-center">
                 <Calendar className="mr-2 h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -1299,7 +1315,7 @@ export default function TimeTracker() {
               </div>
             ) : (
               <div className="space-y-4">
-                {<div className="text-center">Updating...</div>}
+                {/* {<div className="text-center">Recent Time Entires...</div>} */}
                 <AnimatePresence>
                   {timeEntries.map((entry) => (
                     <motion.div

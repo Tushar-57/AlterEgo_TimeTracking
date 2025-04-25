@@ -66,17 +66,32 @@ export const Dashboard = (): JSX.Element => {
     try {
       const token = localStorage.getItem('jwtToken');
       if (!token) {
-        throw new Error('No authentication token found');
+        console.error('No token found in localStorage');
+        toast({
+          title: 'Authentication Error',
+          description: 'No authentication token found. Please log in again.',
+          variant: 'destructive',
+        });
+        return [];
       }
   
-      const res = await fetch(`http://localhost:8080/api/time-entries?start=${start.toISOString()}&end=${end.toISOString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      console.log('Token being used:', token);
+      // Updated endpoint to /api/timers
+      const url = `http://localhost:8080/api/timers?start=${start.toISOString()}&end=${end.toISOString()}`;
+      console.log('Fetching URL:', url);
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
+  
       if (res.status === 401) {
+        console.error('401 Unauthorized - Check token validity or endpoint');
         toast({
-          title: 'Warning',
-          description: 'Session may have expired. Please try refreshing or logging in again.',
-          variant: 'default',
+          title: 'Session Expired',
+          description: 'Your session may have expired. Please log in again.',
+          variant: 'destructive',
         });
         return [];
       }
@@ -84,32 +99,31 @@ export const Dashboard = (): JSX.Element => {
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
+  
       const data = await res.json();
-      const transformed = data.map((entry: any) => {
-        const startDate = new Date(entry.startTime);
-        const hours = startDate.getHours();
-        
-        return {
-          id: entry.id,
-          time: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          period: hours >= 12 ? 'PM' : 'AM',
-          title: entry.taskDescription,
-          color: getColorForProject(entry.projectId),
-          position: calculatePosition(entry.startTime, entry.duration),
-          width: "143px",
-          height: `${Math.max(30, (entry.duration / 3600) * 60)}px`,
-          hasVideo: false
-        };
-      });
-      
+      console.log('API Response:', data);
+  
+      // Assuming ApiResponse structure: { success: boolean, data: TimeEntry[], message: string }
+      const transformed = data.data.map((entry: any) => ({
+        id: entry.id,
+        time: new Date(entry.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        period: new Date(entry.startTime).getHours() >= 12 ? 'PM' : 'AM',
+        title: entry.description,
+        color: entry.project ? entry.project.color : '#defaultColor',
+        position: calculatePosition(entry.startTime, entry.duration),
+        width: '143px',
+        height: `${Math.max(30, (entry.duration / 3600) * 60)}px`,
+        hasVideo: false,
+      }));
+  
       setCalendarEvents(transformed);
       return transformed;
     } catch (error) {
-      console.error('Error fetching entries:', error);
+      console.error('Error fetching time entries:', error);
       toast({
-        title: 'Warning',
-        description: 'Failed to fetch time entries. Displaying cached data.',
-        variant: 'default',
+        title: 'Error',
+        description: 'Failed to fetch time entries. Please try again later.',
+        variant: 'destructive',
       });
       return [];
     }
