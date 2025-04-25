@@ -1,129 +1,79 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Play, Pause, Save, RotateCcw, Tag, Briefcase, DollarSign, Clock, X, Plus,
-  Calendar, ChevronDown, AlarmClock, Timer, Bell, Volume2, Settings, SkipForward, ArrowRight, CheckCircle, HelpCircle, Coffee
-} from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { useToast } from '../Calendar_updated/components/hooks/use-toast';
-// import { useToast } from '../../hooks/use-toast';
-import { Button } from '../Calendar_updated/components/ui/button';
-import { Input } from '../Calendar_updated/components/ui/input';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../ui/select';
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from '../Calendar_updated/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../Calendar_updated/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../Calendar_updated/components/ui/tooltip';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Slider } from '../Calendar_updated/components/ui/slider';
-import { Switch } from '../Calendar_updated/components/ui/switch';
-import { Badge } from '../Calendar_updated/components/ui/badge';
 import { useAuth } from '../../context/AuthContext';
 import { fetchWithToken } from '../../utils/auth';
-import { useClickOutside } from '../../utils/useClickOutside';
-
-// Types
-type TimerStatus = 'stopped' | 'running' | 'paused';
-type TimerMode = 'stopwatch' | 'countdown' | 'pomodoro';
-interface Project {
-  id: number;
-  name: string;
-  color: string;
-  client?: string;  // Add to match backend
-}
-
-interface Tag {
-  id: number;
-  name: string;
-  color: string;
-}
-interface TimeEntry {
-  id: number;
-  description: string;
-  startTime: string;
-  endTime?: string;
-  duration: number;
-  project?: Project;
-  tags?: Tag[];
-  billable: boolean; // Add this line
-}
-
-type PomodoroSettings = {
-  workDuration: number;
-  shortBreakDuration: number;
-  longBreakDuration: number;
-  sessionsUntilLongBreak: number;
-};
-
-type UserPreferences = {
-  timerMode: TimerMode;
-  darkMode: boolean;
-  soundEnabled: boolean;
-  notificationsEnabled: boolean;
-  pomodoroSettings: PomodoroSettings;
-  countdownPresets: number[];
-};
-
-// Progress Indicator Component
-// const TimerProgressIndicator = ({ progress }: { progress: number }) => {
-//   return (
-//     <div className="relative h-8 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mt-4">
-//       <motion.div
-//         className="absolute top-0 left-0 h-full w-8 bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center"
-//         initial={{ x: '-100%' }}
-//         animate={{ x: `${progress * 100 - 100}%` }}
-//         transition={{ duration: 0.5 }}
-//       >
-//         <ArrowRight className="h-4 w-4 text-white" />
-//       </motion.div>
-//     </div>
-//   );
-// };
+import { TimerHeader } from './TimerHeader';
+import { PomodoroStatus } from './PomodoroStatus';
+import { ProjectTagSelectors } from './ProjectTagSelectors';
+import { TimerControls } from './TimerControls';
+import { TimeEntriesList } from './TimeEntriesList';
+import { SettingsDialog } from './SettingsDialog';
+import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog';
+import { QuoteComponent } from './QuoteComponent';
+import { TimerProgressIndicator } from './TImerProgress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../Calendar_updated/components/ui/tabs';
+import { Button } from '../Calendar_updated/components/ui/button';
+import { Input } from '../Calendar_updated/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '../Calendar_updated/components/ui/dialog';
+import { Timer, AlarmClock, Coffee, Plus } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Project, Tag, TimeEntry, UserPreferences, TimerStatus, TimerMode, PomodoroState } from './types';
+import { formatTime, getRandomColor } from './utility';
+import 'react-circular-progressbar/dist/styles.css';
+import { CircularProgressbar } from 'react-circular-progressbar';
 
 export default function TimeTracker() {
   const { isAuthenticated, user, logout } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   // Timer states
-  const [timerState, setTimerState] = useState({
+  const [timerState, setTimerState] = useState<{
+    time: number;
+    status: TimerStatus;
+    activeTimerId: number | null;
+  }>({
     time: 0,
-    status: 'stopped' as TimerStatus,
-    activeTimerId: null as number | null,
+    status: 'stopped',
+    activeTimerId: null,
   });
 
   // Mode-related states
   const [timerMode, setTimerMode] = useState<TimerMode>('stopwatch');
-  const [pomodoroState, setPomodoroState] = useState({currentSession: 0,isBreak: false, totalSessions: 0,});
-  const [countdownTime, setCountdownTime] = useState(1500);
-  const [currentTask, setCurrentTask] = useState({
-    description: '',
-    projectId: 'noproject',
-    tags: [] as Tag[],
-    billable: false,
-    newTag: '',
+  const [pomodoroState, setPomodoroState] = useState<PomodoroState>({
+    currentSession: 0,
+    isBreak: false,
+    totalSessions: 0,
   });
+  const [countdownTime, setCountdownTime] = useState(1500);
+  const [customMinutes, setCustomMinutes] = useState<number>(25);
+
   // Data states
   const [projects, setProjects] = useState<Project[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [newTag, setNewTag] = useState('');
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [isRunning, setIsRunning] = useState(false);
-  const [customMinutes, setCustomMinutes] = useState<number>(25);
-  
+  const [currentTask, setCurrentTask] = useState<{
+    description: string;
+    projectId: string;
+    tags: Tag[];
+    billable: boolean;
+    newTag: string;
+  }>({
+    description: '',
+    projectId: 'noproject',
+    billable: false,
+    newTag: '',
+    tags: [],
+  });
+
   // UI states
-  const [showTagInput, setShowTagInput] = useState(false);
-  const [showProjectSelect, setShowProjectSelect] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showKeyboardShortcutsDialog, setShowKeyboardShortcutsDialog] = useState(false);
-  const [errors, setErrors] = useState<{ description?: string; tag?: string; general?: string }>({});
-  const projectRef = useClickOutside(() => setShowProjectSelect(false));
-  const tagRef = useClickOutside(() => setShowTagInput(false));
-  const [currentQuote, setCurrentQuote] = useState('');
+  const [currentQuote, setCurrentQuote] = useState<{ text: string; author: string }>({
+    text: 'Productivity is being able to do things that you were never able to do before.',
+    author: 'Franz Kafka',
+  });
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'duration'>('newest');
 
   // User preferences
@@ -149,20 +99,20 @@ export default function TimeTracker() {
 
   // Refs
   const intervalRef = useRef<number>();
-  const tagInputRef = useRef<HTMLInputElement>(null);
 
   const quotes = [
-    "Productivity is being able to do things that you were never able to do before.",
-    "The key is not to prioritize what's on your schedule, but to schedule your priorities.",
-    "Time management is life management.",
-    "Focus on being productive instead of busy.",
-    "Your time is limited, so don't waste it living someone else's life."
+    { text: 'Productivity is being able to do things that you were never able to do before.', author: 'Franz Kafka' },
+    { text: 'The key is not to prioritize what\'s on your schedule, but to schedule your priorities.', author: 'Stephen Covey' },
+    { text: 'Time management is life management.', author: 'Robin Sharma' },
+    { text: 'Focus on being productive instead of busy.', author: 'Tim Ferriss' },
+    { text: 'Your time is limited, so don\'t waste it living someone else\'s life.', author: 'Steve Jobs' },
   ];
+
+  // Quote rotation
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentQuote(quotes[Math.floor(Math.random() * quotes.length)]);
     }, 10000);
-  
     return () => clearInterval(interval);
   }, []);
 
@@ -174,11 +124,7 @@ export default function TimeTracker() {
         const parsedPreferences = JSON.parse(savedPreferences);
         setPreferences(prev => ({ ...prev, ...parsedPreferences }));
         setTimerMode(parsedPreferences.timerMode || 'stopwatch');
-        if (parsedPreferences.darkMode) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+        document.documentElement.classList.toggle('dark', parsedPreferences.darkMode);
       } catch (error) {
         console.error('Error parsing saved preferences:', error);
       }
@@ -188,28 +134,20 @@ export default function TimeTracker() {
   // Save preferences
   useEffect(() => {
     localStorage.setItem('timeTracker_preferences', JSON.stringify(preferences));
-    if (preferences.darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', preferences.darkMode);
   }, [preferences]);
 
   // Set up audio elements
   useEffect(() => {
-    timerCompleteSound.current = new Audio('/sounds/complete.mp3');
-    tickSound.current = new Audio('/sounds/tick.mp3');
-    breakStartSound.current = new Audio('/sounds/break.mp3');
-    workStartSound.current = new Audio('/sounds/work.mp3');
-    timerCompleteSound.current.src = 'https://soundbible.com/mp3/service-bell_daniel_simion.mp3';
-    tickSound.current.src = 'https://soundbible.com/mp3/clock-ticking-2.mp3';
-    breakStartSound.current.src = 'https://soundbible.com/mp3/digital-quick-tone.mp3';
-    workStartSound.current.src = 'https://soundbible.com/mp3/analog-watch-alarm.mp3';
+    timerCompleteSound.current = new Audio('https://soundbible.com/mp3/service-bell_daniel_simion.mp3');
+    tickSound.current = new Audio('https://soundbible.com/mp3/clock-ticking-2.mp3');
+    breakStartSound.current = new Audio('https://soundbible.com/mp3/digital-quick-tone.mp3');
+    workStartSound.current = new Audio('https://soundbible.com/mp3/analog-watch-alarm.mp3');
     return () => {
-      if (timerCompleteSound.current) timerCompleteSound.current.pause();
-      if (tickSound.current) tickSound.current.pause();
-      if (breakStartSound.current) breakStartSound.current.pause();
-      if (workStartSound.current) workStartSound.current.pause();
+      timerCompleteSound.current?.pause();
+      tickSound.current?.pause();
+      breakStartSound.current?.pause();
+      workStartSound.current?.pause();
     };
   }, []);
 
@@ -221,7 +159,7 @@ export default function TimeTracker() {
       try {
         const projectsData = await fetchWithToken<Project[]>('http://localhost:8080/api/projects/userProjects');
         setProjects(projectsData);
-    
+
         const entriesResponse = await fetchWithToken<{
           success: boolean;
           message: string;
@@ -232,13 +170,12 @@ export default function TimeTracker() {
           throw new Error(entriesResponse.message || 'Failed to fetch time entries');
         }
         setTimeEntries(entriesResponse.data || []);
-    
+
         const tagsData = await fetchWithToken<Tag[]>('http://localhost:8080/api/tags');
         setTags(tagsData);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         console.error('Fetch error:', error);
-        // setFetchError(errorMessage);
         toast({
           title: 'Data Loading Error',
           description: errorMessage,
@@ -249,7 +186,7 @@ export default function TimeTracker() {
       }
     };
     if (isAuthenticated) fetchData();
-  }, [isAuthenticated, toast, fetchWithToken]);
+  }, [isAuthenticated]);
 
   // Check for active timer
   useEffect(() => {
@@ -277,9 +214,6 @@ export default function TimeTracker() {
           });
           return;
         }
-        // if (resp) {
-        //   setTimerState(prev => ({ ...prev, ...response }));
-        // }
 
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
@@ -302,9 +236,7 @@ export default function TimeTracker() {
             billable: response.data.billable,
             newTag: '',
           });
-        }
-        else {
-          // Handle case where response.success is false or no data
+        } else {
           setTimerState(prev => ({ ...prev, activeTimerId: null }));
         }
       } catch (error) {
@@ -317,45 +249,7 @@ export default function TimeTracker() {
       }
     };
     if (isAuthenticated) checkActiveTimer();
-  }, []);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-      if (e.code === 'Space') {
-        e.preventDefault();
-        toggleTimer();
-      }
-      if (e.code === 'KeyS' && !e.ctrlKey && !e.metaKey) {
-        if (timerState.status !== 'stopped') {
-          e.preventDefault();
-          stopTimer();
-        }
-      }
-      if (e.code === 'KeyR' && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        resetTimer();
-      }
-      if (e.code === 'Digit1') {
-        e.preventDefault();
-        handleTimerModeChange('stopwatch');
-      }
-      if (e.code === 'Digit2') {
-        e.preventDefault();
-        handleTimerModeChange('countdown');
-      }
-      if (e.code === 'Digit3') {
-        e.preventDefault();
-        handleTimerModeChange('pomodoro');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [timerState.status]);
+  }, [isAuthenticated]);
 
   // Timer logic
   useEffect(() => {
@@ -554,8 +448,6 @@ export default function TimeTracker() {
         }),
       });
       if (res.status === 401) {
-        // localStorage.removeItem('jwtToken');
-        // logout();
         toast({
           title: 'Authentication Error',
           description: 'Your session has expired. Please log in again.',
@@ -627,7 +519,6 @@ export default function TimeTracker() {
           description: 'Please log in to stop the timer.',
           variant: 'destructive',
         });
-        // logout();
         return;
       }
       const res = await fetch(`http://localhost:8080/api/timers/${timerState.activeTimerId}/stop`, {
@@ -637,8 +528,6 @@ export default function TimeTracker() {
         },
       });
       if (res.status === 401) {
-        // localStorage.removeItem('jwtToken');
-        // logout();
         toast({
           title: 'Authentication Error',
           description: 'Your session has expired. Please log in again.',
@@ -660,7 +549,7 @@ export default function TimeTracker() {
       });
       if (entryRes.ok) {
         const entryData = await entryRes.json();
-        setTimeEntries(entryData);
+        setTimeEntries(entryData.data || []);
       }
       resetTimer();
       toast({
@@ -728,7 +617,15 @@ export default function TimeTracker() {
     if (!currentTask.newTag.trim()) return;
     try {
       const token = localStorage.getItem('jwtToken');
-      if (!token) return;
+      if (!token) {
+        toast({
+          title: 'Authentication Error',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive',
+        });
+        logout();
+        return;
+      }
       const res = await fetch('http://localhost:8080/api/tags', {
         method: 'POST',
         headers: {
@@ -741,13 +638,12 @@ export default function TimeTracker() {
         }),
       });
       if (res.status === 401) {
-        localStorage.removeItem('jwtToken');
-        logout();
         toast({
           title: 'Authentication Error',
           description: 'Your session has expired. Please log in again.',
           variant: 'destructive',
         });
+        logout();
         return;
       }
       if (res.status === 409) {
@@ -770,7 +666,6 @@ export default function TimeTracker() {
         localStorage.setItem('cached_tags', JSON.stringify(updatedTags));
         return updatedTags;
       });
-      setShowTagInput(false);
       toast({
         title: 'Tag Created',
         description: `Tag "${newTag.name}" created successfully!`,
@@ -794,55 +689,15 @@ export default function TimeTracker() {
     }
   };
 
-  const formatTime = (seconds: number): string => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  const getRandomColor = () => {
-    const colors = [
-      '#4f46e5', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#6366f1',
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-  };
-
-  const getProjectNameById = (id: number | undefined) => {
-    if (!id) return 'No Project';
-    const project = projects.find(p => p.id === id);
-    return project ? project.name : 'No Project';
-  };
-  
-  const TimerProgressIndicator = ({ progress }: { progress: number }) => {
-    const percentage = Math.round(progress * 100);
-    return (
-      <div className="relative h-8 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mt-4">
-        <motion.div
-          className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center"
-          initial={{ width: '0%' }}
-          animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.5 }}
-        >
-          <span className="text-white text-xs font-bold">{percentage}%</span>
-        </motion.div>
-      </div>
-    );
-  };
-
   const renderTimer = () => {
     const formattedTime = formatTime(timerState.time);
-    const totalTime = timerMode === 'countdown'
-      ? countdownTime
-      : timerMode === 'pomodoro'
-        ? pomodoroState.isBreak
-          ? (pomodoroState.currentSession % preferences.pomodoroSettings.sessionsUntilLongBreak === 0
-              ? preferences.pomodoroSettings.longBreakDuration
-              : preferences.pomodoroSettings.shortBreakDuration) * 60
-          : preferences.pomodoroSettings.workDuration * 60
-        : 0;
-    const progress = totalTime > 0 ? (totalTime - timerState.time) / totalTime : 0;
-  
+    const totalTime = pomodoroState.isBreak
+      ? (pomodoroState.currentSession % preferences.pomodoroSettings.sessionsUntilLongBreak === 0
+          ? preferences.pomodoroSettings.longBreakDuration
+          : preferences.pomodoroSettings.shortBreakDuration) * 60
+      : preferences.pomodoroSettings.workDuration * 60;
+    const progress = (totalTime - timerState.time) / totalTime;
+
     return (
       <div>
         <motion.div
@@ -856,86 +711,60 @@ export default function TimeTracker() {
         {(timerMode === 'countdown' || timerMode === 'pomodoro') && (
           <TimerProgressIndicator progress={progress} />
         )}
+        {(timerMode === 'countdown' || timerMode === 'pomodoro') && ( 
+        <div className="w-16 h-16 mx-auto">
+          <CircularProgressbar value={progress * 100} text={`${Math.round(progress * 100)}%`} />
+        </div>)}
       </div>
     );
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        toggleTimer();
+      }
+      if (e.code === 'KeyS' && !e.ctrlKey && !e.metaKey) {
+        if (timerState.status !== 'stopped') {
+          e.preventDefault();
+          stopTimer();
+        }
+      }
+      if (e.code === 'KeyR' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        resetTimer();
+      }
+      if (e.code === 'Digit1') {
+        e.preventDefault();
+        handleTimerModeChange('stopwatch');
+      }
+      if (e.code === 'Digit2') {
+        e.preventDefault();
+        handleTimerModeChange('countdown');
+      }
+      if (e.code === 'Digit3') {
+        e.preventDefault();
+        handleTimerModeChange('pomodoro');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [timerState.status, toggleTimer, stopTimer, resetTimer, handleTimerModeChange]);
+
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100 transition-colors duration-200">
-      <header className="bg-white dark:bg-gray-800 shadow-sm py-4 px-6">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <Clock className="text-indigo-600 dark:text-indigo-400" size={28} />
-            <h1 className="text-2xl font-bold">AE - Timer</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full"
-                    onClick={() => setPreferences(prev => ({ ...prev, darkMode: !prev.darkMode }))}
-                  >
-                    {preferences.darkMode ? (
-                      <motion.div initial={{ rotate: -30 }} animate={{ rotate: 0 }} transition={{ duration: 0.2 }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                      </motion.div>
-                    ) : (
-                      <motion.div initial={{ rotate: 30 }} animate={{ rotate: 0 }} transition={{ duration: 0.2 }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                        </svg>
-                      </motion.div>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Toggle dark mode</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full"
-                    onClick={() => setShowSettingsDialog(true)}
-                  >
-                    <Settings className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Settings</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full"
-                    onClick={() => setShowKeyboardShortcutsDialog(true)}
-                  >
-                    <HelpCircle className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Keyboard shortcuts</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {user && (
-              <div className="flex items-center">
-                <div className="bg-indigo-600 rounded-full h-8 w-8 flex items-center justify-center text-white font-medium">
-                  {user.name ? user.name[0] : user.email[0]}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+      <TimerHeader
+        preferences={preferences}
+        setPreferences={setPreferences}
+        user={user}
+        setShowSettingsDialog={setShowSettingsDialog}
+        setShowKeyboardShortcutsDialog={setShowKeyboardShortcutsDialog}
+      />
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {fetchError && (
           <motion.div
@@ -952,13 +781,17 @@ export default function TimeTracker() {
             </div>
           </motion.div>
         )}
+
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 overflow-hidden">
-          <Tabs
-            defaultValue="stopwatch"
-            value={timerMode}
-            onValueChange={(value: string) => handleTimerModeChange(value as TimerMode)}
-            className="w-full"
-          >
+        {/* <TabsContent value="stopwatch" className="p-4"> */}
+        <QuoteComponent currentQuote={currentQuote} setCurrentQuote={setCurrentQuote} quotes={quotes} />
+            {/* </TabsContent> */}
+        <Tabs
+          defaultValue="stopwatch"
+          value={timerMode}
+          onValueChange={(value: string) => handleTimerModeChange(value as TimerMode)}
+          className={`w-full ${timerMode === 'pomodoro' ? 'bg-gradient-to-b from-red-50 to-white dark:from-red-900/20 dark:to-gray-900' : ''}`}
+        >
             <TabsList className="grid grid-cols-3 w-full">
               <TabsTrigger value="stopwatch" className="py-3">
                 <Timer className="h-4 w-4 mr-2" />
@@ -973,19 +806,6 @@ export default function TimeTracker() {
                 Pomodoro
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="stopwatch" className="p-4">
-              {/* <div className="text-center text-gray-500 dark:text-gray-400">
-                Track your work time without limits
-              </div> */}
-              <motion.div
-                className="text-center text-lg italic font-serif text-gray-600 dark:text-gray-400"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                key={currentQuote}
-              >
-                "{currentQuote}"
-              </motion.div>
-            </TabsContent>
             <TabsContent value="countdown" className="p-4">
               <div className="flex flex-wrap gap-2 justify-center mb-4">
                 {preferences.countdownPresets.map(seconds => (
@@ -1012,7 +832,6 @@ export default function TimeTracker() {
                       <DialogDescription>Enter the number of minutes for your timer.</DialogDescription>
                     </DialogHeader>
                     <div className="flex items-center space-x-4 py-4">
-                      {/* <Input type="number" min="1" max="180" placeholder="Minutes" defaultValue="25" className="flex-1" id="custom-minutes" /> */}
                       <Input
                         type="number"
                         min="1"
@@ -1027,8 +846,6 @@ export default function TimeTracker() {
                     <DialogFooter>
                       <Button
                         onClick={() => {
-                          // const input = document.getElementById('custom-minutes') as HTMLInputElement;
-                          // const minutes = parseInt(input.value || '25');
                           handleSetCustomCountdown(customMinutes);
                         }}
                       >
@@ -1040,631 +857,62 @@ export default function TimeTracker() {
               </div>
             </TabsContent>
             <TabsContent value="pomodoro" className="p-4">
-              <div className="flex justify-center items-center gap-4 mb-4">
-                <div className="text-center">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Session</div>
-                  <div className="font-medium">{pomodoroState.currentSession}/{preferences.pomodoroSettings.sessionsUntilLongBreak}</div>
-                </div>
-                <Badge variant={pomodoroState.isBreak ? 'secondary' : 'default'} className="px-3 py-1">
-                  {pomodoroState.isBreak ? 'Break' : 'Work'}
-                </Badge>
-                <div className="text-center">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Completed</div>
-                  <div className="font-medium">{pomodoroState.totalSessions}</div>
-                </div>
-              </div>
-              {timerState.status === 'running' && (
-                <Button variant="outline" size="sm" onClick={skipPomodoroSession} className="flex items-center mx-auto">
-                  <SkipForward className="h-4 w-4 mr-1" />
-                  Skip {pomodoroState.isBreak ? 'Break' : 'Session'}
-                </Button>
-              )}
+              <PomodoroStatus
+                pomodoroState={pomodoroState}
+                preferences={preferences}
+                timerState={timerState}
+                skipPomodoroSession={skipPomodoroSession}
+              />
             </TabsContent>
           </Tabs>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 p-6">
           {renderTimer()}
         </div>
-          <div className="mb-4 max-w-3xl mx-auto">
-            <Input
-              type="text"
-              placeholder="What are you working on?"
-              value={currentTask.description}
-              onChange={e => setCurrentTask(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full p-6 !text-2xl md:!text-2xl text-center border-2 rounded-xl focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700"
-              disabled={timerState.status === 'running'}
-            />
-          </div>
-          <div className="flex flex-wrap gap-3 mb-6">
-            <div className="relative">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowProjectSelect(!showProjectSelect);
-                }}
-                disabled={timerState.status === 'running'}
-                // className="flex items-center gap-2 px-4 py-2"
-                className="flex items-center gap-2 px-4 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                <Briefcase className="h-4 w-4" />
-                {currentTask.projectId === 'noproject' ? 'No Project' : getProjectNameById(parseInt(currentTask.projectId))}
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-              {showProjectSelect && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute z-50 mt-1 w-56 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                  ref={projectRef}
-                >
-                  <div className="py-1 max-h-60 overflow-auto">
-                    <button
-                      onClick={() => {
-                        setCurrentTask(prev => ({ ...prev, projectId: 'noproject' }));
-                        setShowProjectSelect(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm ${
-                        currentTask.projectId === 'noproject'
-                          ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-300'
-                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      No Project
-                    </button>
-                    {projects.map(project => (
-                      <button
-                        key={project.id}
-                        onClick={() => {
-                          setCurrentTask(prev => ({ ...prev, projectId: project.id.toString() }));
-                          setShowProjectSelect(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm ${
-                          currentTask.projectId === project.id.toString()
-                            ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-300'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        {project.name}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </div>
-            <div className="relative">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {e.stopPropagation(); 
-                  setShowTagInput(!showTagInput)}}
-                disabled={timerState.status === 'running'}
-                // className="flex items-center gap-2"
-                className="flex items-center gap-2 px-4 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                <Tag className="h-4 w-4" />
-                Tags
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-              {showTagInput && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute z-50 mt-1 w-64 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                  ref={tagRef}
-                >
-                  <div className="p-3">
-                    <div className="flex gap-2 mb-3">
-                      <Input
-                        ref={tagInputRef}
-                        placeholder="Add new tag"
-                        value={currentTask.newTag}
-                        onChange={e => setCurrentTask(prev => ({ ...prev, newTag: e.target.value }))}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddTag();
-                          }
-                        }}
-                        className="flex-1"
-                        
-                      />
-                      <Button size="sm" onClick={handleAddTag} className="px-4">
-                        Add
-                      </Button>
-                    </div>
-                    <div className="max-h-40 overflow-y-auto py-1">
-                      {tags.map(tag => (
-                        <div
-                          key={tag.id}
-                          onClick={() => handleSelectTag(tag)}
-                          className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                        >
-                          <div className="flex items-center">
-                          <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tag.color || '#ccc' }} />
-                            <span className="text-sm">{tag.name}</span>
-                          </div>
-                          {currentTask.tags.some(t => t.id === tag.id) && <CheckCircle className="h-4 w-4 text-green-500" />}
-                        </div>
-                      ))}
-                      {tags.length === 0 && (
-                        <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">No tags yet. Create one above.</div>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {currentTask.tags.map(tag => (
-                <Badge
-                  key={tag.id}
-                  variant="secondary"
-                  className="flex items-center gap-1 pl-1 pr-2 py-1"
-                  style={{ backgroundColor: `${tag.color}20` }}
-                >
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
-                  <span>{tag.name}</span>
-                  <button
-                    onClick={() => setCurrentTask(prev => ({ ...prev, tags: prev.tags.filter(t => t.id !== tag.id) }))}
-                    disabled={timerState.status === 'running'}
-                    className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  >
-                    <X size={12} />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-            <div className="flex items-center gap-2 ml-auto">
-              <DollarSign className={`h-4 w-4 ${currentTask.billable ? 'text-green-500' : 'text-gray-400'}`} />
-              <span className="text-sm">Billable</span>
-              <Switch
-                checked={currentTask.billable || false}
-                onCheckedChange={checked => setCurrentTask(prev => ({ ...prev, billable: checked }))}
-                disabled={timerState.status === 'running'}
-              />
-            </div>
-          </div>
-          <div className="flex justify-center gap-4">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={resetTimer}
-                    disabled={timerState.status === 'running'}
-                    className="rounded-full h-12 w-12 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
-                  >
-                    <RotateCcw className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Reset timer (R)</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={toggleTimer}
-                    className={`rounded-full h-16 w-16 flex items-center justify-center 
-                      shadow-lg hover:shadow-xl transition-colors ${
-                        timerState.status === 'running' 
-                          ? 'bg-red-500 hover:bg-red-600' 
-                          : 'bg-blue-500 hover:bg-blue-600'
-                      }`}
-                    variant="default"
-                  >
-                    {timerState.status === 'running' ? (
-                      <Pause className="h-8 w-8 text-white" />
-                    ) : (
-                      <Play className="h-8 w-8 ml-1 text-white" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {timerState.status === 'running' ? 'Pause timer (Space)' : 'Start timer (Space)'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={stopTimer}
-                    disabled={timerState.status === 'stopped' || timerState.time < 60}
-                    className="rounded-full h-12 w-12 bg-green-100 hover:bg-green-200 dark:bg-green-800 dark:hover:bg-green-700"
-                  >
-                    <Save className="h-5 w-5 text-green-700 dark:text-green-300" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Stop and save (S)</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 ">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold flex items-center">
-                <Calendar className="mr-2 h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                Recent Time Entries
-              </h2>
-              <Select onValueChange={(value) => setSortBy(value as any)}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="oldest">Oldest First</SelectItem>
-                  <SelectItem value="duration">Longest First</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {loading ? (
-              <div className="py-10 text-center text-gray-500 dark:text-gray-400">Loading time entries...</div>
-            ) : timeEntries.length === 0 ? (
-              <div className="py-10 text-center text-gray-500 dark:text-gray-400">
-                <Clock className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                <p>No time entries yet. Start tracking your time!</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* {<div className="text-center">Recent Time Entires...</div>} */}
-                <AnimatePresence>
-                  {timeEntries.map((entry) => (
-                    <motion.div
-                      key={entry.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <div 
-                        className="border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-850 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                      >
-                        <div className="grid grid-cols-3 gap-4 items-center">
-                          <div className="col-span-2">
-                            <h3 className="font-semibold text-lg mb-1">{entry.description || 'Untitled Task'}</h3>
-                            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                              {entry.project && (
-                                <div className="flex items-center">
-                                  <Briefcase className="h-4 w-4 mr-1" />
-                                  {entry.project.name}
-                                </div>
-                              )}
-                              <div className="flex items-center">
-                                <Calendar className="h-4 w-4 mr-1" />
-                                {new Date(entry.startTime).toLocaleDateString()}
-                              </div>
-                            </div>
-                            {entry.tags && entry.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mt-2">
-                                {entry.tags.map(tag => (
-                                  <Badge 
-                                    key={tag.id}
-                                    variant="outline"
-                                    className="px-3 py-1 text-sm flex items-center gap-1"
-                                  >
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
-                                    {tag.name}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-end gap-2">
-                            {entry.billable && <DollarSign className="h-5 w-5 text-green-500" />}
-                            <span className="font-mono text-xl">
-                              {formatTime(entry.duration)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            )}
-            <div className="mt-6 text-center">
-              <Button variant="link" asChild>
-                <a href="/reports" className="flex items-center justify-center">
-                  View all time entries
-                  <ArrowRight className="ml-1 h-4 w-4" />
-                </a>
-              </Button>
-            </div>
-          </div>
+        <div className="mb-4 max-w-3xl mx-auto">
+          <Input
+            type="text"
+            placeholder="What are you working on?"
+            value={currentTask.description}
+            onChange={e => setCurrentTask(prev => ({ ...prev, description: e.target.value }))}
+            className="w-full p-6 !text-2xl md:!text-2xl text-center border-2 rounded-xl focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700"
+            disabled={timerState.status === 'running'}
+            id="task-description-input"
+          />
+        </div>
+        <ProjectTagSelectors
+          projects={projects}
+          tags={tags}
+          currentTask={currentTask}
+          setCurrentTask={setCurrentTask}
+          handleAddTag={handleAddTag}
+          handleSelectTag={handleSelectTag}
+          timerState={timerState}
+        />
+        <TimerControls
+          timerState={timerState}
+          toggleTimer={toggleTimer}
+          stopTimer={stopTimer}
+          resetTimer={resetTimer}
+        />
+        <TimeEntriesList
+          timeEntries={timeEntries}
+          loading={loading}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          formatTime={formatTime}
+        />
       </main>
-      <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Settings</DialogTitle>
-            <DialogDescription>Customize your timer preferences</DialogDescription>
-          </DialogHeader>
-          <Tabs defaultValue="general">
-            <TabsList className="grid grid-cols-3">
-              <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="pomodoro">Pomodoro</TabsTrigger>
-              <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            </TabsList>
-            <TabsContent value="general" className="space-y-4 pt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Dark Mode</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Switch between light and dark themes</p>
-                </div>
-                <Switch
-                  checked={preferences.darkMode}
-                  onCheckedChange={checked => setPreferences(prev => ({ ...prev, darkMode: checked }))}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Default Timer Mode</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Select the default timer type</p>
-                </div>
-                <Select
-                  value={preferences.timerMode}
-                  onValueChange={(value: TimerMode) => setPreferences(prev => ({ ...prev, timerMode: value }))}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Timer Mode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="stopwatch">Stopwatch</SelectItem>
-                    <SelectItem value="countdown">Countdown</SelectItem>
-                    <SelectItem value="pomodoro">Pomodoro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <h3 className="font-medium mb-2">Countdown Presets (minutes)</h3>
-                <div className="flex flex-wrap gap-2">
-                  {preferences.countdownPresets.map((seconds, index) => (
-                    <div key={index} className="flex items-center">
-                      <Input
-                        type="number"
-                        min="1"
-                        max="180"
-                        value={seconds / 60}
-                        onChange={e => {
-                          const newValue = parseInt(e.target.value) * 60;
-                          const newPresets = [...preferences.countdownPresets];
-                          newPresets[index] = newValue;
-                          setPreferences(prev => ({ ...prev, countdownPresets: newPresets }));
-                        }}
-                        className="w-16 text-center"
-                      />
-                      {index > 2 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 ml-1"
-                          onClick={() => {
-                            const newPresets = preferences.countdownPresets.filter((_, i) => i !== index);
-                            setPreferences(prev => ({ ...prev, countdownPresets: newPresets }));
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  {preferences.countdownPresets.length < 8 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2 min-w-[120px]"
-                      onClick={() => {
-                        setPreferences(prev => ({
-                          ...prev,
-                          countdownPresets: [...prev.countdownPresets, 1800],
-                        }));
-                      }}
-                      
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-            <TabsContent value="pomodoro" className="space-y-4 pt-4">
-              <div>
-                <h3 className="font-medium mb-2">Work Session</h3>
-                <div className="flex items-center">
-                  <span className="w-24 text-sm text-gray-500 dark:text-gray-400">Duration</span>
-                  <div className="flex-1">
-                    <Slider
-                      min={5}
-                      max={60}
-                      step={5}
-                      value={[preferences.pomodoroSettings.workDuration]}
-                      onValueChange={value =>
-                        setPreferences(prev => ({
-                          ...prev,
-                          pomodoroSettings: { ...prev.pomodoroSettings, workDuration: value[0] },
-                        }))
-                      }
-                    />
-                  </div>
-                  <span className="w-16 text-right">{preferences.pomodoroSettings.workDuration} min</span>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-medium mb-2">Short Break</h3>
-                <div className="flex items-center">
-                  <span className="w-24 text-sm text-gray-500 dark:text-gray-400">Duration</span>
-                  <div className="flex-1">
-                    <Slider
-                      min={1}
-                      max={15}
-                      step={1}
-                      value={[preferences.pomodoroSettings.shortBreakDuration]}
-                      onValueChange={value =>
-                        setPreferences(prev => ({
-                          ...prev,
-                          pomodoroSettings: { ...prev.pomodoroSettings, shortBreakDuration: value[0] },
-                        }))
-                      }
-                    />
-                  </div>
-                  <span className="w-16 text-right">{preferences.pomodoroSettings.shortBreakDuration} min</span>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-medium mb-2">Long Break</h3>
-                <div className="flex items-center">
-                  <span className="w-24 text-sm text-gray-500 dark:text-gray-400">Duration</span>
-                  <div className="flex-1">
-                    <Slider
-                      min={5}
-                      max={30}
-                      step={5}
-                      value={[preferences.pomodoroSettings.longBreakDuration]}
-                      onValueChange={value =>
-                        setPreferences(prev => ({
-                          ...prev,
-                          pomodoroSettings: { ...prev.pomodoroSettings, longBreakDuration: value[0] },
-                        }))
-                      }
-                    />
-                  </div>
-                  <span className="w-16 text-right">{preferences.pomodoroSettings.longBreakDuration} min</span>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-medium mb-2">Sessions Until Long Break</h3>
-                <div className="flex items-center">
-                  <span className="w-24 text-sm text-gray-500 dark:text-gray-400">Sessions</span>
-                  <div className="flex-1">
-                    <Slider
-                      min={2}
-                      max={8}
-                      step={1}
-                      value={[preferences.pomodoroSettings.sessionsUntilLongBreak]}
-                      onValueChange={value =>
-                        setPreferences(prev => ({
-                          ...prev,
-                          pomodoroSettings: { ...prev.pomodoroSettings, sessionsUntilLongBreak: value[0] },
-                        }))
-                      }
-                    />
-                  </div>
-                  <span className="w-16 text-right">{preferences.pomodoroSettings.sessionsUntilLongBreak}</span>
-                </div>
-              </div>
-            </TabsContent>
-            <TabsContent value="notifications" className="space-y-4 pt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Sound Effects</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Play sounds for timer events</p>
-                </div>
-                <div className="flex items-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="mr-2"
-                    onClick={() => {
-                      if (preferences.soundEnabled && timerCompleteSound.current) {
-                        timerCompleteSound.current.play().catch(e => console.error('Error playing sound:', e));
-                      }
-                    }}
-                  >
-                    <Volume2 className="h-4 w-4" />
-                  </Button>
-                  <Switch
-                    checked={preferences.soundEnabled}
-                    onCheckedChange={checked => setPreferences(prev => ({ ...prev, soundEnabled: checked }))}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Browser Notifications</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Show notifications when timer completes</p>
-                </div>
-                <div className="flex items-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="mr-2"
-                    onClick={() => {
-                      if (preferences.notificationsEnabled && 'Notification' in window) {
-                        Notification.requestPermission().then(permission => {
-                          if (permission === 'granted') {
-                            new Notification('TimeTracker', { body: 'Notifications are now enabled!' });
-                          }
-                        });
-                      }
-                    }}
-                  >
-                    <Bell className="h-4 w-4" />
-                  </Button>
-                  <Switch
-                    checked={preferences.notificationsEnabled}
-                    onCheckedChange={checked => {
-                      if (checked && 'Notification' in window && Notification.permission !== 'granted') {
-                        Notification.requestPermission();
-                      }
-                      setPreferences(prev => ({ ...prev, notificationsEnabled: checked }));
-                    }}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-          <DialogFooter>
-            <Button onClick={() => setShowSettingsDialog(false)}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={showKeyboardShortcutsDialog} onOpenChange={setShowKeyboardShortcutsDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Keyboard Shortcuts</DialogTitle>
-            <DialogDescription>Use these shortcuts to navigate and control the TimeTracker efficiently.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Start/Pause Timer</span>
-              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">Space</kbd>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Stop and Save Timer</span>
-              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">S</kbd>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Reset Timer</span>
-              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">R</kbd>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Switch to Stopwatch</span>
-              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">1</kbd>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Switch to Countdown</span>
-              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">2</kbd>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm font-medium">Switch to Pomodoro</span>
-              <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">3</kbd>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowKeyboardShortcutsDialog(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SettingsDialog
+        open={showSettingsDialog}
+        onOpenChange={setShowSettingsDialog}
+        preferences={preferences}
+        setPreferences={setPreferences}
+      />
+      <KeyboardShortcutsDialog
+        open={showKeyboardShortcutsDialog}
+        onOpenChange={setShowKeyboardShortcutsDialog}
+      />
     </div>
-    
   );
 }
