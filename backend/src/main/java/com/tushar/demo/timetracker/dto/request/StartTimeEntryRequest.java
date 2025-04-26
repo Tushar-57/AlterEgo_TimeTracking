@@ -10,33 +10,36 @@ import java.util.List;
 import org.owasp.encoder.Encode;
 
 public record StartTimeEntryRequest(
-    @NotBlank(message = "Task description cannot be empty")
-    @Size(max = 255, message = "Task description cannot exceed 255 characters")
-    String description,
+		@NotBlank(message = "Task description cannot be empty") @Size(max = 255, message = "Task description cannot exceed 255 characters") String description,
 
-    @NotNull(message = "Start time is required")
-    LocalDateTime startTime,
+		@NotNull(message = "Start time is required") LocalDateTime startTime,
 
-    @Size(max = 100, message = "Category cannot exceed 100 characters")
-    String category,
+		@Size(max = 100, message = "Category cannot exceed 100 characters") String category,
 
 //    @Size(max = 10, message = "Maximum 10 tags allowed")
-    List<Long> tagIds,
+		List<Long> tagIds,
 
 //    @Size(max = 1, message = "Maximum 1 Concurrent project allowed for now !")
-    Long projectId,
+		Long projectId,
 
-    boolean billable
-) {
-    public Long getProjectId() {
-        return projectId;
-    }
+		boolean billable) {
+	public String getDescription() {
+		return description;
+	}
 
-    public List<Long> getTagIds() {
-        return tagIds;
-    }
+	public @NotNull(message = "Start time is required") LocalDateTime getStartTime() {
+		return startTime;
+	}
 
-    public String getDescription() {
-        return description;
-    }
+	public Long getProjectId() {
+		return projectId;
+	}
+
+	public List<Long> getTagIds() {
+		return tagIds;
+	}
+
+	public boolean isBillable() {
+		return billable;
+	}
 }

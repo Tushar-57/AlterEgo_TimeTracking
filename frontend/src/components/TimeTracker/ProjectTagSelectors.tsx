@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Button } from '../Calendar_updated/components/ui/button';
 import { Input } from '../Calendar_updated/components/ui/input';
 import { motion } from 'framer-motion';
-import { X, ChevronDown, Briefcase, TagsIcon, DollarSign, Badge } from 'lucide-react';
+import { X, ChevronDown, Briefcase, TagsIcon, DollarSign } from 'lucide-react';
 import { Project, Tag, CurrentTask } from './types';
 import { useClickOutside } from '../../utils/useClickOutside';
 import { Switch } from '../Calendar_updated/components/ui/switch';
@@ -15,7 +15,7 @@ export const ProjectTagSelectors = ({
   setCurrentTask,
   handleAddTag,
   handleSelectTag,
-  timerState
+  timerState,
 }: {
   projects: Project[];
   tags: Tag[];
@@ -43,7 +43,7 @@ export const ProjectTagSelectors = ({
             setShowProjectSelect(!showProjectSelect);
           }}
           disabled={timerState.status === 'running'}
-          className="flex items-center gap-2 px-4 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+          className="flex items-center gap-2 px-4 py-2 bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50 text-[#A3BFFA] hover:bg-[#F8C8DC]/20 transition-colors"
         >
           <Briefcase className="h-4 w-4" />
           {getProjectNameById(currentTask.projectId, projects)}
@@ -55,7 +55,7 @@ export const ProjectTagSelectors = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="absolute z-50 mt-1 w-56 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+            className="absolute z-50 mt-1 w-56 rounded-md bg-[#FAF9F6] dark:bg-[#2D2D2D] shadow-lg ring-1 ring-[#F8C8DC]/50 focus:outline-none"
             ref={projectRef}
           >
             <div className="py-1 max-h-60 overflow-auto">
@@ -64,25 +64,25 @@ export const ProjectTagSelectors = ({
                   setCurrentTask((prev: CurrentTask) => ({ ...prev, projectId: 'noproject' }));
                   setShowProjectSelect(false);
                 }}
-                className={`w-full text-left px-4 py-2 text-sm ${
+                className={`w-full text-left px-4 py-2 text-sm font-inter ${
                   currentTask.projectId === 'noproject'
-                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-300'
-                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? 'bg-[#A8D5BA]/20 text-[#1A202C] dark:text-[#E2E8F0]'
+                    : 'text-[#A3BFFA] hover:bg-[#F8C8DC]/20'
                 }`}
               >
                 No Project
               </button>
-              {projects.map(project => (
+              {projects.map((project) => (
                 <button
                   key={project.id}
                   onClick={() => {
                     setCurrentTask((prev: CurrentTask) => ({ ...prev, projectId: project.id.toString() }));
                     setShowProjectSelect(false);
                   }}
-                  className={`w-full text-left px-4 py-2 text-sm ${
+                  className={`w-full text-left px-4 py-2 text-sm font-inter ${
                     currentTask.projectId === project.id.toString()
-                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-300'
-                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? 'bg-[#A8D5BA]/20 text-[#1A202C] dark:text-[#E2E8F0]'
+                      : 'text-[#A3BFFA] hover:bg-[#F8C8DC]/20'
                   }`}
                 >
                   {project.name}
@@ -101,7 +101,7 @@ export const ProjectTagSelectors = ({
             setShowTagInput(!showTagInput);
           }}
           disabled={timerState.status === 'running'}
-          className="flex items-center gap-2 px-4 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+          className="flex items-center gap-2 px-4 py-2 bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50 text-[#A3BFFA] hover:bg-[#F8C8DC]/20 transition-colors"
         >
           <TagsIcon className="h-4 w-4" />
           Tags
@@ -113,66 +113,53 @@ export const ProjectTagSelectors = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="absolute z-50 mt-1 w-64 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+            className="absolute z-50 mt-1 w-64 rounded-md bg-[#FAF9F6] dark:bg-[#2D2D2D] shadow-lg ring-1 ring-[#F8C8DC]/50 focus:outline-none"
             ref={tagRef}
           >
             <div className="p-3">
-            <div className="flex gap-2 mb-3">
-              <Input
-                ref={tagInputRef}
-                placeholder="Add new tag"
-                value={currentTask.newTag}
-                onChange={e => setCurrentTask((prev: CurrentTask) => ({ ...prev, newTag: e.target.value }))}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddTag();
+              <div className="flex gap-2 mb-3">
+                <Input
+                  ref={tagInputRef}
+                  placeholder="Add new tag"
+                  value={currentTask.newTag}
+                  onChange={(e) =>
+                    setCurrentTask((prev: CurrentTask) => ({ ...prev, newTag: e.target.value }))
                   }
-                }}
-                className="flex-1"
-              />
-              <div className="w-6 h-6 rounded-full" style={{ backgroundColor: getRandomColor() }} />
-              <Button size="sm" onClick={handleAddTag} className="px-4">
-                Add
-              </Button>
-            </div>
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddTag();
+                    }
+                  }}
+                  className="flex-1 bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50"
+                />
+                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: getRandomColor() }} />
+                <Button
+                  size="sm"
+                  onClick={handleAddTag}
+                  className="px-4 bg-[#A8D5BA] text-white hover:bg-[#A8D5BA]/80"
+                >
+                  Add
+                </Button>
+              </div>
               <div className="max-h-40 overflow-y-auto py-1">
                 {tags.map((tag: Tag) => (
                   <div
                     key={tag.id}
                     onClick={() => handleSelectTag(tag)}
-                    className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                    className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-[#F8C8DC]/20 cursor-pointer"
                   >
                     <div className="flex items-center">
-                      <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: tag.color || '#ccc' }} />
-                      <span className="text-sm">{tag.name}</span>
+                      <div
+                        className="w-3 h-3 rounded-full mr-2"
+                        style={{ backgroundColor: tag.color || '#ccc' }}
+                      />
+                      <span className="text-sm text-[#A3BFFA] font-inter">{tag.name}</span>
                     </div>
-                    {currentTask.tags.map((tag: Tag) => (
-                      <Badge
-                        key={tag.id}
-                        className="flex items-center gap-1 pl-1 pr-2 py-1"
-                        style={{ backgroundColor: `${tag.color}20` }}
-                      >
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
-                        <span>{tag.name}</span>
-                        <button
-                          onClick={() =>
-                            setCurrentTask((prev: CurrentTask) => ({
-                              ...prev,
-                              tags: prev.tags.filter((t: Tag) => t.id !== tag.id),
-                            }))
-                          }
-                          disabled={timerState.status === 'running'}
-                          className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                        >
-                          <X size={12} />
-                        </button>
-                      </Badge>
-                    ))}
                   </div>
                 ))}
                 {tags.length === 0 && (
-                  <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+                  <div className="text-sm text-[#A3BFFA] text-center py-2 font-inter">
                     No tags yet. Create one above.
                   </div>
                 )}
@@ -182,24 +169,28 @@ export const ProjectTagSelectors = ({
         )}
       </div>
       <div className="flex items-center gap-2">
-       <Switch
+        <Switch
           checked={currentTask.billable}
-          onCheckedChange={(checked) => setCurrentTask((prev: CurrentTask) => ({ ...prev, billable: checked }))}
+          onCheckedChange={(checked) =>
+            setCurrentTask((prev: CurrentTask) => ({ ...prev, billable: checked }))
+          }
           disabled={timerState.status === 'running'}
-          className="transition-all duration-200"
+          className="data-[state=checked]:bg-[#A8D5BA]"
         />
-        <DollarSign className={`h-4 w-4 ${currentTask.billable ? 'text-green-500' : 'text-gray-500'}`} />
-        <span className="text-sm">Billable</span>
+        <DollarSign
+          className={`h-4 w-4 ${currentTask.billable ? 'text-[#A8D5BA]' : 'text-[#A3BFFA]'}`}
+        />
+        <span className="text-sm text-[#A3BFFA] font-inter">Billable</span>
       </div>
       <div className="flex flex-wrap gap-2">
         {currentTask.tags.map((tag: Tag) => (
           <div
             key={tag.id}
-            className="flex items-center gap-1 pl-1 pr-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-md"
+            className="flex items-center gap-1 pl-1 pr-2 py-1 bg-[#F5F5F4] dark:bg-[#3A3A3A] rounded-md"
             style={{ backgroundColor: `${tag.color}20` }}
           >
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
-            <span>{tag.name}</span>
+            <span className="text-[#A3BFFA] font-inter">{tag.name}</span>
             <button
               onClick={() =>
                 setCurrentTask((prev: CurrentTask) => ({
@@ -208,7 +199,7 @@ export const ProjectTagSelectors = ({
                 }))
               }
               disabled={timerState.status === 'running'}
-              className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="ml-1 text-[#A3BFFA] hover:text-[#FF6B6B]"
             >
               <X size={12} />
             </button>

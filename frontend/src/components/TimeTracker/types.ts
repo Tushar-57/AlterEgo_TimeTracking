@@ -32,14 +32,28 @@ export type PomodoroSettings = {
   sessionsUntilLongBreak: number;
 };
 
-export type UserPreferences = {
+// export type UserPreferences = {
+//   timerMode: TimerMode;
+//   darkMode: boolean;
+//   soundEnabled: boolean;
+//   notificationsEnabled: boolean;
+//   pomodoroSettings: PomodoroSettings;
+//   countdownPresets: number[];
+// };
+export interface UserPreferences {
   timerMode: TimerMode;
   darkMode: boolean;
   soundEnabled: boolean;
   notificationsEnabled: boolean;
-  pomodoroSettings: PomodoroSettings;
+  pomodoroSettings: {
+    workDuration: number;
+    shortBreakDuration: number;
+    longBreakDuration: number;
+    sessionsUntilLongBreak: number;
+  };
   countdownPresets: number[];
-};
+  progressStyle: 'circular' | 'linear'; // Add this
+}
 export interface PomodoroState {
   currentSession: number;
   isBreak: boolean;

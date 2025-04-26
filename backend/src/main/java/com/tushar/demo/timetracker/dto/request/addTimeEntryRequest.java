@@ -16,4 +16,40 @@ public record addTimeEntryRequest(
 		  Integer projectId,
 		  boolean billable,
 		  boolean isActive
-		) {}
+		) {
+
+	public String taskDescription() {
+		return taskDescription;
+	}
+
+	public LocalDateTime startTime() {
+		return startTime;
+	}
+
+	public LocalDateTime endTime() {
+		return endTime;
+	}
+
+	public String category() {
+		return category;
+	}
+
+	public List<String> tags() {
+		return tags;
+	}
+
+	public Integer projectId() {
+		return projectId;
+	}
+
+	public boolean billable() {
+		return billable;
+	}
+
+	public boolean isActive() {
+		return isActive;
+	}
+	
+	
+	
+}

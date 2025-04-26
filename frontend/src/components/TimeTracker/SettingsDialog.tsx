@@ -20,6 +20,7 @@ const defaultPreferences: UserPreferences = {
     sessionsUntilLongBreak: 4,
   },
   countdownPresets: [300, 600, 900, 1500, 2700, 3600],
+  progressStyle: 'linear'
 };
 
 export const SettingsDialog = ({
@@ -41,40 +42,36 @@ export const SettingsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg bg-[#FAF9F6] dark:bg-[#2D2D2D] border-[#F8C8DC]/30">
         <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>Customize your timer preferences</DialogDescription>
+          <DialogTitle className="text-[#1A202C] dark:text-[#E2E8F0] font-poppins">Settings</DialogTitle>
+          <DialogDescription className="text-[#A3BFFA]">Customize your timer preferences</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="general">
-          <TabsList className="grid grid-cols-3">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="pomodoro">Pomodoro</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsList className="grid grid-cols-3 bg-[#F5F5F4] dark:bg-[#3A3A3A]">
+            <TabsTrigger value="general" className="text-[#A3BFFA] data-[state=active]:bg-[#A8D5BA]/20">General</TabsTrigger>
+            <TabsTrigger value="pomodoro" className="text-[#A3BFFA] data-[state=active]:bg-[#A8D5BA]/20">Pomodoro</TabsTrigger>
+            <TabsTrigger value="notifications" className="text-[#A3BFFA] data-[state=active]:bg-[#A8D5BA]/20">Notifications</TabsTrigger>
           </TabsList>
 
-          {/* General Settings Tab */}
           <TabsContent value="general" className="space-y-4 pt-4">
-            {/* Dark Mode Switch */}
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-medium">Dark Mode</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Switch between light and dark themes
-                </p>
+                <h3 className="font-medium text-[#1A202C] dark:text-[#E2E8F0] font-poppins">Dark Mode</h3>
+                <p className="text-sm text-[#A3BFFA]">Switch between light and dark themes</p>
               </div>
               <Switch
                 checked={preferences.darkMode}
                 onCheckedChange={(checked) =>
                   setPreferences({ ...preferences, darkMode: checked })
                 }
+                className="data-[state=checked]:bg-[#A8D5BA]"
               />
             </div>
 
-            {/* Countdown Presets */}
             <div>
-              <h3 className="font-medium mb-2">Countdown Presets (minutes)</h3>
+              <h3 className="font-medium mb-2 text-[#1A202C] dark:text-[#E2E8F0] font-poppins">Countdown Presets (minutes)</h3>
               <div className="flex flex-wrap gap-2">
                 {preferences.countdownPresets.map((seconds, index) => (
                   <div key={index} className="flex items-center">
@@ -86,12 +83,12 @@ export const SettingsDialog = ({
                       onChange={(e) => {
                         const value = Number(e.target.value);
                         if (value < 1 || value > 180) {
-                          setErrors((prev: { preset: string }) => ({
+                          setErrors((prev) => ({
                             ...prev,
                             preset: 'Value must be between 1 and 180 minutes',
                           }));
                         } else {
-                          setErrors((prev: { preset: string }) => ({
+                          setErrors((prev) => ({
                             ...prev,
                             preset: '',
                           }));
@@ -100,16 +97,16 @@ export const SettingsDialog = ({
                           setPreferences({ ...preferences, countdownPresets: newPresets });
                         }
                       }}
-                      className="w-16 text-center"
+                      className="w-16 text-center bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50"
                     />
                     {errors.preset && (
-                      <p className="text-red-500 text-sm">{errors.preset}</p>
+                      <p className="text-[#FF6B6B] text-sm">{errors.preset}</p>
                     )}
                     {index > 2 && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 ml-1"
+                        className="h-6 w-6 ml-1 text-[#A3BFFA] hover:bg-[#F8C8DC]/20"
                         onClick={() => {
                           const newPresets = preferences.countdownPresets.filter(
                             (_, i) => i !== index
@@ -126,11 +123,9 @@ export const SettingsDialog = ({
             </div>
           </TabsContent>
 
-          {/* Pomodoro Settings Tab */}
           <TabsContent value="pomodoro" className="space-y-4 pt-4">
-            {/* Work Duration Slider */}
             <div>
-              <h3 className="font-medium mb-2">Work Session</h3>
+              <h3 className="font-medium mb-2 text-[#1A202C] dark:text-[#E2E8F0] font-poppins">Work Session</h3>
               <div className="flex items-center gap-4">
                 <Slider
                   min={5}
@@ -146,26 +141,27 @@ export const SettingsDialog = ({
                       },
                     })
                   }
+                  className="data-[thumb]:bg-[#A8D5BA]"
                 />
-                <span className="w-16">{preferences.pomodoroSettings.workDuration} min</span>
+                <span className="w-16 text-[#A3BFFA]">{preferences.pomodoroSettings.workDuration} min</span>
               </div>
             </div>
-
-            {/* Similar sliders for Short Break, Long Break, and Sessions */}
+            {/* Similar sliders for Short Break, Long Break, and Sessions can be added here */}
           </TabsContent>
 
-          {/* Notifications Tab */}
           <TabsContent value="notifications" className="space-y-4 pt-4">
-            {/* Sound Toggle */}
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-medium">Sound Effects</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Play sounds for timer events
-                </p>
+                <h3 className="font-medium text-[#1A202C] dark:text-[#E2E8F0] font-poppins">Sound Effects</h3>
+                <p className="text-sm text-[#A3BFFA]">Play sounds for timer events</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={handleSoundTest}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleSoundTest}
+                  className="text-[#A3BFFA] hover:bg-[#F8C8DC]/20"
+                >
                   <Volume2 className="h-4 w-4" />
                 </Button>
                 <Switch
@@ -173,11 +169,11 @@ export const SettingsDialog = ({
                   onCheckedChange={(checked) =>
                     setPreferences({ ...preferences, soundEnabled: checked })
                   }
+                  className="data-[state=checked]:bg-[#A8D5BA]"
                 />
               </div>
             </div>
-
-            {/* Browser Notifications Toggle */}
+            {/* Browser Notifications Toggle can be added here */}
           </TabsContent>
         </Tabs>
 
@@ -185,10 +181,16 @@ export const SettingsDialog = ({
           <Button
             variant="outline"
             onClick={() => setPreferences(defaultPreferences)}
+            className="border-[#F8C8DC]/50 text-[#A3BFFA] hover:bg-[#F8C8DC]/20"
           >
             Reset to Defaults
           </Button>
-          <Button onClick={() => onOpenChange(false)}>Save Changes</Button>
+          <Button
+            onClick={() => onOpenChange(false)}
+            className="bg-[#A8D5BA] text-white hover:bg-[#A8D5BA]/80"
+          >
+            Save Changes
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

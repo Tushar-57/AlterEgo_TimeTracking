@@ -1,5 +1,5 @@
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import {
@@ -54,7 +54,10 @@ export const CalendarSection = ({ events }: { events: CalendarEvent[] }): JSX.El
         isCurrentMonth,
         isToday: isCurrentMonth && new Date(date.getFullYear(), date.getMonth(), day).toDateString() === new Date().toDateString(),
         isWeekend: (i % 7 === 0 || i % 7 === 6) && isCurrentMonth,
-        events: isCurrentMonth ? events.filter(e => new Date(e.position.top).getDate() === day) : []
+        events: isCurrentMonth ? events.filter(e => {
+          const eventDate = new Date(`${e.time} ${e.period}`);
+          return eventDate.getDate() === day && eventDate.getMonth() === date.getMonth() && eventDate.getFullYear() === date.getFullYear();
+        }) : []
       };
     });
   };
@@ -68,7 +71,10 @@ export const CalendarSection = ({ events }: { events: CalendarEvent[] }): JSX.El
           const day = (i % lastDay) + 1;
           return {
             date: day.toString(),
-            events: events.filter(e => new Date(e.position.top).getMonth() === index && new Date(e.position.top).getDate() === day)
+            events: events.filter(e => {
+              const eventDate = new Date(`${e.time} ${e.period}`);
+              return eventDate.getMonth() === index && eventDate.getDate() === day;
+            })
           };
         })
       };
@@ -97,7 +103,7 @@ export const CalendarSection = ({ events }: { events: CalendarEvent[] }): JSX.El
     <div className="flex flex-col w-full h-full items-start">
       <div className="flex w-full items-start pl-12 pr-0 py-0 gap-3">
         <div className="flex flex-1">
-          <div className={`flex flex-col flex-1 items-start pt-1 pb-4 px-2 shadow-[inset_-1px_-1px_0px_#e0e0e0] ${weekDays.find(d => d.isToday)?.isToday ? "bg-blue-50" : "bg-white"}`}>
+          <div className={`flex flex-col flex-1 items-start pt-1 pb-4 px-2 shadow-[inset_-1px_-1px_0px_#e0e0e0] ${weekDays.find(d => d.isToday)?.isToday ? "bg-blue-100" : "bg-white"}`}>
             <div className="relative self-stretch mt-[-1.00px] font-bold text-gray-500 text-[10px] tracking-[0] leading-3">
               {currentDate.toLocaleString('en-US', { weekday: 'short' }).toUpperCase()}
             </div>
@@ -129,20 +135,22 @@ export const CalendarSection = ({ events }: { events: CalendarEvent[] }): JSX.El
     </div>
   );
 
+  useEffect(() => {
+    const todayColumn = document.querySelector('.day-column[data-today="true"]');
+    todayColumn?.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+  }, [currentDate]);
+  
   const renderWeekView = () => (
     <div className="flex flex-col w-full h-full items-start">
       <div className="flex w-full items-start pl-12 pr-0 py-0 gap-3">
-        <div className="flex flex-1">
+        <div className="grid grid-cols-7 flex-1">
           {weekDays.map((dayInfo, index) => (
             <div
               key={index}
               className={`flex flex-col flex-1 items-start pt-1 pb-4 px-2 shadow-[inset_-1px_-1px_0px_#e0e0e0] ${
-                dayInfo.isWeekend
-                  ? "bg-gray-50"
-                  : dayInfo.isToday
-                    ? "bg-blue-50"
-                    : "bg-white"
+                dayInfo.isWeekend ? "bg-gray-50" : dayInfo.isToday ? "bg-blue-100" : "bg-white"
               }`}
+              data-today={dayInfo.isToday}
             >
               <div className="relative self-stretch mt-[-1.00px] font-bold text-gray-500 text-[10px] tracking-[0] leading-3">
                 {dayInfo.day}
@@ -157,21 +165,17 @@ export const CalendarSection = ({ events }: { events: CalendarEvent[] }): JSX.El
           EST<br />GMT-5
         </div>
       </div>
-      {timeSlots.map((time, timeIndex) => (
-        <div key={timeIndex} className="flex w-full items-start gap-3">
-          <div className="w-9 mt-[-1.00px] text-xs font-medium text-gray-500">
-            {time}
-          </div>
-          <div className="flex flex-1 items-start">
+      <div className="grid grid-cols-7 flex-1 items-start">
+        {timeSlots.map((time, timeIndex) => (
+          <div key={timeIndex} className="contents">
+            <div className="w-9 mt-[-1.00px] text-xs font-medium text-gray-500">
+              {time}
+            </div>
             {weekDays.map((dayInfo, dayIndex) => (
               <div
                 key={dayIndex}
                 className={`flex flex-col flex-1 items-start shadow-[inset_-1px_-1px_0px_#e0e0e0] ${
-                  dayInfo.isWeekend
-                    ? "bg-gray-50"
-                    : dayInfo.isToday
-                      ? "bg-blue-50"
-                      : "bg-white"
+                  dayInfo.isWeekend ? "bg-gray-50" : dayInfo.isToday ? "bg-blue-100 border-blue-300 border-2" : "bg-white"
                 }`}
               >
                 <div className="relative self-stretch w-full h-9 shadow-[inset_0px_-1px_0px_#f7f7f7]" />
@@ -179,11 +183,11 @@ export const CalendarSection = ({ events }: { events: CalendarEvent[] }): JSX.El
               </div>
             ))}
           </div>
-          <div className="w-9 mt-[-1.00px] text-xs font-medium text-gray-500">
-            {time}
-          </div>
+        ))}
+        <div className="w-9 mt-[-1.00px] text-xs font-medium text-gray-500">
+          {timeSlots[timeSlots.length - 1]}
         </div>
-      ))}
+      </div>
     </div>
   );
 
@@ -203,7 +207,7 @@ export const CalendarSection = ({ events }: { events: CalendarEvent[] }): JSX.El
             className={`min-h-[100px] p-2 border-b border-r last:border-r-0 ${
               day.isCurrentMonth
                 ? day.isToday
-                  ? "bg-blue-50"
+                  ? "bg-blue-100 border-blue-300 border-2"
                   : day.isWeekend
                     ? "bg-gray-50"
                     : "bg-white"
@@ -324,4 +328,4 @@ export const CalendarSection = ({ events }: { events: CalendarEvent[] }): JSX.El
       </div>
     </section>
   );
-};
+}

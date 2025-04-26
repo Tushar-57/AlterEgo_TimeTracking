@@ -17,7 +17,7 @@ export const TimerHeader = ({
   setShowSettingsDialog: (show: boolean) => void;
   setShowKeyboardShortcutsDialog: (show: boolean) => void;
 }) => (
-  <header className="bg-gradient-to-r from-gray-900 via-indigo-950 to-gray-900 shadow-lg py-4 px-6 backdrop-blur-sm">
+  <header className="bg-gradient-to-r from-[#FAF9F6] to-[#F5F5F4] dark:from-[#2D2D2D] dark:to-[#3A3A3A] shadow-sm py-4 px-6">
     <div className="max-w-7xl mx-auto flex justify-between items-center">
       <div className="flex items-center space-x-2">
         <motion.div
@@ -25,9 +25,9 @@ export const TimerHeader = ({
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <Clock className="text-cyan-400" size={28} />
+          <Clock className="text-[#FF6B6B]" size={28} />
         </motion.div>
-        <h1 className="text-2xl font-bold text-white font-orbitron">Timer</h1>
+        <h1 className="text-2xl font-bold text-[#1A202C] dark:text-[#E2E8F0] font-poppins">Timer</h1>
       </div>
       <div className="flex items-center gap-4">
         <TooltipProvider>
@@ -36,14 +36,14 @@ export const TimerHeader = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full hover:bg-cyan-500/20 hover:shadow-[0_0_10px_rgba(34,211,238,0.5)] transition-all"
+                className="rounded-full hover:bg-[#F8C8DC]/20 hover:shadow-sm transition-all"
                 onClick={() => setPreferences((prev) => ({ ...prev, darkMode: !prev.darkMode }))}
               >
                 {preferences.darkMode ? (
                   <motion.div initial={{ rotate: -30 }} animate={{ rotate: 0 }} transition={{ duration: 0.2 }}>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-cyan-400"
+                      className="h-5 w-5 text-[#A3BFFA]"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -60,7 +60,7 @@ export const TimerHeader = ({
                   <motion.div initial={{ rotate: 30 }} animate={{ rotate: 0 }} transition={{ duration: 0.2 }}>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-yellow-400"
+                      className="h-5 w-5 text-[#F4A261]"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -76,7 +76,7 @@ export const TimerHeader = ({
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="bg-gray-800 text-cyan-400 border-cyan-500/50">Toggle dark mode</TooltipContent>
+            <TooltipContent className="bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50">Toggle dark mode</TooltipContent>
           </Tooltip>
         </TooltipProvider>
         <TooltipProvider>
@@ -85,13 +85,13 @@ export const TimerHeader = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full hover:bg-cyan-500/20 hover:shadow-[0_0_10px_rgba(34,211,238,0.5)] transition-all"
+                className="rounded-full hover:bg-[#F8C8DC]/20 hover:shadow-sm transition-all"
                 onClick={() => setShowSettingsDialog(true)}
               >
-                <Settings className="h-5 w-5 text-cyan-400" />
+                <Settings className="h-5 w-5 text-[#A3BFFA]" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="bg-gray-800 text-cyan-400 border-cyan-500/50">Settings</TooltipContent>
+            <TooltipContent className="bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50">Settings</TooltipContent>
           </Tooltip>
         </TooltipProvider>
         <TooltipProvider>
@@ -100,21 +100,21 @@ export const TimerHeader = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full hover:bg-cyan-500/20 hover:shadow-[0_0_10px_rgba(34,211,238,0.5)] transition-all"
+                className="rounded-full hover:bg-[#F8C8DC]/20 hover:shadow-sm transition-all"
                 onClick={() => setShowKeyboardShortcutsDialog(true)}
               >
-                <HelpCircle className="h-5 w-5 text-cyan-400" />
+                <HelpCircle className="h-5 w-5 text-[#A3BFFA]" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="bg-gray-800 text-cyan-400 border-cyan-500/50">Keyboard shortcuts</TooltipContent>
+            <TooltipContent className="bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50">Keyboard shortcuts</TooltipContent>
           </Tooltip>
         </TooltipProvider>
         {user && (
           <motion.div
             className="flex items-center transition-transform hover:scale-110"
-            whileHover={{ boxShadow: '0 0 15px rgba(34, 211, 238, 0.7)' }}
+            whileHover={{ boxShadow: '0 0 10px rgba(248, 200, 220, 0.5)' }}
           >
-            <div className="bg-gradient-to-br from-cyan-500 to-indigo-600 rounded-full h-8 w-8 flex items-center justify-center text-white font-medium shadow-[0_0_10px_rgba(34,211,238,0.5)]">
+            <div className="bg-gradient-to-br from-[#FF6B6B] to-[#F8C8DC] rounded-full h-8 w-8 flex items-center justify-center text-white font-medium shadow-sm">
               {user.name ? user.name[0] : user.email[0]}
             </div>
           </motion.div>

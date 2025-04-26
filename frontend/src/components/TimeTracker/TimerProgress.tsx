@@ -46,65 +46,38 @@
 // };
 
 
-import { motion } from 'framer-motion';
-import 'react-circular-progressbar/dist/styles.css';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
-import { useEffect } from 'react';
-import { toast } from '../Calendar_updated/components/hooks/use-toast';
+import 'react-circular-progressbar/dist/styles.css';
 
-export const TimerProgressIndicator = ({
-  progress,
-  isCircular,
-}: {
+interface TimerProgressIndicatorProps {
   progress: number;
-  isCircular?: boolean;
-}) => {
-  const percentage = Math.round(progress * 100);
-  useEffect(() => {
-    if ([0.25, 0.5, 0.75].includes(Math.round(progress * 100) / 100)) {
-      toast({
-        title: `Progress Milestone`,
-        description: `You've reached ${Math.round(progress * 100)}% of your timer!`,
-        className: 'bg-gray-800 text-cyan-400 border-cyan-500/50',
-      });
-    }
-  }, [progress]);
+  progressStyle: 'circular' | 'linear';
+}
 
-  return isCircular ? (
-    <motion.div
-      className="w-24 h-24 relative"
-      animate={{ scale: [1, 1.05, 1] }}
-      transition={{ duration: 1, repeat: percentage % 25 === 0 ? 1 : 0 }}
-    >
-      <CircularProgressbar
-        value={percentage}
-        text={`${percentage}%`}
-        styles={buildStyles({
-          pathColor: '#22d3ee',
-          textColor: '#22d3ee',
-          trailColor: '#1e293b',
-          textSize: '16px',
-          pathTransitionDuration: 0.5,
-        })}
+export const TimerProgressIndicator = ({ progress, progressStyle }: TimerProgressIndicatorProps) => {
+  const normalizedProgress = Math.min(Math.max(progress * 100, 0), 100);
+
+  if (progressStyle === 'circular') {
+    return (
+      <div className="w-24 h-24 mt-4">
+        <CircularProgressbar
+          value={normalizedProgress}
+          styles={buildStyles({
+            pathColor: '#A8D5BA',
+            trailColor: '#F8C8DC',
+            textColor: '#A3BFFA',
+          })}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-xs h-2 bg-[#F8C8DC]/50 rounded-full mt-4">
+      <div
+        className="h-full bg-[#A8D5BA] rounded-full transition-all duration-300"
+        style={{ width: `${normalizedProgress}%` }}
       />
-      <div className="absolute inset-0 rounded-full shadow-[0_0_15px_rgba(34,211,238,0.7)]"></div>
-    </motion.div>
-  ) : (
-    <div className="relative h-8 w-full bg-gray-800 rounded-full overflow-hidden mt-4 border border-cyan-500/30">
-      <motion.div
-        className="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-500 to-indigo-600 flex items-center justify-center shadow-[0_0_10px_rgba(34,211,238,0.5)]"
-        initial={{ width: '0%' }}
-        animate={{
-          width: `${percentage}%`,
-          scale: 1,
-        }}
-        transition={{
-          width: { duration: 0.5 },
-          scale: { duration: 0 },
-        }}
-      >
-        <span className="text-white text-xs font-bold font-orbitron">{percentage}%</span>
-      </motion.div>
     </div>
   );
 };

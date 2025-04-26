@@ -14,7 +14,6 @@ import com.tushar.demo.timetracker.repository.TimeEntryRepository;
 import com.tushar.demo.timetracker.service.TimeEntryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.web.session.RequestedUrlRedirectInvalidSessionStrategy;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -115,11 +114,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
                          endTime, timeEntry.getStartTime(), id);
             throw new IllegalArgumentException("End time cannot be before start time");
         }
-        if (manualEnd == null) {
-            timeEntry.setEndTime(LocalDateTime.now());
-        } else {
-            timeEntry.setEndTime(manualEnd);
-        }
+        timeEntry.setEndTime(endTime);
         
         // Calculate duration
         timeEntry.setDuration(Duration.between(timeEntry.getStartTime(), timeEntry.getEndTime()).getSeconds());
@@ -161,8 +156,18 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     @Override
     public List<TimeEntry> getRecentTimeEntries(Users user, int limit) {
         logger.info("Fetching up to {} recent time entries for user: {}", limit, user.getEmail());
-        List<TimeEntry> entries = timeEntryRepository.findByUserIdOrderByStartTimeDesc(user.getId(), limit);
+        List<TimeEntry> entries = timeEntryRepository.findTopByUserIdOrderByStartTimeDesc(user.getId(), limit);
         logger.info("Found {} recent time entries for user: {}", entries.size(), user.getEmail());
         return entries;
+    }
+
+    @Override
+    public TimeEntry updateTimerPosition(Long timerId, Users user, String positionTop, String positionLeft) {
+        TimeEntry timeEntry = timeEntryRepository.findByIdAndUser(timerId, user)
+                .orElseThrow(() -> new IllegalArgumentException("Timer not found or does not belong to user"));
+        timeEntry.setPositionTop(positionTop);
+        timeEntry.setPositionLeft(positionLeft);
+        logger.info("Updating position for timer: {} to top: {}, left: {}", timerId, positionTop, positionLeft);
+        return timeEntryRepository.save(timeEntry);
     }
 }

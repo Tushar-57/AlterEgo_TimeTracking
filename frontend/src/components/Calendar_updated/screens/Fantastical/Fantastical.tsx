@@ -1,20 +1,14 @@
 import { useState } from "react";
 import { CalendarSection } from "./sections/CalendarSection/CalendarSection";
 import { DraggableEvent } from "../../components/DraggableEvent";
+import { CalendarEvent } from "../../../Dashboard";
 
-export interface CalendarEvent {
-  id: number;
-  time: string;
-  period: string;
-  title: string;
-  color: string;
-  position: { top: string; left: string };
-  width: string;
-  height: string;
-  hasVideo?: boolean;
+interface FantasticalProps {
+  events: CalendarEvent[];
+  onEventDrag: (eventId: number, newPosition: { top: string; left: string }) => void;
 }
 
-export const Fantastical = ({ events }: { events: CalendarEvent[] }): JSX.Element => {
+export const Fantastical = ({ events, onEventDrag }: FantasticalProps): JSX.Element => {
   const [colorClasses] = useState({
     lightblue: {
       bg: "bg-blue-100",
@@ -60,8 +54,11 @@ export const Fantastical = ({ events }: { events: CalendarEvent[] }): JSX.Elemen
           key={event.id} 
           event={event} 
           getColorClasses={getColorClasses}
+          onDragStop={onEventDrag}
         />
       ))}
     </div>
   );
 };
+
+export type { CalendarEvent };

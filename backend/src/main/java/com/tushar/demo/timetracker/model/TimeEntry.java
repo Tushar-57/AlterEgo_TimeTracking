@@ -44,6 +44,12 @@ public class TimeEntry {
     private boolean billable;
     private String client;
     private boolean active;
+    
+    @Column(name = "position_top")
+    private String positionTop;
+
+    @Column(name = "position_left")
+    private String positionLeft;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -64,7 +70,6 @@ public class TimeEntry {
         }
     }
 
-    public Project getProject() { return project; }
     public Long getId() { return id; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
@@ -72,17 +77,22 @@ public class TimeEntry {
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
     public LocalDateTime getEndTime() { return endTime; }
     public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+    public Long getDuration() { return duration; }
+    public void setDuration(Long duration) { this.duration = duration; }
+    public Project getProject() { return project; }
+    public void setProject(Project project) { this.project = project; }
+    public List<Long> getTagIds() { return tagIds; }
+    public void setTagIds(List<Long> tagIds) { this.tagIds = tagIds; }
+    public boolean isBillable() { return billable; }
+    public void setBillable(boolean billable) { this.billable = billable; }
+    public String getClient() { return client; }
+    public void setClient(String client) { this.client = client; }
+    public boolean getIsActive() { return active; }
+    public void setIsActive(boolean isActive) { this.active = isActive; }
+    public String getPositionTop() { return positionTop; }
+    public void setPositionTop(String positionTop) { this.positionTop = positionTop; }
+    public String getPositionLeft() { return positionLeft; }
+    public void setPositionLeft(String positionLeft) { this.positionLeft = positionLeft; }
     public Users getUser() { return user; }
     public void setUser(Users user) { this.user = user; }
-    public Long getDuration() { return duration; }
-    public void setIsActive(boolean active) { this.active = active; }
-    public boolean getIsActive() { return active; }
-    public List<Long> getTagIds() { return tagIds; } // Updated getter
-    public void setTagIds(List<Long> tagIds) { this.tagIds = tagIds; } // Updated setter
-    public void setProject(Project project ) {this.project = project;}
-
-	public void setDuration(long seconds) {
-		this.duration = seconds;
-		
-	}
 }
