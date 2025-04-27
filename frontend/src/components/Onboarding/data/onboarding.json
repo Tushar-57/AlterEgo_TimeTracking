@@ -1,0 +1,90 @@
+{
+    "traits": [
+      "Confidence",
+      "Creativity",
+      "Focus",
+      "Discipline",
+      "Empathy",
+      "Optimism"
+    ],
+    "tones": [
+      "Bold",
+      "Calm",
+      "Playful"
+    ],
+    "suggestedGoals": [
+      "Public speaking",
+      "Launching a startup",
+      "Learning a new language",
+      "Writing a book",
+      "Establishing a workout routine",
+      "Improving work-life balance",
+      "Developing leadership skills",
+      "Mastering time management"
+    ],
+    "avatars": [
+      {
+        "id": "avatar-1",
+        "url": "https://images.pexels.com/photos/2607544/pexels-photo-2607544.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "alt": "Serene mountain landscape"
+      },
+      {
+        "id": "avatar-2",
+        "url": "https://images.pexels.com/photos/1295138/pexels-photo-1295138.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "alt": "Calm ocean waves"
+      },
+      {
+        "id": "avatar-3",
+        "url": "https://images.pexels.com/photos/1671324/pexels-photo-1671324.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "alt": "Northern lights"
+      },
+      {
+        "id": "avatar-4",
+        "url": "https://images.pexels.com/photos/696644/pexels-photo-696644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "alt": "Peaceful forest"
+      },
+      {
+        "id": "avatar-5",
+        "url": "https://images.pexels.com/photos/1025469/pexels-photo-1025469.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "alt": "Sunset horizon"
+      },
+      {
+        "id": "avatar-6",
+        "url": "https://images.pexels.com/photos/1287075/pexels-photo-1287075.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "alt": "Abstract calming pattern"
+      }
+    ],
+    "randomNames": [
+      "Aria",
+      "Nova",
+      "Sage",
+      "Luna",
+      "Echo",
+      "Zephyr",
+      "Atlas",
+      "Aurora",
+      "Kai",
+      "Orion",
+      "Lyra",
+      "Ember",
+      "Sol",
+      "Astra",
+      "Cove"
+    ],
+    "defaultPlannerData": {
+      "objectiveTitle": "",
+      "whyItMatters": "",
+      "startDate": "",
+      "endDate": "",
+      "isSMART": false,
+      "dailyCheckInTime": "08:00",
+      "weeklyReviewTime": "17:00",
+      "dndStart": "22:00",
+      "dndEnd": "06:00",
+      "workHours": {
+        "start": "09:00",
+        "end": "17:00"
+      },
+      "pomodoroRatio": "25/5"
+    }
+  }

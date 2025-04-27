@@ -14,6 +14,10 @@ import { UserTagPage } from './components/UserTags';
 import { ToastProvider } from './components/ui/toast';
 // import { ToastViewport } from '@radix-ui/react-toast';
 import { ToastViewport } from './components/ui/toast';
+import MainRunner from './components/Onboarding/MainRunner';
+import OnboardingFlow from './components/Onboarding/OnboardingFlow';
+import MentorSelection from './components/Onboarding/Mentor/MentorSelection';
+import { MentorArchetype } from './components/Onboarding/types/coaching';
 
 const Reports = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Reports Page</div>;
 const Projects = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Projects Page</div>;
@@ -29,6 +33,14 @@ const App = () => (
         <Routes>
           <Route path="/login" element={<LoginClassic />} />
           <Route path="/signup" element={<SignupClassic />} />
+          <Route path="/onboarding/*" element={<OnboardingFlow />} />
+
+        {/* Mentor Selection Flow */}
+        <Route
+          path="/mentor"
+          element={<MentorSelection onSelect={function (archetype: MentorArchetype): void {
+            throw new Error('Function not implemented.');
+          } } />} />
           <Route path="/*" element={<ProtectedRoutes />} />
         </Routes>
         <ToastViewport className="[--viewport-padding:_25px] fixed bottom-0 right-0 flex flex-col p-[var(--viewport-padding)] gap-[25px] w-[390px] max-w-[100vw] m-0 list-none z-[2147483647] outline-none" />
