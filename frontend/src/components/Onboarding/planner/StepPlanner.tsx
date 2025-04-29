@@ -9,7 +9,7 @@ interface PlannerSetupProps {
   onSubmit: () => void;
   setChatHistory: (history: ChatBubbleProps[]) => void;
   errors?: Record<string, string>;
-  tone?: any; // Kept as any to avoid breaking, will be fixed in ChatOnboarding
+  tone?: any;
 }
 
 const StepPlanner: React.FC<PlannerSetupProps> = ({
@@ -83,7 +83,6 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
     };
     onUpdatePlanner(updatedPlannerData);
 
-    // Update chat history to preserve functionality from PlannerSetup.tsx
     setChatHistory([
       ...plannerData.goals.map((goal: Goal) => ({
         content: `Goal: ${goal.title} (${goal.whyItMatters || 'No reason specified'})`,
@@ -126,7 +125,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
         Configure your availability, notifications, and integrations to align with your goals.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-2xl p-6 shadow-lg">
+      <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-2xl p-6 shadow-sm">
         {plannerData.goals.length > 0 && (
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Your Goals</h3>
@@ -134,7 +133,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
               {plannerData.goals.map((goal: Goal) => (
                 <span
                   key={goal.id}
-                  className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
                 >
                   {goal.title}
                 </span>
@@ -155,8 +154,8 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
                 name="workHours.start"
                 value={availability.workHours.start}
                 onChange={(e) => handleAvailabilityChange(e, 'workHours')}
-                className={`w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${
-                  errors['workHours.start'] ? 'border-red-500' : ''
+                className={`w-full p-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50 ${
+                  errors['workHours.start'] ? 'border-red-400' : ''
                 }`}
               />
               {errors['workHours.start'] && (
@@ -172,8 +171,8 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
                 name="workHours.end"
                 value={availability.workHours.end}
                 onChange={(e) => handleAvailabilityChange(e, 'workHours')}
-                className={`w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${
-                  errors['workHours.end'] ? 'border-red-500' : ''
+                className={`w-full p-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50 ${
+                  errors['workHours.end'] ? 'border-red-400' : ''
                 }`}
               />
               {errors['workHours.end'] && (
@@ -191,8 +190,8 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
                 name="dndHours.start"
                 value={availability.dndHours.start}
                 onChange={(e) => handleAvailabilityChange(e, 'dndHours')}
-                className={`w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${
-                  errors['dndHours.start'] ? 'border-red-500' : ''
+                className={`w-full p-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50 ${
+                  errors['dndHours.start'] ? 'border-red-400' : ''
                 }`}
               />
               {errors['dndHours.start'] && (
@@ -208,8 +207,8 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
                 name="dndHours.end"
                 value={availability.dndHours.end}
                 onChange={(e) => handleAvailabilityChange(e, 'dndHours')}
-                className={`w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${
-                  errors['dndHours.end'] ? 'border-red-500' : ''
+                className={`w-full p-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50 ${
+                  errors['dndHours.end'] ? 'border-red-400' : ''
                 }`}
               />
               {errors['dndHours.end'] && (
@@ -227,8 +226,8 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
                 name="preferredTime"
                 value={availability.checkIn.preferredTime}
                 onChange={(e) => handleAvailabilityChange(e, 'checkIn')}
-                className={`w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${
-                  errors['checkIn.preferredTime'] ? 'border-red-500' : ''
+                className={`w-full p-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50 ${
+                  errors['checkIn.preferredTime'] ? 'border-red-400' : ''
                 }`}
               />
               {errors['checkIn.preferredTime'] && (
@@ -243,8 +242,8 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
                 name="frequency"
                 value={availability.checkIn.frequency}
                 onChange={(e) => handleAvailabilityChange(e, 'checkIn')}
-                className={`w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${
-                  errors['checkIn.frequency'] ? 'border-red-500' : ''
+                className={`w-full p-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50 ${
+                  errors['checkIn.frequency'] ? 'border-red-400' : ''
                 }`}
               >
                 <option value="daily">Daily</option>
@@ -265,8 +264,8 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
               name="timezone"
               value={availability.timezone}
               onChange={(e) => handleAvailabilityChange(e, 'timezone')}
-              className={`w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${
-                errors.timezone ? 'border-red-500' : ''
+              className={`w-full p-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50 ${
+                errors.timezone ? 'border-red-400' : ''
               }`}
               placeholder="e.g., America/New_York"
             />
@@ -283,7 +282,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
               type="checkbox"
               checked={remindersEnabled}
               onChange={(e) => setRemindersEnabled(e.target.checked)}
-              className="h-4 w-4 text-purple-600 rounded focus:ring-purple-300"
+              className="h-4 w-4 text-blue-600 rounded focus:ring-blue-300"
             />
             <span className="text-sm">
               <Bell className="inline-block h-4 w-4 mr-1" /> Enable Reminders
@@ -298,7 +297,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
               type="checkbox"
               checked={calendarSync}
               onChange={(e) => setCalendarSync(e.target.checked)}
-              className="h-4 w-4 text-purple-600 rounded focus:ring-purple-300"
+              className="h-4 w-4 text-blue-600 rounded focus:ring-blue-300"
             />
             <span className="text-sm">
               <Calendar className="inline-block h-4 w-4 mr-1" /> Calendar Sync
@@ -309,7 +308,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
               type="checkbox"
               checked={taskManagementSync}
               onChange={(e) => setTaskManagementSync(e.target.checked)}
-              className="h-4 w-4 text-purple-600 rounded focus:ring-purple-300"
+              className="h-4 w-4 text-blue-600 rounded focus:ring-blue-300"
             />
             <span className="text-sm">Task Management Sync</span>
           </label>
@@ -317,9 +316,9 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
 
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+          className="w-full bg-gradient-to-r from-blue-400 to-cyan-500 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
         >
-          Complete Setup
+          Continue
         </button>
       </form>
     </motion.div>

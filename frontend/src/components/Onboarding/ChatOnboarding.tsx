@@ -3,7 +3,6 @@ import { Message, PlannerData, Tone, UserRole, Answer, Goal } from './types/onbo
 import { ChatContainer } from './UI/ChatContainer';
 import ChatBubble from './UI/ChatBubble';
 import TypingIndicator from './UI/TypingIndicator';
-import StepIntroduction from './introduction/StepIntroduction';
 import RoleSelection from './RoleSelection';
 import StepGoals from './goals/StepGoals';
 import Personalization from './Personalization';
@@ -45,7 +44,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
       taskManagementSync: false,
     },
   });
-  const [chatHistory, setChatHistory] = useState<any[]>([]); // Temporary type to avoid breaking
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -78,7 +77,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
     await addMessage(
       <div className="flex items-center gap-2">
         <span>I'm currently a</span>
-        <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm">{role}</span>
+        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">{role}</span>
       </div>,
       'user'
     );
@@ -98,7 +97,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
       <div className="flex flex-col gap-2">
         <span>My priorities are:</span>
         {answers.map((answer) => (
-          <span key={answer.id} className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm">
+          <span key={answer.id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
             {answer.answer}
           </span>
         ))}
@@ -122,7 +121,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
       <div className="flex flex-col gap-2">
         <span>My goals are:</span>
         {goals.map((goal) => (
-          <span key={goal.id} className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm">
+          <span key={goal.id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
             {goal.title}
           </span>
         ))}
@@ -205,7 +204,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
   }, []);
 
   return (
-    <div className="h-screen w-full flex flex-col bg-gradient-to-br from-indigo-50 to-purple-50">
+    <div className="h-screen w-full flex flex-col bg-gradient-to-br from-blue-50 to-cyan-50">
       <div className="p-4">
         <ProgressBar currentStep={currentStep} tone={null} />
       </div>
@@ -213,7 +212,16 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
         <ChatContainer messages={messages} isTyping={isTyping}>
           {!isTyping && currentStep !== 'complete' && (
             <div className="mx-auto max-w-2xl w-full my-6 px-4">
-              {currentStep === 'intro' && <StepIntroduction onSelect={handleIntroductionSelect} />}
+              {currentStep === 'intro' && (
+                <ChatBubble isUser={true}>
+                  <button
+                    onClick={handleIntroductionSelect}
+                    className="bg-gradient-to-r from-blue-400 to-cyan-500 text-white px-6 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300"
+                  >
+                    Start Onboarding
+                  </button>
+                </ChatBubble>
+              )}
               {currentStep === 'role' && <RoleSelection onSelect={handleRoleSelect} />}
               {currentStep === 'personalization' && (
                 <Personalization
@@ -227,7 +235,6 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
                   selectedGoals={selectedGoals}
                   userRole={selectedRole}
                   onSelect={handleGoalsSelect}
-                  onSubmit={() => setCurrentStep('planner')}
                 />
               )}
               {currentStep === 'planner' && (
@@ -236,8 +243,8 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
                   onUpdatePlanner={setPlannerData}
                   onSubmit={handlePlannerSubmit}
                   setChatHistory={setChatHistory}
-                  errors={{}} // Pass empty errors for now
-                  tone={null} // Pass null tone for now
+                  errors={{}}
+                  tone={null}
                 />
               )}
             </div>
