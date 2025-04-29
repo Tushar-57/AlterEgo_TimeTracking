@@ -9,33 +9,28 @@ interface ProgressBarProps {
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ currentStep, tone }) => {
   const toneStyles = getToneStyles(tone);
-  const gradientClasses = tone 
-    ? toneStyles.primaryColor 
+  const gradientClasses = tone
+    ? toneStyles.primaryColor
     : 'from-purple-600 to-indigo-700';
-  
-  // Define all steps in order
+
   const steps: OnboardingStep[] = [
-    'introduction',
-    'traits',
+    'intro',
+    'role',
+    'personalization',
     'goals',
-    'tone',
-    'identity',
     'planner',
-    'completion',
+    'complete',
   ];
-  
-  // Get current step index
+
   const currentIndex = steps.indexOf(currentStep);
-  
-  // Calculate progress percentage
   const progressPercentage = Math.max(
-    5, // Minimum starting progress
+    5,
     ((currentIndex + 1) / steps.length) * 100
   );
-  
+
   return (
     <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-6">
-      <div 
+      <div
         className={`h-full bg-gradient-to-r ${gradientClasses} transition-all duration-700 ease-in-out`}
         style={{ width: `${progressPercentage}%` }}
       />

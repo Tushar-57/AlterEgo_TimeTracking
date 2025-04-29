@@ -1,181 +1,290 @@
-import React, { useState, ChangeEvent, FormEvent, Dispatch, SetStateAction } from 'react';
-import { ChatBubbleProps, PlannerData, PlannerSetupProps } from '../types/onboarding';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
+import { motion } from 'framer-motion';
+import { Clock, Bell, Calendar } from 'lucide-react';
+import { PlannerData, ChatBubbleProps, Goal, Availability } from '../types/onboarding';
+
+interface PlannerSetupProps {
+  handleNext: () => void;
+  plannerData: PlannerData;
+  setPlannerData: (data: PlannerData) => void;
+  setChatHistory: (history: ChatBubbleProps[]) => void;
+}
 
 const StepPlanner: React.FC<PlannerSetupProps> = ({
   handleNext,
   plannerData,
   setPlannerData,
-  setChatHistory
+  setChatHistory,
 }) => {
-  // State initialization
-  const [objectiveTitle, setObjectiveTitle] = useState<string>(plannerData.objectiveTitle || '');
-  const [whyItMatters, setWhyItMatters] = useState<string>(plannerData.whyItMatters || '');
-  const [startDate, setStartDate] = useState<string>(plannerData.startDate || '');
-  const [endDate, setEndDate] = useState<string>(plannerData.endDate || '');
-  const [SMART, setSMART] = useState<PlannerData['SMART']>(plannerData.SMART || { 
-    S: false, 
-    M: false, 
-    A: false, 
-    R: false, 
-    T: false 
-  });
-  const [dailyCheckInTime, setDailyCheckInTime] = useState<string>(plannerData.dailyCheckInTime || '09:00');
-  const [weeklyReviewTime, setWeeklyReviewTime] = useState<string>(plannerData.weeklyReviewTime || 'Friday 17:00');
-  const [dndStart, setDndStart] = useState<string>(plannerData.dndStart || '22:00');
-  const [dndEnd, setDndEnd] = useState<string>(plannerData.dndEnd || '08:00');
-  const [workHoursStart, setWorkHoursStart] = useState<string>(plannerData.workHours?.start || '09:00');
-  const [workHoursEnd, setWorkHoursEnd] = useState<string>(plannerData.workHours?.end || '17:00');
-  const [pomodoroRatio, setPomodoroRatio] = useState<string>(plannerData.pomodoroRatio || '4');
-
-  const handleSMARTChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = event.target;
-    setSMART(prev => ({ ...prev, [name]: checked }));
-  };
-
-  const handleStringChange = (
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    setter: Dispatch<SetStateAction<string>>
-  ) => {
-    setter(event.target.value);
-  };
-
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-
-    if (new Date(endDate) <= new Date(startDate)) {
-      alert("End date must be after start date.");
-      return;
+  const [availability, setAvailability] = useState<Availability>(
+    plannerData.availability || {
+      workHours: { start: '09:00', end: '17:00' },
+      dndHours: { start: '22:00', end: '08:00' },
+      checkIn: { preferredTime: '09:00', frequency: 'daily' },
+      timezone: 'America/New_York',
     }
+  );
+  const [remindersEnabled, setRemindersEnabled] = useState<boolean>(
+    plannerData.notifications.remindersEnabled
+  );
+  const [calendarSync, setCalendarSync] = useState<boolean>(
+    plannerData.integrations?.calendarSync || false
+  );
+  const [taskManagementSync, setTaskManagementSync] = useState<boolean>(
+    plannerData.integrations?.taskManagementSync || false
+  );
+
+  const handleAvailabilityChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    field: keyof Availability | string
+  ) => {
+    const { name, value } = e.target;
+    if (field === 'workHours' || field === 'dndHours') {
+      const [_, child] = name.split('.');
+      setAvailability({
+        ...availability,
+        [field]: {
+          ...availability[field],
+          [child]: value,
+        },
+      });
+    } else if (field === 'checkIn') {
+      setAvailability({
+        ...availability,
+        checkIn: {
+          ...availability.checkIn,
+          [name]: value,
+        },
+      });
+    } else {
+      setAvailability({
+        ...availability,
+        [field]: value,
+      });
+    }
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
 
     const newPlannerData: PlannerData = {
-      objectiveTitle,
-      whyItMatters,
-      startDate,
-      endDate,
-      SMART,
-      dailyCheckInTime,  // Correct property name
-      weeklyReviewTime,  // Correct property name
-      dndStart,
-      dndEnd,
-      workHours: {
-        start: workHoursStart,
-        end: workHoursEnd,
+      goals: plannerData.goals || [],
+      availability,
+      notifications: {
+        remindersEnabled,
       },
-      pomodoroRatio,
+      integrations: {
+        calendarSync,
+        taskManagementSync,
+      },
     };
 
     setPlannerData(newPlannerData);
-    setChatHistory((prevHistory) => [
-      ...prevHistory,
-      {
-        content: `Objective: ${objectiveTitle}, Why it matters: ${whyItMatters}, Dates: ${startDate} to ${endDate}, SMART: ${Object.entries(SMART).filter(([_, v]) => v).map(([k]) => k).join(', ') || 'none'}, Daily: ${dailyCheckInTime}, Weekly: ${weeklyReviewTime}, DND: ${dndStart}-${dndEnd}, Work Hours: ${workHoursStart}-${workHoursEnd}, Pomodoro: ${pomodoroRatio}`,
+    setChatHistory([
+      ...plannerData.goals.map((goal: Goal) => ({
+        content: `Goal: ${goal.title} (${goal.whyItMatters || 'No reason specified'})`,
         type: 'user',
+        sender: 'user',
+        isRendered: true,
+        timestamp: new Date(),
+      } as ChatBubbleProps)),
+      {
+        content: (
+          <div className="space-y-2">
+            <p>Planner Setup:</p>
+            <p>Work Hours: {availability.workHours.start} to {availability.workHours.end}</p>
+            <p>DND Hours: {availability.dndHours.start} to {availability.dndHours.end}</p>
+            <p>Check-In: {availability.checkIn.preferredTime} ({availability.checkIn.frequency})</p>
+            <p>Timezone: {availability.timezone}</p>
+            <p>Reminders: {remindersEnabled ? 'Enabled' : 'Disabled'}</p>
+            <p>Calendar Sync: {calendarSync ? 'Enabled' : 'Disabled'}</p>
+            <p>Task Management Sync: {taskManagementSync ? 'Enabled' : 'Disabled'}</p>
+          </div>
+        ),
+        type: 'user',
+        sender: 'user',
+        isRendered: true,
+        timestamp: new Date(),
       } as ChatBubbleProps,
     ]);
-    
+
     handleNext();
   };
 
   return (
-    <div className="flex flex-col space-y-4 w-full p-6">
-      <h2 className="text-2xl font-bold">Planner Setup</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col space-y-4 w-full">
-        <div>
-          <label htmlFor="objectiveTitle" className="block text-sm font-medium text-gray-700">Objective Title</label>
-          <input type="text" name="objectiveTitle" id="objectiveTitle" value={objectiveTitle} onChange={(e) => handleStringChange(e, setObjectiveTitle)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required />
-        </div>
-        <div>
-          <label htmlFor="whyItMatters" className="block text-sm font-medium text-gray-700">Why It Matters</label>
-          <textarea name="whyItMatters" id="whyItMatters" value={whyItMatters} onChange={(e) => handleStringChange(e, setWhyItMatters)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required />
-        </div>
-        <div>
-          <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">Start Date</label>
-          <input type="date" name="startDate" id="startDate" value={startDate} onChange={(e) => handleStringChange(e, setStartDate)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-        </div>
-        <div>
-          <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">End Date</label>
-          <input type="date" name="endDate" id="endDate" value={endDate} onChange={(e) => handleStringChange(e, setEndDate)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-        </div>
-        <div>
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">SMART Goals</label>
-          {['S', 'M', 'A', 'R', 'T'].map((letter) => (
-            <div key={letter} className="flex items-center">
-              <input
-                type="checkbox"
-                name={letter}
-                checked={SMART[letter as keyof typeof SMART]}
-                onChange={handleSMARTChange}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <label className="ml-2 text-sm text-gray-900">
-                {{
-                  S: 'Specific',
-                  M: 'Measurable',
-                  A: 'Achievable',
-                  R: 'Relevant',
-                  T: 'Time-bound'
-                }[letter]}
-              </label>
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full max-w-4xl mx-auto p-6"
+    >
+      <h2 className="text-3xl font-bold text-gray-900 mb-4">Set Up Your Planner</h2>
+      <p className="text-gray-600 max-w-2xl mx-auto mb-8">
+        Configure your availability, notifications, and integrations to align with your goals.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-2xl p-6 shadow-lg">
+        {plannerData.goals.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Your Goals</h3>
+            <div className="flex flex-wrap gap-2">
+              {plannerData.goals.map((goal: Goal) => (
+                <span
+                  key={goal.id}
+                  className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                >
+                  {goal.title}
+                </span>
+              ))}
             </div>
-          ))}
-        </div>
-        </div>
-        <div>
-          <label htmlFor="dailyCheckIn" className="block text-sm font-medium text-gray-700">Daily Check-In Time</label>
-          <input type="time" name="dailyCheckIn" id="dailyCheckIn" value={dailyCheckInTime} onChange={(e) => handleStringChange(e, setDailyCheckInTime)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-        </div>
-        <div>
-          <label htmlFor="weeklyReview" className="block text-sm font-medium text-gray-700">Weekly Review Time</label>
-          <input type="text" name="weeklyReview" id="weeklyReview" value={weeklyReviewTime} onChange={(e) => handleStringChange(e, setWeeklyReviewTime)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-        </div>
-        <div>
-          <label htmlFor="dndStart" className="block text-sm font-medium text-gray-700">Do Not Disturb Start</label>
-          <input type="time" name="dndStart" id="dndStart" value={dndStart} onChange={(e) => handleStringChange(e, setDndStart)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-        </div>
-        <div>
-          <label htmlFor="dndEnd" className="block text-sm font-medium text-gray-700">Do Not Disturb End</label>
-          <input type="time" name="dndEnd" id="dndEnd" value={dndEnd} onChange={(e) => handleStringChange(e, setDndEnd)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="workHoursStart" className="block text-sm font-medium text-gray-700">
-              Work Hours Start
-            </label>
-            <input
-              type="time"
-              name="workHoursStart"
-              id="workHoursStart"
-              value={workHoursStart}
-              onChange={(e) => handleStringChange(e, setWorkHoursStart)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-            />
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Availability</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Clock className="inline-block h-4 w-4 mr-1" /> Work Hours Start
+              </label>
+              <input
+                type="time"
+                name="workHours.start"
+                value={availability.workHours.start}
+                onChange={(e) => handleAvailabilityChange(e, 'workHours')}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Clock className="inline-block h-4 w-4 mr-1" /> Work Hours End
+              </label>
+              <input
+                type="time"
+                name="workHours.end"
+                value={availability.workHours.end}
+                onChange={(e) => handleAvailabilityChange(e, 'workHours')}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Clock className="inline-block h-4 w-4 mr-1" /> DND Start
+              </label>
+              <input
+                type="time"
+                name="dndHours.start"
+                value={availability.dndHours.start}
+                onChange={(e) => handleAvailabilityChange(e, 'dndHours')}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Clock className="inline-block h-4 w-4 mr-1" /> DND End
+              </label>
+              <input
+                type="time"
+                name="dndHours.end"
+                value={availability.dndHours.end}
+                onChange={(e) => handleAvailabilityChange(e, 'dndHours')}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Clock className="inline-block h-4 w-4 mr-1" /> Check-In Time
+              </label>
+              <input
+                type="time"
+                name="preferredTime"
+                value={availability.checkIn.preferredTime}
+                onChange={(e) => handleAvailabilityChange(e, 'checkIn')}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="inline-block h-4 w-4 mr-1" /> Check-In Frequency
+              </label>
+              <select
+                name="frequency"
+                value={availability.checkIn.frequency}
+                onChange={(e) => handleAvailabilityChange(e, 'checkIn')}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="biweekly">Biweekly</option>
+              </select>
+            </div>
           </div>
           <div>
-            <label htmlFor="workHoursEnd" className="block text-sm font-medium text-gray-700">
-              Work Hours End
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Calendar className="inline-block h-4 w-4 mr-1" /> Timezone
             </label>
             <input
-              type="time"
-              name="workHoursEnd"
-              id="workHoursEnd"
-              value={workHoursEnd}
-              onChange={(e) => handleStringChange(e, setWorkHoursEnd)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+              type="text"
+              name="timezone"
+              value={availability.timezone}
+              onChange={(e) => handleAvailabilityChange(e, 'timezone')}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              placeholder="e.g., America/New_York"
             />
           </div>
         </div>
-        <div>
-          <label htmlFor="pomodoroRatio" className="block text-sm font-medium text-gray-700">Pomodoro Ratio</label>
-          <input type="text" name="pomodoroRatio" id="pomodoroRatio" value={pomodoroRatio} onChange={(e) => handleStringChange(e, setPomodoroRatio)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={remindersEnabled}
+              onChange={(e) => setRemindersEnabled(e.target.checked)}
+              className="h-4 w-4 text-purple-600 rounded focus:ring-purple-300"
+            />
+            <span className="text-sm">
+              <Bell className="inline-block h-4 w-4 mr-1" /> Enable Reminders
+            </span>
+          </label>
         </div>
-        <button type="submit" className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-          Next
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">Integrations</h3>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={calendarSync}
+              onChange={(e) => setCalendarSync(e.target.checked)}
+              className="h-4 w-4 text-purple-600 rounded focus:ring-purple-300"
+            />
+            <span className="text-sm">
+              <Calendar className="inline-block h-4 w-4 mr-1" /> Calendar Sync
+            </span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={taskManagementSync}
+              onChange={(e) => setTaskManagementSync(e.target.checked)}
+              className="h-4 w-4 text-purple-600 rounded focus:ring-purple-300"
+            />
+            <span className="text-sm">Task Management Sync</span>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+        >
+          Complete Setup
         </button>
       </form>
-    </div>
+    </motion.div>
   );
 };
 
-
-export default StepPlanner;  
+export default StepPlanner;

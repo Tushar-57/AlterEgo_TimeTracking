@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, X, Target, Edit2 } from 'lucide-react';
+import { Plus, X, Target } from 'lucide-react';
 import { Goal, UserRole, SmartCriteria } from '../types/onboarding';
 import {
   SUGGESTED_GOALS_STUDENT,
@@ -23,6 +23,7 @@ interface GoalFormState {
   priority: 'Low' | 'Medium' | 'High' | 'Critical';
   estimatedEffortHours?: number;
   endDate?: string;
+  whyItMatters?: string;
   milestones: string[];
   smartCriteria: SmartCriteria;
 }
@@ -37,6 +38,7 @@ const StepGoals: React.FC<StepGoalsProps> = ({ selectedGoals, userRole, onSelect
     priority: 'Medium',
     estimatedEffortHours: undefined,
     endDate: undefined,
+    whyItMatters: '',
     milestones: [],
     smartCriteria: {
       specific: { checked: false, note: '' },
@@ -129,6 +131,7 @@ const StepGoals: React.FC<StepGoalsProps> = ({ selectedGoals, userRole, onSelect
       priority: goalForm.priority,
       estimatedEffortHours: goalForm.estimatedEffortHours,
       endDate: goalForm.endDate,
+      whyItMatters: goalForm.whyItMatters,
       milestones: goalForm.milestones,
       smartCriteria: goalForm.smartCriteria,
     };
@@ -141,6 +144,7 @@ const StepGoals: React.FC<StepGoalsProps> = ({ selectedGoals, userRole, onSelect
       priority: 'Medium',
       estimatedEffortHours: undefined,
       endDate: undefined,
+      whyItMatters: '',
       milestones: [],
       smartCriteria: {
         specific: { checked: false, note: '' },
@@ -165,6 +169,7 @@ const StepGoals: React.FC<StepGoalsProps> = ({ selectedGoals, userRole, onSelect
       priority: 'Medium',
       estimatedEffortHours: undefined,
       endDate: undefined,
+      whyItMatters: '',
       milestones: [],
       smartCriteria: {
         specific: { checked: false, note: '' },
@@ -294,6 +299,15 @@ const StepGoals: React.FC<StepGoalsProps> = ({ selectedGoals, userRole, onSelect
                 <textarea
                   name="description"
                   value={goalForm.description}
+                  onChange={handleFormChange}
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Why It Matters</label>
+                <textarea
+                  name="whyItMatters"
+                  value={goalForm.whyItMatters || ''}
                   onChange={handleFormChange}
                   className="w-full p-2 border border-gray-300 rounded-lg"
                 />

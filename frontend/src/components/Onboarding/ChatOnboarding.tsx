@@ -8,6 +8,7 @@ import RoleSelection from './RoleSelection';
 import StepGoals from './goals/StepGoals';
 import Personalization from './Personalization';
 import StepPlanner from './planner/StepPlanner';
+import ProgressBar from './ProgressBar';
 import { createMessage } from './utils/onboardingUtils';
 
 interface ChatOnboardingProps {
@@ -32,14 +33,19 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
     goals: [],
     availability: {
       workHours: { start: '09:00', end: '17:00' },
-      dndHours: { start: '22:00', end: '06:00' },
+      dndHours: { start: '22:00', end: '08:00' },
       checkIn: { preferredTime: '09:00', frequency: 'daily' },
       timezone: 'America/New_York',
     },
     notifications: {
       remindersEnabled: true,
     },
+    integrations: {
+      calendarSync: false,
+      taskManagementSync: false,
+    },
   });
+  const [chatHistory, setChatHistory] = useState<any[]>([]); // Temporary type to avoid breaking
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -133,11 +139,15 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
     setPreviousStep('goals');
   };
 
-  const handlePlannerSubmit = async (updatedPlanner: PlannerData) => {
-    setPlannerData(updatedPlanner);
+  const handlePlannerSubmit = async () => {
     await addMessage(
       <div className="flex flex-col gap-2">
-        <span>My planner is set up with {updatedPlanner.goals.length} goals.</span>
+        <span>My planner is set up with {plannerData.goals.length} goals.</span>
+        {plannerData.goals.map((goal) => (
+          <span key={goal.id} className="text-sm">Goal: {goal.title} ({goal.whyItMatters || 'No reason specified'})</span>
+        ))}
+        <span>Availability: {plannerData.availability.workHours.start} - {plannerData.availability.workHours.end}</span>
+        <span>Reminders: {plannerData.notifications.remindersEnabled ? 'Enabled' : 'Disabled'}</span>
       </div>,
       'user'
     );
@@ -151,9 +161,9 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
     setPreviousStep('planner');
     onComplete({
       role: selectedRole!,
-      goals: updatedPlanner.goals,
+      goals: plannerData.goals,
       answers: selectedAnswers,
-      planner: updatedPlanner,
+      planner: plannerData,
     });
   };
 
@@ -194,50 +204,43 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
     };
   }, []);
 
-  const renderCurrentStep = () => {
-    switch (currentStep) {
-      case 'intro':
-        return <StepIntroduction onSelect={handleIntroductionSelect} />;
-      case 'role':
-        return <RoleSelection onSelect={handleRoleSelect} />;
-      case 'personalization':
-        return (
-          <Personalization
-            userRole={selectedRole}
-            onSelect={handlePersonalizationSelect}
-            onBack={handleBack}
-          />
-        );
-      case 'goals':
-        return (
-          <StepGoals
-            selectedGoals={selectedGoals}
-            userRole={selectedRole}
-            onSelect={handleGoalsSelect}
-            onSubmit={() => setCurrentStep('planner')}
-          />
-        );
-      case 'planner':
-        return (
-          <StepPlanner
-            plannerData={plannerData}
-            onUpdatePlanner={setPlannerData}
-            onSubmit={() => handlePlannerSubmit(plannerData)}
-            errors={{}}
-            tone={null}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="h-screen w-full flex flex-col bg-gradient-to-br from-indigo-50 to-purple-50">
+      <div className="p-4">
+        <ProgressBar currentStep={currentStep} tone={null} />
+      </div>
       <div className="flex-1 overflow-hidden relative">
         <ChatContainer messages={messages} isTyping={isTyping}>
           {!isTyping && currentStep !== 'complete' && (
-            <div className="mx-auto max-w-2xl w-full my-6 px-4">{renderCurrentStep()}</div>
+            <div className="mx-auto max-w-2xl w-full my-6 px-4">
+              {currentStep === 'intro' && <StepIntroduction onSelect={handleIntroductionSelect} />}
+              {currentStep === 'role' && <RoleSelection onSelect={handleRoleSelect} />}
+              {currentStep === 'personalization' && (
+                <Personalization
+                  userRole={selectedRole}
+                  onSelect={handlePersonalizationSelect}
+                  onBack={handleBack}
+                />
+              )}
+              {currentStep === 'goals' && (
+                <StepGoals
+                  selectedGoals={selectedGoals}
+                  userRole={selectedRole}
+                  onSelect={handleGoalsSelect}
+                  onSubmit={() => setCurrentStep('planner')}
+                />
+              )}
+              {currentStep === 'planner' && (
+                <StepPlanner
+                  plannerData={plannerData}
+                  onUpdatePlanner={setPlannerData}
+                  onSubmit={handlePlannerSubmit}
+                  setChatHistory={setChatHistory}
+                  errors={{}} // Pass empty errors for now
+                  tone={null} // Pass null tone for now
+                />
+              )}
+            </div>
           )}
         </ChatContainer>
       </div>
