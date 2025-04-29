@@ -1,6 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 
 /* @layer base {
   body {
@@ -21,6 +23,8 @@
     --border: 214.3 31.8% 91.4%;
     --radius: 0.5rem;
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    height: 100%;
+    width: 100%;
   }
   
   /* .dark {
@@ -166,4 +170,81 @@
 .calendar-content {
   height: calc(100vh - 150px);
   overflow-y: auto;
+}
+
+.onboarding-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #f5e5ff, #e0f2f7);
+  padding: 2rem;
+}
+
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+.step-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.chat-bubble {
+  border-radius: 10px;
+  padding: 10px 15px;
+  max-width: 80%;
+  word-wrap: break-word;
+  margin-bottom: 5px;
+}
+
+.user-bubble {
+  background-color: #e0f7fa;
+  color: #333;
+  align-self: flex-end;
+}
+
+.assistant-bubble {
+  background-color: #f0f0f0;
+  color: #555;
+  align-self: flex-start;
+}
+
+.typing-indicator {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #999;
+  display: inline-block;
+}
+@media (max-width: 768px) {
+  .step-container {
+    padding: 1rem;
+  }
+
+  .chat-container {
+    max-height: 40vh;
+  }
+
+  .chat-bubble {
+    max-width: 95%;
+  }
+  .assistant-bubble{
+      max-width: 95%;
+  }
+  .glow {
+  box-shadow: 0 0 10px rgba(168, 216, 234, 0.5);
+}
 }

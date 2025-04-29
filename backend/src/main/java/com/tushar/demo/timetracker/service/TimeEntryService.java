@@ -6,12 +6,13 @@ import com.tushar.demo.timetracker.model.Users;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface TimeEntryService {
     TimeEntry startTimeEntry(StartTimeEntryRequest request, Users user);
-    TimeEntry stopTimer(Long id, Users user, LocalDateTime manualEnd);
-    List<TimeEntry> getTimeEntriesBetweenDates(Users user, LocalDateTime start, LocalDateTime end);
+    TimeEntry stopTimer(Long timerId, Users user, LocalDateTime manualEnd);
     TimeEntry getActiveTimer(Users user);
-    // Add the new method
     List<TimeEntry> getRecentTimeEntries(Users user, int limit);
+    List<TimeEntry> getTimeEntriesBetweenDates(Users user, LocalDateTime start, LocalDateTime end);
+    TimeEntry updateTimerPosition(Long timerId, Users user, String positionTop, String positionLeft);
 }

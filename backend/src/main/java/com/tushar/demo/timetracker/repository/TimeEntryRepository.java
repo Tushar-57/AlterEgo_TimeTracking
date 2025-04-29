@@ -1,4 +1,3 @@
-// TimeEntryRepository.java
 package com.tushar.demo.timetracker.repository;
 
 import com.tushar.demo.timetracker.model.TimeEntry;
@@ -12,9 +11,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
-	List<TimeEntry> findByUserIdAndStartTimeBetween(Long userId, LocalDateTime start, LocalDateTime end);
     Optional<TimeEntry> findByUserIdAndEndTimeIsNull(Long userId);
 
-    @Query("SELECT te FROM TimeEntry te WHERE te.user.id = :userId ORDER BY te.startTime DESC")
-    List<TimeEntry> findByUserIdOrderByStartTimeDesc(Long userId, int limit);
+    List<TimeEntry> findByUserIdAndStartTimeBetween(Long userId, LocalDateTime start, LocalDateTime end);
+
+    @Query(value = "SELECT * FROM time_entry WHERE user_id = :userId ORDER BY start_time DESC LIMIT :limit", nativeQuery = true)
+    List<TimeEntry> findTopByUserIdOrderByStartTimeDesc(@Param("userId") Long userId, @Param("limit") int limit);
+
+    Optional<TimeEntry> findByIdAndUser(Long timerId, Users user);
 }
