@@ -1,22 +1,83 @@
-import { Tone } from "./types";
+// import { Goal, Mentor, MentorArchetype } from "./coaching";
+export type MentorArchetype = 'Innovator' | 'Sage' | 'Challenger' | 'Master' | 'Guide';
+export type CoachingStyle = 'Direct' | 'Friendly' | 'Encouraging' | 'Nurturing' | 'Patient' | 'Challenging' | 'Inspirational';
+export type UserRole = 'Student' | 'Professional' | 'Freelancer' | 'Other';
+export interface Mentor {
+  archetype: MentorArchetype;
+  style: CoachingStyle;
+  name: string;
+  avatar: string;
+}
+export type Goal = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  priority: "Low" | "Medium" | "High" | "Critical"; // Priority level
+  milestones: string[];      // Add from GoalCanvas
+  endDate?: string;
+  estimatedEffortHours?: number;   // Estimated hours needed to complete (useful for planning load)
+  smartCriteria: SmartCriteria
+};
+export interface LoadingStep {
+  message: string;
+  progress: number;
+  detail?: string;
+}
+export const BOT_NAMES = [
+  'Alex', 'Jordan', 'Taylor', 'Casey', 'Drew', 'Reese', 'Morgan', 'Skyler',
+] as const;
 
-export type Trait = 'Confidence' | 'Creativity' | 'Focus' | 'Discipline' | 'Empathy' | 'Optimism';
-export type Role = 'student' | 'professional' | 'freelancer' | 'other';
+export const SUGGESTED_GOALS_STUDENT = [
+  'Improve focus',
+  'Manage time better',
+  'Increase productivity',
+] as const;
 
+export const SUGGESTED_GOALS_WORK = [
+  'Improve focus',
+  'Manage time better',
+  'Increase productivity',
+] as const;
+
+export const SUGGESTED_GOALS_FREELANCER = [
+  'Improve focus',
+  'Manage time better',
+  'Increase productivity',
+] as const;
+
+export const SUGGESTED_GOALS_OTHER = [
+  'Manage Time Better',
+  'Increase Productivity',
+  'IDK, Figure out !',
+] as const;
+
+// export type SuggestedGoalStudent = typeof SUGGESTED_GOALS_STUDENT[number];
+// export type SuggestedGoalWork = typeof SUGGESTED_GOALS_WORK[number];
+// export type SuggestedGoalFreelancer = typeof SUGGESTED_GOALS_FREELANCER[number];
+// export type SuggestedGoalOther = typeof SUGGESTED_GOALS_OTHER[number];
+
+export type AVATARS = [
+  { id: '1', url: '/assets/avatars/avatar1.png', alt: 'Avatar 1' },
+  { id: '2', url: '/assets/avatars/avatar2.png', alt: 'Avatar 2' },
+  { id: '3', url: '/assets/avatars/avatar3.png', alt: 'Avatar 3' },
+];
+export const RANDOM_NAMES = [
+  'Alex', 'Jordan', 'Taylor', 'Casey', 'Drew', 'Reese', 'Morgan', 'Skyler',
+];
+export const AVATARS = [
+  { id: '1', url: '/assets/avatars/avatar1.png', alt: 'Avatar 1' },
+  { id: '2', url: '/assets/avatars/avatar2.png', alt: 'Avatar 2' },
+  { id: '3', url: '/assets/avatars/avatar3.png', alt: 'Avatar 3' },
+];
 export type Answer = {
-  text: string;
+  answer: string;
   id: string;
 };
-
 export type Question = {
-  text: string;
-  answers: Answer[];
-};
-
-export type Avatar = {
   id: string;
-  url: string;
-  alt: string;
+  question: string;
+  // previousAnswers?: Answer[];
 };
 
 export interface ChatBubbleProps {
@@ -26,45 +87,74 @@ export interface ChatBubbleProps {
   isRendered?: boolean;
   timestamp?: Date;
 }
+export type SmartCriteriaField = {
+  checked: boolean;  // true or false
+  note: string;      // explanation, user comment, or template hint
+};
 
+export type SmartCriteria = {
+  specific: SmartCriteriaField;
+  measurable: SmartCriteriaField;
+  achievable: SmartCriteriaField;
+  relevant: SmartCriteriaField;
+  timeBound: SmartCriteriaField;
+};
+export type Availability = {
+  workHours: {
+    start: string;   // HH:mm format, e.g., "09:00"
+    end: string;     // HH:mm format, e.g., "17:00"
+  };
+  dndHours: {
+    start: string;   // HH:mm format
+    end: string;     // HH:mm format
+  };
+  checkIn: {
+    preferredTime: string;             // HH:mm, when user prefers check-ins
+    frequency: 'daily' | 'weekly' | 'biweekly';  // how often user wants to check-in
+  };
+  timezone: string;                    // e.g., "America/New_York"
+};
+export type SMART = {
+  S: boolean;
+  M: boolean;
+  A: boolean;
+  R: boolean;
+  T: boolean;
+};
+export type WorkHours = {
+  start: string;
+  end: string;
+};
 export type PlannerData = {
   objectiveTitle: string;
   whyItMatters: string;
   startDate: string;
   endDate: string;
-  SMART: {
-    S: boolean;
-    M: boolean;
-    A: boolean;
-    R: boolean;
-    T: boolean;
-  };
+  SMART: SMART;
   dailyCheckInTime: string;
   weeklyReviewTime: string;
   dndStart: string;
   dndEnd: string;
-  workHours: {
-    start: string;
-    end: string;
-  };
+  workHours: WorkHours;
   pomodoroRatio: string;
-};
-
-export type Goal = {
-  id: string; // Default: ''
-  title: string,
-  description: string; // Default: ''
-  category: string; // Default: ''
-  connections: string[]; // Default: []
-};
-
-export type OnboardingData = {
-  reason: string;
-  traits: Trait[];
   goals: Goal[];
-  tone: Tone;
-  coachName: string;
-  avatar: Avatar;
+};
+
+export type Tone ={
+  tone: string | "Neutral";
+}
+export type OnboardingData = {
+  role: UserRole;
+  goals: (Goal | string)[];
+  mentor: Mentor;
+  preferredTone: Tone;
+  coachAvatar: string;
+  schedule: {
+    workHours: WorkHours;
+    dndHours: { start: string; end: string };
+    checkIn: { preferredTime: string; frequency: 'daily' | 'weekly' | 'biweekly' };
+    timezone: string;
+  };
   planner: PlannerData;
 };
 
@@ -74,66 +164,5 @@ export type Message = {
   content: string | React.ReactNode;
   isRendered: boolean;
   timestamp: Date;
+  additionalContent: string | '';
 };
-
-export interface WelcomeScreenProps {
-  onStart: () => void;
-}
-
-export interface RoleSelectionProps {
-  onSelectRole: (role: string) => void;
-  nextStep: () => void;
-}
-
-export interface PersonalizationProps {
-  userRole: string;
-  nextStep: () => void;
-  previousStep: () => void;
-}
-
-export interface StepGoalsProps {
-  handleNext: () => void;
-  userGoals: Goal[];
-  setUserGoals: (goals: Goal[]) => void;
-  setChatHistory: React.Dispatch<React.SetStateAction<ChatBubbleProps[]>>;
-}
-
-export interface StepToneProps {
-  handleNext: () => void;
-  preferredTone: string;
-  setPreferredTone: (tone: string) => void;
-  setChatHistory: React.Dispatch<React.SetStateAction<ChatBubbleProps[]>>;
-}
-
-export interface NameAndAvatarProps {
-  handleNext: () => void;
-  coachName: string;
-  setCoachName: (name: string) => void;
-  coachAvatar: string;
-  setCoachAvatar: (avatar: string) => void;
-  setChatHistory: React.Dispatch<React.SetStateAction<ChatBubbleProps[]>>;
-}
-
-export interface PlannerSetupProps {
-  handleNext: () => void;
-  plannerData: PlannerData;
-  setPlannerData: (data: PlannerData) => void;
-  setChatHistory: React.Dispatch<React.SetStateAction<ChatBubbleProps[]>>;
-}
-
-export interface CoachWelcomeProps {
-  goal: Goal;
-  nextStep: () => void;
-}
-
-export interface ChatContainerProps {
-  messages: ChatBubbleProps[];
-  isTyping: boolean;
-  tone: string;
-}
-
-export interface MentorSelectionProps {
-  onSelect: (mentor: string) => void;
-}
-
-

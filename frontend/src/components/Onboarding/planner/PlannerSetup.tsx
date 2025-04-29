@@ -1,5 +1,5 @@
 import React, { useState, ChangeEvent, FormEvent, Dispatch, SetStateAction } from 'react';
-import { ChatBubbleProps, PlannerData, PlannerSetupProps } from './types/onboarding';
+import { ChatBubbleProps, PlannerData, PlannerSetupProps } from '../types/onboarding';
 
 const StepPlanner: React.FC<PlannerSetupProps> = ({
   handleNext,

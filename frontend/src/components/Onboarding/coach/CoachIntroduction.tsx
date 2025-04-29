@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ChatBubbleProps, ChatBubbleType } from './types/onboarding';
+import { ChatBubbleProps, ChatBubbleType } from '../types/onboarding';
 
 const affirmations = [
     "You are capable of amazing things.",

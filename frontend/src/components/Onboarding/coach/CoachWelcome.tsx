@@ -1,5 +1,5 @@
 import React from "react";
-import { Goal } from "./types/onboarding";
+import { Goal } from "../types/onboarding";
 
 interface CoachWelcomeProps {
   goal: Goal;
