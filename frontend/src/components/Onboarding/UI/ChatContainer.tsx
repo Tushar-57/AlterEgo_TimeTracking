@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, Children } from 'react';
-import { Message, Tone } from '../types/onboarding';
+import React, { useRef, useEffect } from 'react';
+import { Message } from '../types/onboarding';
 import ChatBubble from './ChatBubble';
 import TypingIndicator from './TypingIndicator';
 
@@ -7,12 +7,14 @@ interface ChatContainerProps {
   messages: Message[];
   isTyping: boolean;
   children?: React.ReactNode;
+  className?: string; // Added className prop
 }
 
-export const ChatContainer: React.FC<ChatContainerProps> = ({ 
-  messages, 
-  isTyping, 
-  children
+export const ChatContainer: React.FC<ChatContainerProps> = ({
+  messages,
+  isTyping,
+  children,
+  className, // Destructure className
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -21,8 +23,10 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   }, [messages, isTyping]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 h-[calc(100vh-200px)]">
-      {messages.map(message => (
+    <div
+      className={`flex-1 overflow-y-auto px-4 py-4 space-y-4 h-[calc(100vh-200px)] ${className || ''}`} // Apply className with fallback
+    >
+      {messages.map((message) => (
         <ChatBubble
           key={message.id}
           content={message.content}

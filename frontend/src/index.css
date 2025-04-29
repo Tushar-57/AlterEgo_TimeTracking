@@ -244,4 +244,7 @@
   .assistant-bubble{
       max-width: 95%;
   }
+  .glow {
+  box-shadow: 0 0 10px rgba(168, 216, 234, 0.5);
+}
 }

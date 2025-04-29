@@ -1,7 +1,9 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
-import { motion } from 'framer-motion';
-import { Clock, Bell, Calendar } from 'lucide-react';
-import { PlannerData, ChatBubbleProps, Goal, Availability } from '../types/onboarding';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Clock, Bell, Calendar, Target, CheckCircle } from 'lucide-react';
+import { PlannerData, ChatBubbleProps, Goal, Availability, SmartCriteria } from '../types/onboarding';
+import { BackButton } from '../UI/BackButton';
+import { GoalForm } from '../goals/StepGoals';
 
 interface PlannerSetupProps {
   plannerData: PlannerData;
@@ -10,6 +12,21 @@ interface PlannerSetupProps {
   setChatHistory: (history: ChatBubbleProps[]) => void;
   errors?: Record<string, string>;
   tone?: any;
+  onBack: () => void;
+}
+
+interface GoalFormState {
+  title: string;
+  description: string;
+  category: string;
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  estimatedEffortHours?: number;
+  endDate?: string;
+  whyItMatters?: string;
+  milestones: string[];
+  smartCriteria: SmartCriteria;
+  isEditing?: boolean;
+  editGoalId?: string;
 }
 
 const StepPlanner: React.FC<PlannerSetupProps> = ({
@@ -19,6 +36,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
   setChatHistory,
   errors = {},
   tone,
+  onBack,
 }) => {
   const [availability, setAvailability] = useState<Availability>(
     plannerData.availability || {
@@ -37,6 +55,24 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
   const [taskManagementSync, setTaskManagementSync] = useState<boolean>(
     plannerData.integrations?.taskManagementSync || false
   );
+  const [showGoalForm, setShowGoalForm] = useState(false);
+  const [goalForm, setGoalForm] = useState<GoalFormState>({
+    title: '',
+    description: '',
+    category: 'General',
+    priority: 'Medium',
+    estimatedEffortHours: undefined,
+    endDate: undefined,
+    whyItMatters: '',
+    milestones: [],
+    smartCriteria: {
+      specific: { checked: false, note: '' },
+      measurable: { checked: false, note: '' },
+      achievable: { checked: false, note: '' },
+      relevant: { checked: false, note: '' },
+      timeBound: { checked: false, note: '' },
+    },
+  });
 
   const handleAvailabilityChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -66,6 +102,58 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
         [field]: value,
       });
     }
+  };
+
+  const handleEditGoal = (goal: Goal) => {
+    setGoalForm({
+      ...goal,
+      isEditing: true,
+      editGoalId: goal.id,
+    });
+    setShowGoalForm(true);
+  };
+
+  const handleFormSubmit = () => {
+    if (!goalForm.title.trim() || !goalForm.description.trim()) return;
+    const newGoal: Goal = {
+      id: goalForm.isEditing ? goalForm.editGoalId! : Math.random().toString(36).substring(2, 15),
+      title: goalForm.title,
+      description: goalForm.description,
+      category: goalForm.category,
+      priority: goalForm.priority,
+      estimatedEffortHours: goalForm.estimatedEffortHours,
+      endDate: goalForm.endDate,
+      whyItMatters: goalForm.whyItMatters,
+      milestones: goalForm.milestones,
+      smartCriteria: goalForm.smartCriteria,
+    };
+    const updatedGoals = goalForm.isEditing
+      ? plannerData.goals.map((g) => (g.id === newGoal.id ? newGoal : g))
+      : [...plannerData.goals, newGoal];
+    onUpdatePlanner({
+      ...plannerData,
+      goals: updatedGoals,
+    });
+    setShowGoalForm(false);
+    setGoalForm({
+      title: '',
+      description: '',
+      category: 'General',
+      priority: 'Medium',
+      estimatedEffortHours: undefined,
+      endDate: undefined,
+      whyItMatters: '',
+      milestones: [],
+      smartCriteria: {
+        specific: { checked: false, note: '' },
+        measurable: { checked: false, note: '' },
+        achievable: { checked: false, note: '' },
+        relevant: { checked: false, note: '' },
+        timeBound: { checked: false, note: '' },
+      },
+      isEditing: false,
+      editGoalId: undefined,
+    });
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -120,7 +208,10 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-4xl mx-auto p-6"
     >
-      <h2 className="text-3xl font-bold text-gray-900 mb-4">Set Up Your Planner</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-3xl font-bold text-gray-900">Set Up Your Planner</h2>
+        <BackButton onClick={onBack} />
+      </div>
       <p className="text-gray-600 max-w-2xl mx-auto mb-8">
         Configure your availability, notifications, and integrations to align with your goals.
       </p>
@@ -129,14 +220,38 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
         {plannerData.goals.length > 0 && (
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Your Goals</h3>
-            <div className="flex flex-wrap gap-2">
-              {plannerData.goals.map((goal: Goal) => (
-                <span
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {plannerData.goals.map((goal, index) => (
+                <motion.div
                   key={goal.id}
-                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm hover:shadow-md transition-shadow duration-300 ring-2 ring-blue-300 glow"
                 >
-                  {goal.title}
-                </span>
+                  <div className="absolute top-2 right-2">
+                    <CheckCircle className="h-5 w-5 text-cyan-500" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="inline-block p-3 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 text-white mb-4 group-hover:scale-105 transition-transform duration-300">
+                      <Target className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
+                    <p className="text-gray-600 text-sm">
+                      Category: {goal.category} | Priority: {goal.priority}
+                    </p>
+                    <p className="text-gray-600 text-sm mt-1 truncate">
+                      {goal.whyItMatters || 'No reason specified'}
+                    </p>
+                    <button
+                      onClick={() => handleEditGoal(goal)}
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-2"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-cyan-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+                </motion.div>
               ))}
             </div>
           </div>
@@ -217,7 +332,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="relative group">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Clock className="inline-block h-4 w-4 mr-1" /> Check-In Time
               </label>
@@ -230,6 +345,9 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
                   errors['checkIn.preferredTime'] ? 'border-red-400' : ''
                 }`}
               />
+              <div className="absolute bottom-full mb-2 hidden group-hover:block bg-white text-gray-600 text-sm rounded-lg shadow-sm p-2 max-w-xs">
+                This time you will sit with your Alter Ego, to look back and analyze and other things.
+              </div>
               {errors['checkIn.preferredTime'] && (
                 <p className="text-red-500 text-sm mt-1">{errors['checkIn.preferredTime']}</p>
               )}
@@ -321,6 +439,18 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
           Continue
         </button>
       </form>
+
+      <AnimatePresence>
+        {showGoalForm && (
+          <GoalForm
+            goalForm={goalForm}
+            setGoalForm={setGoalForm}
+            onSubmit={handleFormSubmit}
+            onCancel={() => setShowGoalForm(false)}
+            userRole={null}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

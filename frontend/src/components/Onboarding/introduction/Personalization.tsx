@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { UserRole, Question, Answer } from './types/onboarding';
-import { BackButton } from './UI/BackButton';
+import { UserRole, Question, Answer } from '../types/onboarding';
+import { BackButton } from '../UI/BackButton';
 import { BookOpen, Briefcase, DollarSign, Star } from 'lucide-react';
 
 interface PersonalizationProps {

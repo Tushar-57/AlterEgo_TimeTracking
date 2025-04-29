@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Message, PlannerData, Tone, UserRole, Answer, Goal } from './types/onboarding';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Message, PlannerData, UserRole, Answer, Goal, Mentor } from './types/onboarding';
 import { ChatContainer } from './UI/ChatContainer';
 import ChatBubble from './UI/ChatBubble';
 import TypingIndicator from './UI/TypingIndicator';
-import RoleSelection from './RoleSelection';
+import RoleSelection from './introduction/RoleSelection';
 import StepGoals from './goals/StepGoals';
-import Personalization from './Personalization';
+import Personalization from './introduction/Personalization';
 import StepPlanner from './planner/StepPlanner';
-import ProgressBar from './ProgressBar';
+import ProgressBar from './UI/ProgressBar';
 import { createMessage } from './utils/onboardingUtils';
+import StepMentor from './Mentor/MentorComponent';
 
 interface ChatOnboardingProps {
   onComplete: (data: {
     role: UserRole;
     goals: Goal[];
     answers: Answer[];
+    mentor: Mentor;
     planner: PlannerData;
   }) => void;
 }
@@ -23,11 +26,12 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [currentStep, setCurrentStep] = useState<'intro' | 'role' | 'personalization' | 'goals' | 'planner' | 'complete'>('intro');
-  const [previousStep, setPreviousStep] = useState<'intro' | 'role' | 'personalization' | 'goals' | 'planner' | 'complete'>('intro');
+  const [currentStep, setCurrentStep] = useState<'intro' | 'role' | 'personalization' | 'goals' | 'planner' | 'mentor' | 'complete'>('intro');
+  const [previousStep, setPreviousStep] = useState<'intro' | 'role' | 'personalization' | 'goals' | 'planner' | 'mentor' | 'complete'>('intro');
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [selectedGoals, setSelectedGoals] = useState<Goal[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<Answer[]>([]);
+  const [selectedMentor, setMentor] = useState<Mentor | null>(null);
   const [plannerData, setPlannerData] = useState<PlannerData>({
     goals: [],
     availability: {
@@ -66,13 +70,15 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
   };
 
   const handleIntroductionSelect = async () => {
+    setCurrentStep('role');
     await addMessage("Let's start onboarding!", 'user');
     await simulateTyping();
-    setCurrentStep('role');
+    await addMessage("Let's begin by selecting your role.", 'assistant', 300);
     setPreviousStep('intro');
   };
 
   const handleRoleSelect = async (role: UserRole) => {
+    setCurrentStep('personalization');
     setSelectedRole(role);
     await addMessage(
       <div className="flex items-center gap-2">
@@ -87,11 +93,11 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
       'assistant',
       300
     );
-    setCurrentStep('personalization');
     setPreviousStep('role');
   };
 
   const handlePersonalizationSelect = async (answers: Answer[]) => {
+    setCurrentStep('goals');
     setSelectedAnswers(answers);
     await addMessage(
       <div className="flex flex-col gap-2">
@@ -110,11 +116,16 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
       'assistant',
       300
     );
-    setCurrentStep('goals');
     setPreviousStep('personalization');
   };
 
+  const handleGoalsUpdate = (goals: Goal[]) => {
+    setSelectedGoals(goals);
+    setPlannerData({ ...plannerData, goals });
+  };
+
   const handleGoalsSelect = async (goals: Goal[]) => {
+    setCurrentStep('planner');
     setSelectedGoals(goals);
     setPlannerData({ ...plannerData, goals });
     await addMessage(
@@ -134,11 +145,11 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
       'assistant',
       300
     );
-    setCurrentStep('planner');
     setPreviousStep('goals');
   };
 
   const handlePlannerSubmit = async () => {
+    setCurrentStep('mentor');
     await addMessage(
       <div className="flex flex-col gap-2">
         <span>My planner is set up with {plannerData.goals.length} goals.</span>
@@ -152,33 +163,123 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
     );
     await simulateTyping();
     await addMessage(
-      "You're all set to start your journey!",
+      "Great! Now, let’s meet your AI Alter Ego!",
       'assistant',
       300
     );
-    setCurrentStep('complete');
     setPreviousStep('planner');
+  };
+
+  const handleMentorSelect = async (selectedMentor: Mentor) => {
+    setMentor(selectedMentor);
+    await addMessage(
+      <div className="flex flex-col gap-2">
+        <span>My AI AlterEgo:</span>
+        <span className="bg-[#a8d8ea] text-white px-2 py-1 rounded-full text-sm">
+          {selectedMentor.name} ({selectedMentor.archetype}, {selectedMentor.style})
+        </span>
+      </div>,
+      'user'
+    );
+    await simulateTyping();
+    await addMessage(
+      "Your 'AI Alter Ego' is ready, Let's try it out!",
+      'assistant',
+      300
+    );
+
+    // Construct OnboardingData
+    const onboardingData: any = {
+      role: selectedRole!,
+      goals: plannerData.goals,
+      mentor: selectedMentor,
+      preferredTone: selectedMentor.style,
+      coachAvatar: selectedMentor.avatar,
+      schedule: plannerData.availability,
+      planner: plannerData,
+    };
+
+    // Send to backend
+    try {
+      console.log('Sending payload:', JSON.stringify(onboardingData, null, 2));
+      const response = await fetch('/api/onboarding/onboardNewUser', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+        },
+        body: JSON.stringify(onboardingData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to submit onboarding data: ${response.statusText}`);
+      }
+
+      console.log('Onboarding data submitted successfully');
+    } catch (error) {
+      console.error('Error submitting onboarding data:', error);
+      // Optionally show error to user (e.g., toast)
+    }
+
+    setCurrentStep('complete');
+    setPreviousStep('mentor');
     onComplete({
       role: selectedRole!,
       goals: plannerData.goals,
       answers: selectedAnswers,
       planner: plannerData,
+      mentor: selectedMentor,
     });
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
     if (currentStep === 'role') {
+      await simulateTyping();
+      await addMessage(
+        <div className="space-y-3">
+          <h2 className="text-xl font-bold text-gray-800">Welcome to AlterEgo</h2>
+          <p className="text-gray-600">Ready to become your best self? Let's begin!</p>
+        </div>,
+        'assistant'
+      );
       setCurrentStep('intro');
       setPreviousStep('intro');
     } else if (currentStep === 'personalization') {
+      await simulateTyping();
+      await addMessage("Let's begin by selecting your role.", 'assistant', 300);
       setCurrentStep('role');
       setPreviousStep('intro');
+      setSelectedAnswers([]);
     } else if (currentStep === 'goals') {
+      await simulateTyping();
+      await addMessage(
+        "Let's personalize your experience by selecting your priorities.",
+        'assistant',
+        300
+      );
       setCurrentStep('personalization');
       setPreviousStep('role');
+      setSelectedGoals([]);
+      setPlannerData({ ...plannerData, goals: [] });
     } else if (currentStep === 'planner') {
+      await simulateTyping();
+      await addMessage(
+        "Let's identify which goals you'd like to achieve.",
+        'assistant',
+        300
+      );
       setCurrentStep('goals');
       setPreviousStep('personalization');
+    } else if (currentStep === 'mentor') {
+      await simulateTyping();
+      await addMessage(
+        "Awesome goals! Let's set up your planner to achieve them.",
+        'assistant',
+        300
+      );
+      setCurrentStep('planner');
+      setPreviousStep('goals');
+      setMentor(null);
     }
   };
 
@@ -205,52 +306,92 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
 
   return (
     <div className="h-screen w-full flex flex-col bg-gradient-to-br from-blue-50 to-cyan-50">
-      <div className="p-4">
+      <div className="p-4 z-20">
         <ProgressBar currentStep={currentStep} tone={null} />
       </div>
       <div className="flex-1 overflow-hidden relative">
-        <ChatContainer messages={messages} isTyping={isTyping}>
-          {!isTyping && currentStep !== 'complete' && (
-            <div className="mx-auto max-w-2xl w-full my-6 px-4">
-              {currentStep === 'intro' && (
-                <ChatBubble isUser={true}>
-                  <button
-                    onClick={handleIntroductionSelect}
-                    className="bg-gradient-to-r from-blue-400 to-cyan-500 text-white px-6 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300"
-                  >
-                    Start Onboarding
-                  </button>
-                </ChatBubble>
-              )}
-              {currentStep === 'role' && <RoleSelection onSelect={handleRoleSelect} />}
-              {currentStep === 'personalization' && (
-                <Personalization
-                  userRole={selectedRole}
-                  onSelect={handlePersonalizationSelect}
-                  onBack={handleBack}
-                />
-              )}
-              {currentStep === 'goals' && (
-                <StepGoals
-                  selectedGoals={selectedGoals}
-                  userRole={selectedRole}
-                  onSelect={handleGoalsSelect}
-                />
-              )}
-              {currentStep === 'planner' && (
-                <StepPlanner
-                  plannerData={plannerData}
-                  onUpdatePlanner={setPlannerData}
-                  onSubmit={handlePlannerSubmit}
-                  setChatHistory={setChatHistory}
-                  errors={{}}
-                  tone={null}
-                />
-              )}
-            </div>
-          )}
+        <ChatContainer messages={messages} isTyping={isTyping} className="pb-24">
+          <AnimatePresence mode="wait">
+            {!isTyping && currentStep !== 'complete' && (
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="mx-auto max-w-2xl w-full my-6 px-4"
+              >
+                {currentStep === 'intro' && (
+                  <ChatBubble isUser={true}>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleIntroductionSelect}
+                        className="bg-gradient-to-r from-blue-400 to-cyan-500 text-white px-6 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300"
+                      >
+                        Start Onboarding
+                      </button>
+                    </div>
+                  </ChatBubble>
+                )}
+                {currentStep === 'role' && <RoleSelection onSelect={handleRoleSelect} />}
+                {currentStep === 'personalization' && (
+                  <Personalization
+                    userRole={selectedRole}
+                    onSelect={handlePersonalizationSelect}
+                    onBack={handleBack}
+                  />
+                )}
+                {currentStep === 'goals' && (
+                  <StepGoals
+                    selectedGoals={selectedGoals}
+                    userRole={selectedRole}
+                    onSelect={handleGoalsSelect}
+                    onUpdateGoals={handleGoalsUpdate}
+                    onBack={handleBack}
+                  />
+                )}
+                {currentStep === 'planner' && (
+                  <StepPlanner
+                    plannerData={plannerData}
+                    onUpdatePlanner={setPlannerData}
+                    onSubmit={handlePlannerSubmit}
+                    setChatHistory={setChatHistory}
+                    errors={{}}
+                    tone={null}
+                    onBack={handleBack}
+                  />
+                )}
+                {currentStep === 'mentor' && (
+                  <StepMentor onSelect={handleMentorSelect} onBack={handleBack} />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </ChatContainer>
       </div>
+      <motion.div
+        key="input"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="fixed bottom-4 left-0 right-0 z-10"
+      >
+        <div className="mx-auto max-w-2xl px-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <textarea
+              placeholder={currentStep === 'complete' ? 'Type your message...' : 'Complete onboarding to start chatting...'}
+              disabled={currentStep !== 'complete'}
+              className="w-full p-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50 text-gray-900 text-base transition-all duration-200 resize-none h-20 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            <button
+              disabled={currentStep !== 'complete'}
+              className="w-full bg-gradient-to-r from-blue-400 to-cyan-500 text-white px-4 py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] font-medium"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 };

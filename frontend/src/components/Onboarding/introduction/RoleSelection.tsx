@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, Briefcase, Users, Sparkles } from 'lucide-react';
-import { UserRole } from './types/onboarding';
+import { UserRole } from '../types/onboarding';
 import { useNavigate } from 'react-router-dom';
-import { BackButton } from './UI/BackButton';
+import { BackButton } from '../UI/BackButton';
 
 interface RoleSelectionProps {
   onSelect: (role: UserRole) => void;

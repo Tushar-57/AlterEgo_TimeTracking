@@ -170,7 +170,7 @@
 export type MentorArchetype = 'Innovator' | 'Sage' | 'Challenger' | 'Master' | 'Guide';
 export type CoachingStyle = 'Direct' | 'Friendly' | 'Encouraging' | 'Nurturing' | 'Patient' | 'Challenging' | 'Inspirational';
 export type UserRole = 'Student' | 'Professional' | 'Freelancer' | 'Other';
-export type OnboardingStep = 'intro' | 'role' | 'personalization' | 'goals' | 'planner' | 'complete';
+export type OnboardingStep = 'intro' | 'role' | 'personalization' | 'goals' | 'planner' | 'mentor' | 'complete';
 
 export interface Mentor {
   archetype: MentorArchetype;
@@ -205,11 +205,13 @@ export const SUGGESTED_GOALS_WORK = ['Improve focus', 'Manage time better', 'Inc
 export const SUGGESTED_GOALS_FREELANCER = ['Improve focus', 'Manage time better', 'Increase productivity'] as const;
 export const SUGGESTED_GOALS_OTHER = ['Manage Time Better', 'Increase Productivity', 'IDK, Figure out !'] as const;
 
-export const AVATARS = [
-  { id: '1', url: '/assets/avatars/avatar1.png', alt: 'Avatar 1' },
-  { id: '2', url: '/assets/avatars/avatar2.png', alt: 'Avatar 2' },
-  { id: '3', url: '/assets/avatars/avatar3.png', alt: 'Avatar 3' },
-];
+const AVATAR_BASE_PATH = 'src/public/avatars';
+export const AVATARS = Array.from({ length: 17 }, (_, i) => ({
+  id: `${i + 1}`,
+  url: `${AVATAR_BASE_PATH}/av${i + 1}.svg`,
+  alt: `Avatar ${i + 1}`,
+  // You can add more properties if needed
+}));
 
 export const RANDOM_NAMES = ['Alex', 'Jordan', 'Taylor', 'Casey', 'Drew', 'Reese', 'Morgan', 'Skyler'];
 

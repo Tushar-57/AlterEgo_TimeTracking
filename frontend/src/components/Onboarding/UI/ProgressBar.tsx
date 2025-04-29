@@ -1,6 +1,6 @@
 import React from 'react';
-import { OnboardingStep, Tone } from './types/onboarding';
-import { getToneStyles } from './utils/onboardingUtils';
+import { OnboardingStep, Tone } from '../types/onboarding';
+import { getToneStyles } from '../utils/onboardingUtils';
 
 interface ProgressBarProps {
   currentStep: OnboardingStep;
@@ -19,6 +19,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ currentStep, tone }) => {
     'personalization',
     'goals',
     'planner',
+    'mentor',
     'complete',
   ];
 

@@ -1,9 +1,10 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Tone } from '../types/onboarding';
 
 interface ChatBubbleProps {
-  content?: string | React.ReactNode; // Make content optional
-  children?: React.ReactNode; // Make children optional
+  content?: string | React.ReactNode;
+  children?: React.ReactNode;
   isUser: boolean;
   isAnimated?: boolean;
 }
@@ -20,39 +21,48 @@ const BotAvatar = () => (
   </div>
 );
 
-const ChatBubble: React.FC<ChatBubbleProps> = ({ 
-  content, 
-  children, 
-  isUser, 
-  isAnimated = true 
+const ChatBubble: React.FC<ChatBubbleProps> = ({
+  content,
+  children,
+  isUser,
+  isAnimated = true,
 }) => {
-  const baseClasses = "max-w-[80%] rounded-2xl p-4 shadow-sm";
-  
+  const baseClasses = 'max-w-[80%] rounded-2xl p-4 shadow-sm';
+
   const userBubbleClasses = `
-    ${baseClasses} 
-    ml-auto 
-    bg-gradient-to-r 
-    from-purple-600 to-indigo-700
+    ${baseClasses}
+    ml-auto
+    bg-gradient-to-r
+    from-blue-400
+    to-cyan-500
     text-white
+    border
+    border-blue-200
+    text-shadow-sm
   `;
-  
+
   const assistantBubbleClasses = `
-    ${baseClasses} 
-    mr-auto 
-    bg-white 
-    border 
+    ${baseClasses}
+    mr-auto
+    bg-white
+    border
     border-purple-200
     text-gray-800
   `;
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} gap-2 mb-4`}>
+    <motion.div
+      initial={isAnimated ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`flex ${isUser ? 'justify-end' : 'justify-start'} gap-2 mb-4`}
+    >
       {!isUser && <BotAvatar />}
       <div className={isUser ? userBubbleClasses : assistantBubbleClasses}>
-        {content || children} {/* Render content if provided, otherwise render children */}
+        {content || children}
       </div>
       {isUser && <UserAvatar />}
-    </div>
+    </motion.div>
   );
 };
 
