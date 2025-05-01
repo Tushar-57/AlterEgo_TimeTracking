@@ -1,88 +1,88 @@
 import { Button } from '../Calendar_updated/components/ui/button';
-import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from '../Calendar_updated/components/ui/tooltip';
-import { Play, Pause, Save, RotateCcw } from 'lucide-react';
-import { TimerStatus } from './types';
+import { Play, Pause, Square, RefreshCw } from 'lucide-react';
+import { TimerStatus, TimerMode } from './types';
 import { motion } from 'framer-motion';
 
-export const TimerControls = ({
+interface TimerControlsProps {
+  timerState: {
+    stopwatchTime: number;
+    countdownTime: number;
+    pomodoroTime: number;
+    status: TimerStatus;
+    activeTimerId: number | null;
+    startTime?: string;
+    currentMode: TimerMode;
+  };
+  toggleTimer: () => void;
+  stopTimer: () => void;
+  resetTimer: () => void;
+}
+
+export function TimerControls({
   timerState,
   toggleTimer,
   stopTimer,
   resetTimer,
-}: {
-  timerState: { status: TimerStatus; time: number };
-  toggleTimer: () => void;
-  stopTimer: () => void;
-  resetTimer: () => void;
-}) => (
-  <div className="flex justify-center gap-6 bg-[#FAF9F6] dark:bg-[#2D2D2D] rounded-lg p-4 border border-[#F8C8DC]/30">
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={resetTimer}
-            disabled={timerState.status === 'running'}
-            className="rounded-full h-12 w-12 bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50 text-[#A3BFFA] hover:bg-[#F8C8DC]/20 transition-all"
-          >
-            <RotateCcw className="h-5 w-5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent className="bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50">Reset timer (R)</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+}: TimerControlsProps) {
+  const { status, currentMode, stopwatchTime, countdownTime, pomodoroTime } = timerState;
 
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <motion.div
-            animate={{
-              scale: timerState.status === 'running' ? [1, 1.1, 1] : 1,
-              boxShadow:
-                timerState.status === 'running'
-                  ? ['0 0 10px rgba(248, 200, 220, 0.5)', '0 0 20px rgba(248, 200, 220, 0.7)', '0 0 10px rgba(248, 200, 220, 0.5)']
-                  : 'none',
-            }}
-            transition={{ duration: 1.5, repeat: timerState.status === 'running' ? Infinity : 0 }}
-          >
-            <Button
-              onClick={toggleTimer}
-              className={`rounded-full h-14 w-14 flex items-center justify-center shadow-md hover:shadow-lg transition-transform ${
-                timerState.status === 'running'
-                  ? 'bg-[#FF6B6B]/80 hover:bg-[#FF6B6B]'
-                  : 'bg-[#A8D5BA]/80 hover:bg-[#A8D5BA]'
-              } active:scale-95`}
-            >
-              {timerState.status === 'running' ? (
-                <Pause className="h-8 w-8 text-white" />
-              ) : (
-                <Play className="h-8 w-8 ml-1 text-white" />
-              )}
-            </Button>
-          </motion.div>
-        </TooltipTrigger>
-        <TooltipContent className="bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50">
-          {timerState.status === 'running' ? 'Pause timer (Space)' : 'Start timer (Space)'}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+  // Determine the current time based on the timer mode
+  const currentTime =
+    currentMode === 'stopwatch'
+      ? stopwatchTime
+      : currentMode === 'countdown'
+      ? countdownTime
+      : pomodoroTime;
 
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={stopTimer}
-            disabled={timerState.status === 'stopped' || timerState.time < 60}
-            className="rounded-full h-12 w-12 bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50 text-[#A3BFFA] hover:bg-[#F8C8DC]/20 transition-all"
-          >
-            <Save className="h-5 w-5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent className="bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50">Stop and save (S)</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  </div>
-);
+  return (
+    <div className="flex items-center gap-4">
+      <motion.div
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <Button
+          variant="default"
+          size="lg"
+          onClick={toggleTimer}
+          className="bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/80 rounded-full p-6"
+          disabled={currentTime === 0 && currentMode !== 'stopwatch'}
+        >
+          {status === 'running' ? (
+            <Pause className="h-6 w-6" />
+          ) : (
+            <Play className="h-6 w-6" />
+          )}
+        </Button>
+      </motion.div>
+
+      <motion.div
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={stopTimer}
+          className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20 rounded-full p-6"
+          disabled={status === 'stopped' && !timerState.activeTimerId}
+        >
+          <Square className="h-6 w-6" />
+        </Button>
+      </motion.div>
+
+      <motion.div
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={resetTimer}
+          className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20 rounded-full p-6"
+        >
+          <RefreshCw className="h-6 w-6" />
+        </Button>
+      </motion.div>
+    </div>
+  );
+}

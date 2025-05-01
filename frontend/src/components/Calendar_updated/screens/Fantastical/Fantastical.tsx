@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CalendarSection } from "./sections/CalendarSection/CalendarSection";
 import { DraggableEvent } from "../../components/DraggableEvent";
-import { CalendarEvent } from "../../../Dashboard";
+import { CalendarEvent } from "../../components/DraggableEvent";
 
 interface FantasticalProps {
   events: CalendarEvent[];
@@ -46,17 +46,39 @@ export const Fantastical = ({ events, onEventDrag }: FantasticalProps): JSX.Elem
     return colorClasses[color as keyof typeof colorClasses] || colorClasses.lightblue;
   };
 
+  console.log('Fantastical events:', events); // Debug log
+
   return (
-    <div className="flex flex-col w-full h-screen overflow-hidden">
-      <CalendarSection events={events} />
-      {events.map(event => (
-        <DraggableEvent 
-          key={event.id} 
-          event={event} 
-          getColorClasses={getColorClasses}
-          onDragStop={onEventDrag}
+    <div className="flex flex-col w-full h-screen">
+      <div className="relative flex-1 overflow-y-auto">
+        <CalendarSection
+          events={events}
+          refreshEvents={async () => {
+            // Trigger event refresh in Dashboard.tsx
+          }}
         />
-      ))}
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+          {events.map(event => (
+            <div
+              key={event.id}
+              className="pointer-events-auto border-2 border-red-500" // Temporary debug border
+              style={{
+                position: 'absolute',
+                top: event.position.top,
+                left: `calc(${event.position.left} + 48px)`,
+                width: event.width,
+                height: event.height,
+              }}
+            >
+              <DraggableEvent
+                event={event}
+                getColorClasses={getColorClasses}
+                onDragStop={onEventDrag}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

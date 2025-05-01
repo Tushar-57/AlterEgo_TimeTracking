@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useToast } from '../Calendar_updated/components/hooks/use-toast';
 import { useAuth } from '../../context/AuthContext';
 import { fetchWithToken } from '../../utils/auth';
@@ -9,13 +9,12 @@ import { TimerControls } from './TimerControls';
 import { TimeEntriesList } from './TimeEntriesList';
 import { SettingsDialog } from './SettingsDialog';
 import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog';
-import { QuoteComponent } from './QuoteComponent';
-import { TimerProgressIndicator } from './TImerProgress';
+import { TimerProgressIndicator } from './TimerProgress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../Calendar_updated/components/ui/tabs';
 import { Button } from '../Calendar_updated/components/ui/button';
 import { Input } from '../Calendar_updated/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '../Calendar_updated/components/ui/dialog';
-import { Timer, AlarmClock, Coffee, Plus } from 'lucide-react';
+import { Timer, AlarmClock, Coffee, Plus, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Project, Tag, TimeEntry, UserPreferences, TimerStatus, TimerMode, PomodoroState } from './types';
 import { formatTime, getRandomColor } from './utility';
@@ -25,25 +24,34 @@ export default function TimeTracker() {
   const { isAuthenticated, user, logout } = useAuth();
   const { toast } = useToast();
 
-  // Timer states
+  // Timer states per mode
   const [timerState, setTimerState] = useState<{
-    time: number;
+    stopwatchTime: number;
+    countdownTime: number;
+    pomodoroTime: number;
     status: TimerStatus;
     activeTimerId: number | null;
-  }>({
-    time: 0,
-    status: 'stopped',
-    activeTimerId: null,
+    startTime?: string;
+    currentMode: TimerMode;
+  }>(() => {
+    const saved = localStorage.getItem('timerState');
+    return saved ? JSON.parse(saved) : {
+      stopwatchTime: 0,
+      countdownTime: 1500,
+      pomodoroTime: 1500,
+      status: 'stopped',
+      activeTimerId: null,
+      currentMode: 'stopwatch',
+    };
   });
 
   // Mode-related states
-  const [timerMode, setTimerMode] = useState<TimerMode>('stopwatch');
-  const [pomodoroState, setPomodoroState] = useState<PomodoroState>({
-    currentSession: 0,
-    isBreak: false,
-    totalSessions: 0,
+  const [timerMode, setTimerMode] = useState<TimerMode>(() => timerState.currentMode || 'stopwatch');
+  const [pomodoroState, setPomodoroState] = useState<PomodoroState>(() => {
+    const saved = localStorage.getItem('pomodoroState');
+    return saved ? JSON.parse(saved) : { currentSession: 0, isBreak: false, totalSessions: 0 };
   });
-  const [countdownTime, setCountdownTime] = useState(1500);
+  const [countdownPreset, setCountdownPreset] = useState(() => timerState.countdownTime || 1500);
   const [customMinutes, setCustomMinutes] = useState<number>(25);
 
   // Data states
@@ -58,12 +66,17 @@ export default function TimeTracker() {
     tags: Tag[];
     billable: boolean;
     newTag: string;
-  }>({
-    description: '',
-    projectId: 'noproject',
-    billable: false,
-    newTag: '',
-    tags: [],
+    category?: string;
+  }>(() => {
+    const saved = localStorage.getItem('currentTask');
+    return saved ? JSON.parse(saved) : {
+      description: '',
+      projectId: 'noproject',
+      billable: false,
+      newTag: '',
+      tags: [],
+      category: '',
+    };
   });
 
   // UI states
@@ -74,21 +87,25 @@ export default function TimeTracker() {
     author: 'Franz Kafka',
   });
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'duration'>('newest');
+  const [descriptionError, setDescriptionError] = useState(false);
 
   // User preferences
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    timerMode: 'stopwatch',
-    darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
-    soundEnabled: true,
-    notificationsEnabled: true,
-    pomodoroSettings: {
-      workDuration: 25,
-      shortBreakDuration: 5,
-      longBreakDuration: 15,
-      sessionsUntilLongBreak: 4,
-    },
-    countdownPresets: [300, 600, 900, 1500, 2700, 3600],
-    progressStyle: 'circular', // New preference for timer progress style
+  const [preferences, setPreferences] = useState<UserPreferences>(() => {
+    const saved = localStorage.getItem('timeTracker_preferences');
+    return saved ? JSON.parse(saved) : {
+      timerMode: 'stopwatch',
+      darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+      soundEnabled: true,
+      notificationsEnabled: true,
+      pomodoroSettings: {
+        workDuration: 25,
+        shortBreakDuration: 5,
+        longBreakDuration: 15,
+        sessionsUntilLongBreak: 4,
+      },
+      countdownPresets: [300, 600, 900, 1500, 2700, 3600],
+      progressStyle: 'circular',
+    };
   });
 
   // Audio elements
@@ -108,13 +125,12 @@ export default function TimeTracker() {
     { text: 'Your time is limited, so don\'t waste it living someone else\'s life.', author: 'Steve Jobs' },
   ];
 
-  // Quote rotation
+  // Persist states
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentQuote(quotes[Math.floor(Math.random() * quotes.length)]);
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    localStorage.setItem('timerState', JSON.stringify(timerState));
+    localStorage.setItem('pomodoroState', JSON.stringify(pomodoroState));
+    localStorage.setItem('currentTask', JSON.stringify(currentTask));
+  }, [timerState, pomodoroState, currentTask]);
 
   // Load and apply user preferences
   useEffect(() => {
@@ -124,12 +140,11 @@ export default function TimeTracker() {
         const parsedPreferences = JSON.parse(savedPreferences);
         setPreferences(prev => ({ ...prev, ...parsedPreferences }));
         setTimerMode(parsedPreferences.timerMode || 'stopwatch');
-        // Apply dark mode
         document.documentElement.classList.toggle('dark', parsedPreferences.darkMode);
         toast({
           title: 'Preferences Loaded',
           description: 'User preferences loaded successfully.',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
       } catch (error) {
         console.error('Error parsing saved preferences:', error);
@@ -137,11 +152,10 @@ export default function TimeTracker() {
           title: 'Preferences Error',
           description: 'Failed to load saved preferences.',
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
       }
     } else {
-      // Initialize dark mode based on system preference
       document.documentElement.classList.toggle('dark', preferences.darkMode);
     }
   }, [toast]);
@@ -154,7 +168,7 @@ export default function TimeTracker() {
       toast({
         title: 'Preferences Saved',
         description: `Dark mode ${preferences.darkMode ? 'enabled' : 'disabled'}.`,
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     } catch (error) {
       console.error('Error saving preferences:', error);
@@ -162,7 +176,7 @@ export default function TimeTracker() {
         title: 'Preferences Error',
         description: 'Failed to save preferences.',
         variant: 'destructive',
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     }
   }, [preferences, toast]);
@@ -199,8 +213,8 @@ export default function TimeTracker() {
         if (!entriesResponse.success) {
           throw new Error(entriesResponse.message || 'Failed to fetch time entries');
         }
-        setTimeEntries(entriesResponse.data || []);
-        console.log('Fetched time entries:', entriesResponse.data); // Debug tags
+        setTimeEntries(entriesResponse.data.filter((entry: TimeEntry) => entry.endTime !== null));
+        console.log('Fetched time entries:', entriesResponse.data);
 
         const tagsData = await fetchWithToken<Tag[]>('http://localhost:8080/api/tags');
         setTags(tagsData);
@@ -211,7 +225,7 @@ export default function TimeTracker() {
           title: 'Data Loading Error',
           description: errorMessage,
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
       } finally {
         setLoading(false);
@@ -232,7 +246,7 @@ export default function TimeTracker() {
         });
 
         if (resp.status === 204) {
-          setTimerState(prev => ({ ...prev, activeTimerId: null }));
+          setTimerState(prev => ({ ...prev, activeTimerId: null, startTime: undefined }));
           return;
         }
 
@@ -243,7 +257,7 @@ export default function TimeTracker() {
             title: 'Session Expired',
             description: 'Please log in again.',
             variant: 'destructive',
-            className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+            className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
           });
           return;
         }
@@ -258,9 +272,11 @@ export default function TimeTracker() {
 
           setTimerState(prev => ({
             ...prev,
+            stopwatchTime: elapsed,
             activeTimerId: response.data.id,
             status: 'running',
-            time: elapsed,
+            startTime: response.data.startTime,
+            currentMode: 'stopwatch',
           }));
           setCurrentTask({
             description: response.data.description,
@@ -268,9 +284,12 @@ export default function TimeTracker() {
             tags: response.data.tags || [],
             billable: response.data.billable,
             newTag: '',
+            category: response.data.category || '',
           });
+          setTimerMode('stopwatch');
+          console.log('Active timer tags:', response.data.tags);
         } else {
-          setTimerState(prev => ({ ...prev, activeTimerId: null }));
+          setTimerState(prev => ({ ...prev, activeTimerId: null, startTime: undefined }));
         }
       } catch (error) {
         console.error('Error checking active timer:', error);
@@ -278,7 +297,7 @@ export default function TimeTracker() {
           title: 'Error',
           description: 'Failed to check active timer.',
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
       }
     };
@@ -292,20 +311,21 @@ export default function TimeTracker() {
         if (timerMode === 'stopwatch' || (timerMode === 'pomodoro' && !pomodoroState.isBreak)) {
           setTimerState(prev => ({
             ...prev,
-            time: prev.time + 1,
+            stopwatchTime: timerMode === 'stopwatch' ? prev.stopwatchTime + 1 : prev.stopwatchTime,
+            pomodoroTime: timerMode === 'pomodoro' ? prev.pomodoroTime - 1 : prev.pomodoroTime,
           }));
-          if (preferences.soundEnabled && timerState.time > 0 && timerState.time % 60 === 0) {
+          if (preferences.soundEnabled && timerState.stopwatchTime > 0 && timerState.stopwatchTime % 60 === 0) {
             tickSound.current?.play().catch(e => console.error('Error playing sound:', e));
           }
           if (timerMode === 'pomodoro') {
             const workSeconds = preferences.pomodoroSettings.workDuration * 60;
-            if (timerState.time >= workSeconds) {
+            if (timerState.pomodoroTime <= 0) {
               handlePomodoroSessionComplete();
             }
           }
         } else if (timerMode === 'countdown' || (timerMode === 'pomodoro' && pomodoroState.isBreak)) {
           setTimerState(prev => {
-            const newTime = prev.time - 1;
+            const newTime = prev[timerMode === 'countdown' ? 'countdownTime' : 'pomodoroTime'] - 1;
             if (newTime <= 0) {
               clearInterval(intervalRef.current);
               if (preferences.soundEnabled) {
@@ -320,9 +340,9 @@ export default function TimeTracker() {
               }
               if (timerMode === 'pomodoro') {
                 setTimeout(() => handlePomodoroBreakComplete(), 1000);
-                return { ...prev, time: 0, status: 'paused' };
+                return { ...prev, pomodoroTime: 0, status: 'paused' };
               }
-              return { ...prev, time: 0, status: 'stopped' };
+              return { ...prev, countdownTime: 0, status: 'stopped' };
             }
             if (preferences.soundEnabled) {
               if (newTime <= 5) {
@@ -331,7 +351,10 @@ export default function TimeTracker() {
                 tickSound.current?.play().catch(e => console.error('Error playing sound:', e));
               }
             }
-            return { ...prev, time: newTime };
+            return {
+              ...prev,
+              [timerMode === 'countdown' ? 'countdownTime' : 'pomodoroTime']: newTime,
+            };
           });
         }
       }, 1000);
@@ -356,28 +379,36 @@ export default function TimeTracker() {
   };
 
   const handleTimerModeChange = (mode: TimerMode) => {
-    resetTimer();
-    setTimerMode(mode);
-    setPreferences(prev => ({ ...prev, timerMode: mode }));
-    if (mode === 'countdown') {
-      setTimerState(prev => ({ ...prev, time: countdownTime }));
-    } else if (mode === 'pomodoro') {
-      setTimerState(prev => ({
-        ...prev,
-        time: preferences.pomodoroSettings.workDuration * 60,
-      }));
-      setPomodoroState({
-        currentSession: 1,
-        isBreak: false,
-        totalSessions: 0,
+    if (timerState.status !== 'stopped') {
+      toast({
+        title: 'Cannot Change Mode',
+        description: 'Please stop or reset the timer before switching modes.',
+        variant: 'destructive',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
-    } else {
-      setTimerState(prev => ({ ...prev, time: 0 }));
+      return;
+    }
+    setTimerMode(mode);
+    setTimerState(prev => ({
+      ...prev,
+      currentMode: mode,
+      stopwatchTime: mode === 'stopwatch' && prev.activeTimerId ? prev.stopwatchTime : 0,
+      countdownTime: mode === 'countdown' ? countdownPreset : prev.countdownTime,
+      pomodoroTime: mode === 'pomodoro' ? preferences.pomodoroSettings.workDuration * 60 : prev.pomodoroTime,
+    }));
+    setPreferences(prev => ({ ...prev, timerMode: mode }));
+    if (mode === 'pomodoro') {
+      setPomodoroState(prev => ({
+        ...prev,
+        currentSession: prev.currentSession || 1,
+        isBreak: prev.isBreak || false,
+        totalSessions: prev.totalSessions || 0,
+      }));
     }
     toast({
       title: `${mode.charAt(0).toUpperCase() + mode.slice(1)} Mode`,
       description: `Switched to ${mode} timer mode`,
-      className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+      className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
     });
   };
 
@@ -398,12 +429,12 @@ export default function TimeTracker() {
     }));
     setTimerState(prev => ({
       ...prev,
-      time: breakDuration * 60,
+      pomodoroTime: breakDuration * 60,
     }));
     toast({
       title: 'Pomodoro Break',
       description: `Time for a ${isLongBreak ? 'long' : 'short'} break (${breakDuration} minutes)`,
-      className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+      className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
     });
   };
 
@@ -421,13 +452,13 @@ export default function TimeTracker() {
     }));
     setTimerState(prev => ({
       ...prev,
-      time: preferences.pomodoroSettings.workDuration * 60,
+      pomodoroTime: preferences.pomodoroSettings.workDuration * 60,
       status: 'paused',
     }));
     toast({
       title: 'Pomodoro Work',
       description: `Ready for work session ${pomodoroState.currentSession + 1}`,
-      className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+      className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
     });
   };
 
@@ -440,11 +471,12 @@ export default function TimeTracker() {
   };
 
   const startTimer = async () => {
-    if (timerMode === 'countdown' || (timerMode === 'pomodoro' && pomodoroState.isBreak)) {
+    if ((timerMode === 'countdown' || (timerMode === 'pomodoro' && pomodoroState.isBreak)) && !currentTask.description.trim()) {
       setTimerState(prev => ({ ...prev, status: 'running' }));
       return;
     }
     if (!currentTask.description.trim()) {
+      setDescriptionError(true);
       toast({
         title: 'Missing Description',
         description: 'Please enter a task description before starting the timer',
@@ -453,15 +485,16 @@ export default function TimeTracker() {
           <Button
             variant="secondary"
             onClick={() => document.getElementById('task-description-input')?.focus()}
-            className="bg-[#A8D5BA] text-white hover:bg-[#A8D5BA]/80"
+            className="bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/80"
           >
             Add Description
           </Button>
         ),
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
       return;
     }
+    setDescriptionError(false);
     try {
       const token = localStorage.getItem('jwtToken');
       if (!token) {
@@ -469,14 +502,15 @@ export default function TimeTracker() {
           title: 'Authentication Error',
           description: 'Please log in to start the timer.',
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
-        });
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
         logout();
         return;
       }
       const projectId = currentTask.projectId === 'noproject' ? null : parseInt(currentTask.projectId);
       const tagIds = currentTask.tags.map(tag => tag.id);
-      console.log('Sending tagIds:', tagIds); // Debug tags
+      console.log('Starting timer with tagIds:', tagIds);
+      const startTime = new Date().toISOString();
       const res = await fetch('http://localhost:8080/api/timers/start', {
         method: 'POST',
         headers: {
@@ -485,10 +519,11 @@ export default function TimeTracker() {
         },
         body: JSON.stringify({
           description: currentTask.description,
-          startTime: new Date().toISOString(),
+          startTime: startTime,
           projectId: projectId,
           tagIds: tagIds,
           billable: currentTask.billable,
+          category: currentTask.category || null,
         }),
       });
       if (res.status === 401) {
@@ -496,7 +531,7 @@ export default function TimeTracker() {
           title: 'Authentication Error',
           description: 'Your session has expired. Please log in again.',
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
         logout();
         return;
@@ -507,7 +542,7 @@ export default function TimeTracker() {
           title: 'Server Error',
           description: response.message || 'Failed to start timer.',
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
         throw new Error('Start failed');
       }
@@ -515,11 +550,13 @@ export default function TimeTracker() {
         ...prev,
         status: 'running',
         activeTimerId: response.data.id,
+        startTime: startTime,
+        stopwatchTime: 0,
       }));
       toast({
         title: 'Timer Started',
         description: `Tracking "${currentTask.description}"`,
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     } catch (error) {
       console.error('Start timer error:', error);
@@ -527,28 +564,28 @@ export default function TimeTracker() {
         title: 'Network Error',
         description: 'Could not connect to the server.',
         variant: 'destructive',
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     }
   };
 
   const stopTimer = async () => {
     if (timerMode === 'countdown' || (timerMode === 'pomodoro' && pomodoroState.isBreak)) {
-      setTimerState(prev => ({ ...prev, status: 'stopped' }));
+      setTimerState(prev => ({ ...prev, status: 'stopped', startTime: undefined }));
       resetTimer();
       return;
     }
-    if (!timerState.activeTimerId) {
+    if (!timerState.activeTimerId || !timerState.startTime) {
       toast({
         title: 'No Active Timer',
         description: 'There is no timer to stop',
         variant: 'destructive',
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
       return;
     }
 
-    if (timerState.time < 60) {
+    if (timerState.stopwatchTime < 60) {
       toast({
         title: 'Minimum Time Required',
         description: 'Please track at least 1 minute to save your session',
@@ -557,12 +594,12 @@ export default function TimeTracker() {
           <Button
             variant="secondary"
             onClick={() => setTimerState(prev => ({ ...prev, status: 'running' }))}
-            className="bg-[#A8D5BA] text-white hover:bg-[#A8D5BA]/80"
+            className="bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/80"
           >
             Continue Tracking
           </Button>
         ),
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
       return;
     }
@@ -573,23 +610,36 @@ export default function TimeTracker() {
           title: 'Authentication Error',
           description: 'Please log in to stop the timer.',
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
         logout();
         return;
       }
+      const projectId = currentTask.projectId === 'noproject' ? null : parseInt(currentTask.projectId);
+      const tagIds = currentTask.tags.map(tag => tag.id);
+      console.log('Stopping timer with tagIds:', tagIds);
+      const endTime = new Date().toISOString();
       const res = await fetch(`http://localhost:8080/api/timers/${timerState.activeTimerId}/stop`, {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({
+          description: currentTask.description,
+          startTime: timerState.startTime,
+          endTime: endTime,
+          projectId: projectId,
+          tagIds: tagIds,
+          billable: currentTask.billable,
+        }),
       });
       if (res.status === 401) {
         toast({
           title: 'Authentication Error',
           description: 'Your session has expired. Please log in again.',
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
         logout();
         return;
@@ -600,23 +650,23 @@ export default function TimeTracker() {
           title: 'Server Error',
           description: response.message || 'Failed to stop timer.',
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
         throw new Error('Stop failed');
       }
-      const entryRes = await fetch('http://localhost:8080/api/time-entries?limit=5', {
+      const entryRes = await fetch('http://localhost:8080/api/timers?limit=5', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (entryRes.ok) {
         const entryData = await entryRes.json();
-        setTimeEntries(entryData.data || []);
-        console.log('Updated time entries:', entryData.data); // Debug tags
+        setTimeEntries(entryData.data.filter((entry: TimeEntry) => entry.endTime !== null));
+        console.log('Updated time entries:', entryData.data);
       }
       resetTimer();
       toast({
         title: 'Time Entry Saved',
         description: `Saved time entry for "${currentTask.description}"`,
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     } catch (error) {
       console.error('Stop timer error:', error);
@@ -624,23 +674,28 @@ export default function TimeTracker() {
         title: 'Network Error',
         description: 'Could not connect to the server.',
         variant: 'destructive',
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     }
   };
 
   const resetTimer = () => {
-    setTimerState({
-      time: timerMode === 'countdown' ? countdownTime : timerMode === 'pomodoro' ? preferences.pomodoroSettings.workDuration * 60 : 0,
+    setTimerState(prev => ({
+      ...prev,
+      stopwatchTime: prev.activeTimerId ? prev.stopwatchTime : 0,
+      countdownTime: countdownPreset,
+      pomodoroTime: preferences.pomodoroSettings.workDuration * 60,
       status: 'stopped',
       activeTimerId: null,
-    });
+      startTime: undefined,
+    }));
     setCurrentTask({
       description: '',
       projectId: 'noproject',
       tags: [],
       billable: false,
       newTag: '',
+      category: '',
     });
     if (timerMode === 'pomodoro') {
       setPomodoroState({
@@ -649,10 +704,11 @@ export default function TimeTracker() {
         totalSessions: 0,
       });
     }
+    setDescriptionError(false);
     toast({
       title: 'Timer Reset',
       description: 'Timer has been reset.',
-      className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+      className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
     });
   };
 
@@ -664,29 +720,29 @@ export default function TimeTracker() {
       toast({
         title: 'Timer Paused',
         description: 'Your timer is paused.',
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     } else {
       setTimerState(prev => ({ ...prev, status: 'running' }));
       toast({
         title: 'Timer Resumed',
         description: 'Your timer is running.',
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     }
   };
 
   const handleSelectCountdownPreset = (seconds: number) => {
-    setCountdownTime(seconds);
+    setCountdownPreset(seconds);
     setCustomMinutes(seconds / 60);
-    setTimerState(prev => ({ ...prev, time: seconds }));
+    setTimerState(prev => ({ ...prev, countdownTime: seconds }));
   };
 
   const handleSetCustomCountdown = (minutes: number) => {
     const seconds = minutes * 60;
-    setCountdownTime(seconds);
+    setCountdownPreset(seconds);
     setCustomMinutes(minutes);
-    setTimerState(prev => ({ ...prev, time: seconds }));
+    setTimerState(prev => ({ ...prev, countdownTime: seconds }));
   };
 
   const handleAddTag = async () => {
@@ -698,7 +754,7 @@ export default function TimeTracker() {
           title: 'Authentication Error',
           description: 'Your session has expired. Please log in again.',
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
         logout();
         return;
@@ -719,7 +775,7 @@ export default function TimeTracker() {
           title: 'Authentication Error',
           description: 'Your session has expired. Please log in again.',
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
         logout();
         return;
@@ -729,7 +785,7 @@ export default function TimeTracker() {
           title: 'Tag Exists',
           description: `Tag "${currentTask.newTag}" already exists.`,
           variant: 'destructive',
-          className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
         return;
       }
@@ -748,7 +804,7 @@ export default function TimeTracker() {
       toast({
         title: 'Tag Created',
         description: `Tag "${newTag.name}" created successfully!`,
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     } catch (error) {
       console.error('Error creating tag:', error);
@@ -756,7 +812,7 @@ export default function TimeTracker() {
         title: 'Error',
         description: 'Failed to create tag.',
         variant: 'destructive',
-        className: 'bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     }
   };
@@ -770,9 +826,57 @@ export default function TimeTracker() {
     }
   };
 
+  const QuoteComponent = useMemo(() => {
+    return () => (
+      <motion.div
+        className="relative flex items-center justify-between gap-4 mb-8 p-6 rounded-xl bg-[#F7F7F7] dark:bg-[#2D3748] border border-[#D8BFD8]/30 shadow-inner"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{
+          background: preferences.darkMode
+            ? 'linear-gradient(145deg, #2D3748, #3C4A5E)'
+            : 'linear-gradient(145deg, #F7F7F7, #E6E6FA)',
+        }}
+      >
+        <div className="flex-1">
+          <motion.div
+            className="text-center text-[#6B7280] dark:text-[#E6E6FA] font-serif text-lg italic"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            key={currentQuote.text}
+          >
+            "{currentQuote.text}"
+          </motion.div>
+          <div className="text-center text-[#9CA3AF] dark:text-[#B0C4DE] text-sm mt-2">
+            — {currentQuote.author}
+          </div>
+        </div>
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-[#B0C4DE] hover:bg-[#D8BFD8]/20 hover:shadow-sm transition-all"
+            onClick={() => setCurrentQuote(quotes[Math.floor(Math.random() * quotes.length)])}
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.5, ease: 'easeInOut' }}
+              key={currentQuote.text}
+            >
+              <RefreshCw className="h-5 w-5" />
+            </motion.div>
+          </Button>
+        </motion.div>
+      </motion.div>
+    );
+  }, [currentQuote, preferences.darkMode]);
+
   const renderTimer = () => {
-    const formattedTime = formatTime(timerState.time);
-    const totalTime = timerMode === 'countdown' ? countdownTime :
+    const currentTime = timerState[timerMode === 'stopwatch' ? 'stopwatchTime' : timerMode === 'countdown' ? 'countdownTime' : 'pomodoroTime'];
+    const formattedTime = formatTime(currentTime);
+    const totalTime = timerMode === 'countdown' ? countdownPreset :
       timerMode === 'pomodoro' ? (
         pomodoroState.isBreak
           ? (pomodoroState.currentSession % preferences.pomodoroSettings.sessionsUntilLongBreak === 0
@@ -780,13 +884,13 @@ export default function TimeTracker() {
               : preferences.pomodoroSettings.shortBreakDuration) * 60
           : preferences.pomodoroSettings.workDuration * 60
       ) : 3600;
-    const progress = timerMode === 'stopwatch' ? timerState.time / totalTime : (totalTime - timerState.time) / totalTime;
+    const progress = timerMode === 'stopwatch' ? currentTime / totalTime : (totalTime - currentTime) / totalTime;
 
     return (
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center mt-6">
         <motion.div
-          className="text-5xl font-mono font-poppins text-[#1A202C] dark:text-[#E2E8F0]"
-          animate={{ scale: timerState.status === 'running' ? [1, 1.05, 1] : 1 }}
+          className="text-6xl font-mono font-serif text-[#2D3748] dark:text-[#E6E6FA]"
+          animate={{ scale: timerState.status === 'running' ? [1, 1.03, 1] : 1 }}
           transition={{ duration: 2, repeat: timerState.status === 'running' ? Infinity : 0 }}
         >
           {formattedTime}
@@ -820,15 +924,15 @@ export default function TimeTracker() {
         e.preventDefault();
         resetTimer();
       }
-      if (e.code === 'Digit1') {
+      if (e.code === 'Digit1' && timerState.status === 'stopped') {
         e.preventDefault();
         handleTimerModeChange('stopwatch');
       }
-      if (e.code === 'Digit2') {
+      if (e.code === 'Digit2' && timerState.status === 'stopped') {
         e.preventDefault();
         handleTimerModeChange('countdown');
       }
-      if (e.code === 'Digit3') {
+      if (e.code === 'Digit3' && timerState.status === 'stopped') {
         e.preventDefault();
         handleTimerModeChange('pomodoro');
       }
@@ -836,10 +940,10 @@ export default function TimeTracker() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [timerState.status, toggleTimer, stopTimer, resetTimer, handleTimerModeChange]);
+  }, [timerState.status, toggleTimer, stopTimer, resetTimer]);
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#2D2D2D]">
+    <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#1F2937] font-sans">
       <TimerHeader
         preferences={preferences}
         setPreferences={setPreferences}
@@ -847,10 +951,10 @@ export default function TimeTracker() {
         setShowSettingsDialog={setShowSettingsDialog}
         setShowKeyboardShortcutsDialog={setShowKeyboardShortcutsDialog}
       />
-      <main className="max-w-7xl mx-auto py-8 px-6">
+      <main className="max-w-5xl mx-auto py-12 px-6">
         {fetchError && (
           <motion.div
-            className="bg-[#FF6B6B]/10 border border-[#FF6B6B]/50 text-[#FF6B6B] p-4 rounded-lg mb-6"
+            className="bg-[#FECACA]/20 border border-[#FECACA]/50 text-[#DC2626] p-4 rounded-xl mb-8 shadow-sm"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
@@ -864,188 +968,173 @@ export default function TimeTracker() {
           </motion.div>
         )}
 
-        <QuoteComponent currentQuote={currentQuote} setCurrentQuote={setCurrentQuote} quotes={quotes} />
+        <QuoteComponent />
 
-        <Tabs
-          value={timerMode}
-          onValueChange={(value: string) => handleTimerModeChange(value as TimerMode)}
-          className="mb-6"
-        >
-          <TabsList className="grid grid-cols-3 bg-[#F5F5F4] dark:bg-[#3A3A3A] rounded-lg border border-[#F8C8DC]/30">
-            <TabsTrigger
-              value="stopwatch"
-              className="flex items-center gap-2 py-2 font-inter text-[#A3BFFA] data-[state=active]:bg-[#A8D5BA]/20 data-[state=active]:text-[#1A202C] dark:data-[state=active]:text-[#E2E8F0]"
-            >
-              <Timer className="h-4 w-4" />
-              Stopwatch
-            </TabsTrigger>
-            <TabsTrigger
-              value="countdown"
-              className="flex items-center gap-2 py-2 font-inter text-[#A3BFFA] data-[state=active]:bg-[#A8D5BA]/20 data-[state=active]:text-[#1A202C] dark:data-[state=active]:text-[#E2E8F0]"
-            >
-              <AlarmClock className="h-4 w-4" />
-              Countdown
-            </TabsTrigger>
-            <TabsTrigger
-              value="pomodoro"
-              className="flex items-center gap-2 py-2 font-inter text-[#A3BFFA] data-[state=active]:bg-[#A8D5BA]/20 data-[state=active]:text-[#1A202C] dark:data-[state=active]:text-[#E2E8F0]"
-            >
-              <Coffee className="h-4 w-4" />
-              Pomodoro
-            </TabsTrigger>
-          </TabsList>
+        <div className="bg-[#FFFFFF] dark:bg-[#2D3748] rounded-2xl shadow-lg p-8 mb-8">
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="What are you working on?"
+              value={currentTask.description}
+              onChange={e => {
+                setCurrentTask(prev => ({ ...prev, description: e.target.value }));
+                setDescriptionError(false);
+              }}
+              className={`w-full text-xl p-6 bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#2D3748] dark:text-[#E6E6FA] font-serif rounded-xl focus:ring-2 focus:ring-[#D8BFD8] shadow-sm ${descriptionError ? 'border-[#DC2626] border-2' : ''}`}
+              disabled={timerState.status === 'running'}
+              id="task-description-input"
+            />
+            {descriptionError && (
+              <motion.p
+                className="text-[#DC2626] text-sm mt-2 font-serif"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                Please enter a task description
+              </motion.p>
+            )}
+          </div>
+          <ProjectTagSelectors
+            projects={projects}
+            tags={tags}
+            currentTask={currentTask}
+            setCurrentTask={setCurrentTask}
+            handleAddTag={handleAddTag}
+            handleSelectTag={handleSelectTag}
+            timerState={timerState}
+          />
 
-          <TabsContent value="stopwatch" className="p-4">
-            <div className="flex flex-col items-center gap-8">
-              <Input
-                type="text"
-                placeholder="What are you working on?"
-                value={currentTask.description}
-                onChange={e => setCurrentTask(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full max-w-3xl text-lg md:text-xl p-5 bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50 text-[#1A202C] dark:text-[#E2E8F0] font-inter rounded-lg focus:ring-2 focus:ring-[#A8D5BA]"
-                disabled={timerState.status === 'running'}
-                id="task-description-input"
-              />
-              <ProjectTagSelectors
-                projects={projects}
-                tags={tags}
-                currentTask={currentTask}
-                setCurrentTask={setCurrentTask}
-                handleAddTag={handleAddTag}
-                handleSelectTag={handleSelectTag}
-                timerState={timerState}
-              />
-              {renderTimer()}
-              <TimerControls
-                timerState={timerState}
-                toggleTimer={toggleTimer}
-                stopTimer={stopTimer}
-                resetTimer={resetTimer}
-              />
-            </div>
-          </TabsContent>
+          <Tabs
+            value={timerMode}
+            onValueChange={(value: string) => handleTimerModeChange(value as TimerMode)}
+            className="mt-6"
+          >
+            <TabsList className="grid grid-cols-3 bg-[#F7F7F7] dark:bg-[#3C4A5E] rounded-xl border border-[#D8BFD8]/30 shadow-sm">
+              <TabsTrigger
+                value="stopwatch"
+                disabled={timerState.status !== 'stopped'}
+                className="flex items-center gap-2 py-2 font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA] data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
+              >
+                <Timer className="h-4 w-4" />
+                Stopwatch
+              </TabsTrigger>
+              <TabsTrigger
+                value="countdown"
+                disabled={timerState.status !== 'stopped'}
+                className="flex items-center gap-2 py-2 font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA] data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
+              >
+                <AlarmClock className="h-4 w-4" />
+                Countdown
+              </TabsTrigger>
+              <TabsTrigger
+                value="pomodoro"
+                disabled={timerState.status !== 'stopped'}
+                className="flex items-center gap-2 py-2 font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA] data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
+              >
+                <Coffee className="h-4 w-4" />
+                Pomodoro
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="countdown" className="p-4">
-            <div className="flex flex-col items-center gap-8">
-              <Input
-                type="text"
-                placeholder="What are you working on?"
-                value={currentTask.description}
-                onChange={e => setCurrentTask(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full max-w-3xl text-lg md:text-xl p-5 bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50 text-[#1A202C] dark:text-[#E2E8F0] font-inter rounded-lg focus:ring-2 focus:ring-[#A8D5BA]"
-                disabled={timerState.status === 'running'}
-                id="task-description-input"
-              />
-              <ProjectTagSelectors
-                projects={projects}
-                tags={tags}
-                currentTask={currentTask}
-                setCurrentTask={setCurrentTask}
-                handleAddTag={handleAddTag}
-                handleSelectTag={handleSelectTag}
-                timerState={timerState}
-              />
-              <div className="flex flex-wrap gap-2 justify-center mb-4">
-                {preferences.countdownPresets.map(seconds => (
-                  <Button
-                    key={seconds}
-                    variant={countdownTime === seconds ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleSelectCountdownPreset(seconds)}
-                    className={`min-w-[4rem] font-inter ${
-                      countdownTime === seconds
-                        ? 'bg-[#A8D5BA] text-white hover:bg-[#A8D5BA]/80'
-                        : 'bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50 text-[#A3BFFA] hover:bg-[#F8C8DC]/20'
-                    }`}
-                  >
-                    {Math.floor(seconds / 60)}m
-                  </Button>
-                ))}
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50 text-[#A3BFFA] hover:bg-[#F8C8DC]/20 font-inter"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Custom
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-[#FAF9F6] dark:bg-[#2D2D2D] border-[#F8C8DC]/30">
-                    <DialogHeader>
-                      <DialogTitle className="text-[#1A202C] dark:text-[#E2E8F0] font-poppins">Set Custom Time</DialogTitle>
-                      <DialogDescription className="text-[#A3BFFA]">Enter the number of minutes for your timer.</DialogDescription>
-                    </DialogHeader>
-                    <div className="flex items-center space-x-4 py-4">
-                      <Input
-                        type="number"
-                        min="1"
-                        max="180"
-                        placeholder="Minutes"
-                        value={customMinutes}
-                        onChange={(e) => setCustomMinutes(Number(e.target.value))}
-                        className="flex-1 bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50"
-                        id="custom-minutes"
-                      />
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        onClick={() => handleSetCustomCountdown(customMinutes)}
-                        className="bg-[#A8D5BA] text-white hover:bg-[#A8D5BA]/80"
-                      >
-                        Set Timer
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+            <TabsContent value="stopwatch" className="p-4">
+              <div className="flex flex-col items-center gap-6">
+                {renderTimer()}
+                <TimerControls
+                  timerState={timerState}
+                  toggleTimer={toggleTimer}
+                  stopTimer={stopTimer}
+                  resetTimer={resetTimer}
+                />
               </div>
-              {renderTimer()}
-              <TimerControls
-                timerState={timerState}
-                toggleTimer={toggleTimer}
-                stopTimer={stopTimer}
-                resetTimer={resetTimer}
-              />
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="pomodoro" className="p-4">
-            <div className="flex flex-col items-center gap-8">
-              <PomodoroStatus
-                pomodoroState={pomodoroState}
-                preferences={preferences}
-                timerState={timerState}
-                skipPomodoroSession={skipPomodoroSession}
-              />
-              <Input
-                type="text"
-                placeholder="What are you working on?"
-                value={currentTask.description}
-                onChange={e => setCurrentTask(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full max-w-3xl text-lg md:text-xl p-5 bg-[#F5F5F4] dark:bg-[#3A3A3A] border-[#F8C8DC]/50 text-[#1A202C] dark:text-[#E2E8F0] font-inter rounded-lg focus:ring-2 focus:ring-[#A8D5BA]"
-                disabled={timerState.status === 'running'}
-                id="task-description-input"
-              />
-              <ProjectTagSelectors
-                projects={projects}
-                tags={tags}
-                currentTask={currentTask}
-                setCurrentTask={setCurrentTask}
-                handleAddTag={handleAddTag}
-                handleSelectTag={handleSelectTag}
-                timerState={timerState}
-              />
-              {renderTimer()}
-              <TimerControls
-                timerState={timerState}
-                toggleTimer={toggleTimer}
-                stopTimer={stopTimer}
-                resetTimer={resetTimer}
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="countdown" className="p-4">
+              <div className="flex flex-col items-center gap-6">
+                <div className="flex flex-wrap gap-2 justify-center mb-4">
+                  {preferences.countdownPresets.map(seconds => (
+                    <Button
+                      key={seconds}
+                      variant={countdownPreset === seconds ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleSelectCountdownPreset(seconds)}
+                      className={`min-w-[4rem] font-serif ${
+                        countdownPreset === seconds
+                          ? 'bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/80'
+                          : 'bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20'
+                      }`}
+                    >
+                      {Math.floor(seconds / 60)}m
+                    </Button>
+                  ))}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20 font-serif"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Custom
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-[#FFFFFF] dark:bg-[#2D3748] border-[#D8BFD8]/30 rounded-xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-[#2D3748] dark:text-[#E6E6FA] font-serif">Set Custom Time</DialogTitle>
+                        <DialogDescription className="text-[#6B7280] dark:text-[#B0C4DE]">Enter the number of minutes for your timer.</DialogDescription>
+                      </DialogHeader>
+                      <div className="flex items-center space-x-4 py-4">
+                        <Input
+                          type="number"
+                          min="1"
+                          max="180"
+                          placeholder="Minutes"
+                          value={customMinutes}
+                          onChange={(e) => setCustomMinutes(Number(e.target.value))}
+                          className="flex-1 bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#2D3748] dark:text-[#E6E6FA]"
+                          id="custom-minutes"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          onClick={() => handleSetCustomCountdown(customMinutes)}
+                          className="bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/80 font-serif"
+                        >
+                          Set Timer
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                {renderTimer()}
+                <TimerControls
+                  timerState={timerState}
+                  toggleTimer={toggleTimer}
+                  stopTimer={stopTimer}
+                  resetTimer={resetTimer}
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="pomodoro" className="p-4">
+              <div className="flex flex-col items-center gap-6">
+                <PomodoroStatus
+                  pomodoroState={pomodoroState}
+                  preferences={preferences}
+                  timerState={timerState}
+                  skipPomodoroSession={skipPomodoroSession}
+                />
+                {renderTimer()}
+                <TimerControls
+                  timerState={timerState}
+                  toggleTimer={toggleTimer}
+                  stopTimer={stopTimer}
+                  resetTimer={resetTimer}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
 
         <TimeEntriesList
           timeEntries={timeEntries}
