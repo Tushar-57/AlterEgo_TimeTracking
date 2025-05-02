@@ -1,6 +1,7 @@
 package com.tushar.demo.timetracker.service.impl;
 
 import com.tushar.demo.timetracker.dto.request.StartTimeEntryRequest;
+import com.tushar.demo.timetracker.dto.request.addTimeEntryRequest;
 import com.tushar.demo.timetracker.exception.ConflictException;
 import com.tushar.demo.timetracker.exception.NoActiveTimerException;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
@@ -118,6 +119,8 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         
         // Calculate duration
         timeEntry.setDuration(Duration.between(timeEntry.getStartTime(), timeEntry.getEndTime()).getSeconds());
+        timeEntry.setPositionTop(timeEntry.getPositionTop());
+        timeEntry.setPositionLeft(timeEntry.getPositionLeft());
         timeEntry.setIsActive(false);
         TimeEntry updatedEntry = timeEntryRepository.save(timeEntry);
         logger.info("Successfully stopped time entry with ID: {} for user: {}", id, user.getEmail());
@@ -169,5 +172,48 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         timeEntry.setPositionLeft(positionLeft);
         logger.info("Updating position for timer: {} to top: {}, left: {}", timerId, positionTop, positionLeft);
         return timeEntryRepository.save(timeEntry);
+    }
+    
+    @Override
+    public TimeEntry addTimeEntry(addTimeEntryRequest request, Users user) {
+        logger.info("Adding time entry for user: {}, projectId: {}, description: {}", 
+                    user.getEmail(), request.getProjectId(), request.getDescription());
+
+        // Validate project (allow null)
+        Project project = null;
+        if (request.getProjectId() != null) {
+            project = projectRepository.findById(request.getProjectId())
+                    .orElseThrow(() -> {
+                        logger.error("Project with ID {} not found for user: {}", request.getProjectId(), user.getEmail());
+                        return new ResourceNotFoundException("Project not found with ID: " + request.getProjectId());
+                    });
+        }
+
+        // Validate tags
+        List<Long> tagIds = new ArrayList<>();
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            List<Tags> tags = tagRepository.findAllById(request.getTagIds());
+            if (tags.size() != request.getTagIds().size()) {
+                logger.error("Some tags not found for IDs: {} for user: {}", request.getTagIds(), user.getEmail());
+                throw new ResourceNotFoundException("One or more tags not found");
+            }
+            tagIds = tags.stream().map(Tags::getId).toList();
+        }
+
+        // Create new time entry
+        TimeEntry timeEntry = new TimeEntry();
+        timeEntry.setUser(user);
+        timeEntry.setProject(project);
+        timeEntry.setTagIds(tagIds);
+        timeEntry.setDescription(request.getDescription());
+        timeEntry.setStartTime(request.getStartTime());
+        timeEntry.setEndTime(request.getEndTime());
+        timeEntry.setPositionTop(request.getPositionTop());
+        timeEntry.setPositionLeft(request.getPositionLeft());
+        timeEntry.setIsActive(false);
+
+        TimeEntry savedEntry = timeEntryRepository.save(timeEntry);
+        logger.info("Successfully added time entry with ID: {} for user: {}", savedEntry.getId(), user.getEmail());
+        return savedEntry;
     }
 }

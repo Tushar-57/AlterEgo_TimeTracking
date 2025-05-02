@@ -1,4 +1,4 @@
-package com.tushar.demo.timetracker.config;
+package com.tushar.demo.timetracker.assistant.infrastructure.config;
 
 import dev.langchain4j.http.client.jdk.JdkHttpClientBuilder;
 import dev.langchain4j.model.chat.*;
@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 //import dev.langchain4j.http.client.jdk.JdkHttpClientBuilder;
 
 @Configuration
-public class ChatModelConfig {
+public class AIConfig {
 
     @Value("${openai.api.key}")
     private String openAiApiKey;

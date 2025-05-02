@@ -7,6 +7,7 @@ import com.tushar.demo.timetracker.dto.request.PositionUpdateRequest;
 import com.tushar.demo.timetracker.dto.request.SignupRequest;
 import com.tushar.demo.timetracker.dto.request.StartTimeEntryRequest;
 import com.tushar.demo.timetracker.dto.request.StopTimeEntryRequest;
+import com.tushar.demo.timetracker.dto.request.addTimeEntryRequest;
 import com.tushar.demo.timetracker.exception.ConflictException;
 import com.tushar.demo.timetracker.exception.NoActiveTimerException;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
@@ -218,6 +219,28 @@ public class TimerController {
             logger.error("Failed to update timer position for user: {}", authentication.getName(), e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Update failed", Map.of("message", e.getMessage())));
+        }
+    }
+
+    @PostMapping("/addTimer")
+    public ResponseEntity<ApiResponse<TimeEntry>> addTimeEntry(
+            @Valid @RequestBody addTimeEntryRequest request,
+            Authentication authentication) {
+        logger.info("Adding time entry for user: {}", authentication.getName());
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                logger.warn("Unauthorized attempt to start timer");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
+            }
+            Users user = userDetailsService.getCurrentUser(authentication);
+            TimeEntry entry = timeEntryService.addTimeEntry(request, user);
+            logger.info("Popup - Timer added successfully for user: {}", user.getName());
+            return ResponseEntity.ok(ApiResponse.success(entry, "Timer started successfully"));
+        } catch (Exception e) {
+            logger.error("Failed to add time entry for user: {}", authentication.getName(), e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Creation failed", Map.of("message", e.getMessage())));
         }
     }
 }

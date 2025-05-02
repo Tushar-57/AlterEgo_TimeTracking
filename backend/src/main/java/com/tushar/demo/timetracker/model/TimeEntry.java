@@ -29,8 +29,9 @@ public class TimeEntry {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
 
+//    @FutureOrPresent(message = "End time must be in the future")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    @PastOrPresent(message = "End time must be in the future")
+    @NotNull(message = "End time must be in the future")
     private LocalDateTime endTime;
 
     private Long duration;
