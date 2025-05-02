@@ -16,20 +16,14 @@ public class AIConfig {
     @Value("${openai.api.key}")
     private String openAiApiKey;
 
-//    @Bean
-//    public ChatLanguageModel chatLanguageModel() {
-//        return OpenAiChatModel.builder()
-//                .apiKey(openAiApiKey)
-//                .httpClientBuilder(new JdkHttpClientBuilder())
-//                .modelName(OpenAiChatModelName.GPT_3_5_TURBO_16K)
-//                .build();
-//    }
     @Bean
     public ChatLanguageModel chatLanguageModel() {
         return OpenAiChatModel.builder()
                 .apiKey(openAiApiKey)
                 .httpClientBuilder(new JdkHttpClientBuilder())
                 .modelName(OpenAiChatModelName.GPT_3_5_TURBO_16K) // Use string directly
+                .temperature(0.5)
+                .maxTokens(1000) // Max token for usage with the chat model
                 .build();
     }
 }

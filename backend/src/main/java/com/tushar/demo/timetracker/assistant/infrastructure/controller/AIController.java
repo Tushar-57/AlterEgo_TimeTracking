@@ -1,6 +1,6 @@
-package com.tushar.demo.timetracker.controller;
+package com.tushar.demo.timetracker.assistant.infrastructure.controller;
 
-import com.tushar.demo.timetracker.dto.request.AI_CommandRequest;
+import com.tushar.demo.timetracker.assistant.domain.conversation.AI_CommandRequest;
 import com.tushar.demo.timetracker.exception.NoActiveTimerException;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
 import com.tushar.demo.timetracker.model.TimeEntry;

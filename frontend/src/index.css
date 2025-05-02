@@ -3,15 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-
-/* @layer base {
-  body {
-    font-feature-settings: "liga" 1, "kern" 1;
-    -webkit-font-smoothing: antialiased;
-  }
-} */
 @layer base {
-
   body {
     font-feature-settings: "liga" 1, "kern" 1;
     -webkit-font-smoothing: antialiased;
@@ -26,18 +18,6 @@
     height: 100%;
     width: 100%;
   }
-  
-  /* .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-  } */
-}
-.glass-morphism-inner {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .glass-morphism {
@@ -45,7 +25,6 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .luxury-gradient {
@@ -62,7 +41,6 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-/* Timer Animation */
 @keyframes pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -73,86 +51,40 @@
   animation: pulse 2s infinite;
 }
 
-/* Smooth transitions */
 .transition-all {
   transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 300ms;
 }
 
-.glass-morphism
-{
+.glass-morphism {
   @apply backdrop-blur-lg bg-white/30 shadow-sm;
   transition: all 0.3s ease;
 }
+
 .ai-panel-enter {
   opacity: 0;
   transform: translateY(20px);
 }
+
 .ai-panel-enter-active {
   opacity: 1;
   transform: translateY(0);
   transition: all 0.3s ease-out;
 }
-.ai-overlay {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 95vw;
-  height: 95vh;
-  max-width: 1600px;
-  max-height: 900px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  z-index: 9999;
-  padding: 1.5rem;
-}
-
-/* Add dark mode support */
-.dark .ai-overlay {
-  background: hsl(var(--background)) !important;
-  border-color: hsl(var(--border));
-}
-
-/* Add these transitions */
-.ai-overlay {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.ai-overlay select {
-  font-family: inherit;
-  color: inherit;
-}
-/* @keyframes fade-in {
-  from { 
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out forwards;
-} */
 
 .calendar-grid {
   background-image: 
     linear-gradient(to right, #e5e7eb 1px, transparent 1px),
     linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
   background-size: 143px 60px;
-  /* min-height: calc(100vh - 150px); */
-  min-height: 1440px; /* 24 hours * 60px */
+  min-height: 1440px;
 }
 
-
-/* Prevent sidebar overlap */
 .ml-64 {
   margin-left: 252px;
 }
+
 .project-color-lightblue { background-color: #ADD8E6; }
 .project-color-violet { background-color: #8B5CF6; }
 .project-color-amber { background-color: #F59E0B; }
@@ -229,6 +161,7 @@
   background-color: #999;
   display: inline-block;
 }
+
 @media (max-width: 768px) {
   .step-container {
     padding: 1rem;
@@ -241,18 +174,13 @@
   .chat-bubble {
     max-width: 95%;
   }
-  .assistant-bubble{
-      max-width: 95%;
+  .assistant-bubble {
+    max-width: 95%;
   }
   .glow {
-  box-shadow: 0 0 10px rgba(168, 216, 234, 0.5);
+    box-shadow: 0 0 10px rgba(168, 216, 234, 0.5);
+  }
 }
-}
-
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 @keyframes float {
   0% {
@@ -277,7 +205,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -296,12 +223,10 @@ body {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Smooth transitions */
 * {
   transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
-/* Grid background pattern */
 .grid-pattern {
   background-size: 40px 40px;
   background-image: 
@@ -309,8 +234,47 @@ body {
     linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
 }
 
-/* Ensure scrollable containers work */
 html, body, #root {
   height: 100%;
   overflow: auto;
+}
+
+/* Styles for FullScreenChat */
+.chat-fullscreen-container {
+  background: linear-gradient(to bottom right, #eff6ff, #e0f2fe);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.chat-header {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.chat-input-wrapper {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.suggestion-chip {
+  color: #1f2937;
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.suggestion-chip:hover {
+  transform: scale(1.05);
+}
+
+.style-picker-modal {
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(14px);
+  border-radius: 24px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
 }

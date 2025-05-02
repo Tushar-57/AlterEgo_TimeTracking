@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+// import { Message } from '../types/onboarding';
 import { Message } from '../types/onboarding';
 import ChatBubble from './ChatBubble';
 import TypingIndicator from './TypingIndicator';

@@ -1,6 +1,6 @@
 package com.tushar.demo.timetracker.controller;
 
-import com.tushar.demo.timetracker.dto.request.AI_CommandRequest;
+import com.tushar.demo.timetracker.assistant.domain.conversation.AI_CommandRequest;
 import com.tushar.demo.timetracker.dto.request.OnboardingRequestDTO;
 import com.tushar.demo.timetracker.exception.NoActiveTimerException;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
@@ -75,4 +75,55 @@ public class OnboardingController {
                     .body(Map.of("error", "Processing failed", "message", e.getMessage()));
         }
     }
+	
+	@GetMapping("getOnboardingData")
+    public ResponseEntity<?> getOnboarding(Authentication authentication) {
+        try {
+            Users user = userRepo.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            OnboardingEntity onboarding = onboardingRepository.findByUser(user)
+                    .orElseThrow(() -> new ResourceNotFoundException("Onboarding not found for user: " + user.getEmail()));
+            
+            return ResponseEntity.ok(Map.of(
+                "name", onboarding.getName(),
+                "preferredTone", onboarding.getPreferredTone(),
+                "coachAvatar", onboarding.getCoachAvatar()
+            ));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Not found", "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Processing failed", "message", e.getMessage()));
+        }
+    }
+
+    @PatchMapping("updateStyle")
+    public ResponseEntity<?> updateStyle(@RequestBody Map<String, String> request, Authentication authentication) {
+        try {
+            Users user = userRepo.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            String style = request.get("style");
+
+            if (style == null || style.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Style is required"));
+            }
+
+            OnboardingEntity onboarding = onboardingRepository.findByUser(user)
+                    .orElseThrow(() -> new ResourceNotFoundException("Onboarding not found for user: " + user.getEmail()));
+            
+            onboarding.setMentor(new MentorEntity(onboarding.getMentor().getArchetype(),style,onboarding.getMentor().getName(),onboarding.getCoachAvatar()));
+//            setStyle(style);
+            onboardingRepository.save(onboarding);
+
+            return ResponseEntity.ok(Map.of("message", "Style updated successfully"));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Not found", "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Processing failed", "message", e.getMessage()));
+        }
+    }
+	
 }

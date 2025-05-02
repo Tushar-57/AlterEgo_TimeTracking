@@ -12,13 +12,11 @@ import { PlannerForm } from './components/Planner/Planner';
 import { Dashboard } from './components/Dashboard';
 import { UserTagPage } from './components/UserTags';
 import { ToastProvider } from './components/ui/toast';
-// import { ToastViewport } from '@radix-ui/react-toast';
 import { ToastViewport } from './components/ui/toast';
-import MainRunner from './components/Onboarding/MainRunner';
-// import OnboardingFlow from './components/Onboarding/OnboardingFlow';
-import MentorSelection from './components/Onboarding/Mentor/MentorSelection';
-import { MentorArchetype } from './components/Onboarding/types/onboarding';
 import ChatOnboarding from './components/Onboarding/ChatOnboarding';
+import { ChatProvider } from './components/AIChat/ChatContext';
+import FullScreenChat from './components/AIChat/FullScreenChat';
+import ChatToggleButton from './components/AIChat/ChatToggleButton';
 
 const Reports = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Reports Page</div>;
 const Projects = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Projects Page</div>;
@@ -28,24 +26,13 @@ const Tags = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Tags Page<
 const Settings = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Settings Page</div>;
 
 const App = () => (
-
   <Router>
     <AuthProvider>
       <ToastProvider>
         <Routes>
           <Route path="/login" element={<LoginClassic />} />
           <Route path="/signup" element={<SignupClassic />} />
-          <Route 
-              path="/onboarding" 
-              element={<ChatOnboarding onComplete={handleOnboardingComplete} />} 
-            />
-
-        {/* Mentor Selection Flow */}
-        {/* <Route
-          path="/mentor"
-          element={<MentorSe lection onSelect={function (archetype: MentorArchetype): void {
-            throw new Error('Function not implemented.');
-          } } />} /> */}
+          <Route path="/onboarding" element={<ChatOnboarding onComplete={handleOnboardingComplete} />} />
           <Route path="/*" element={<ProtectedRoutes />} />
         </Routes>
         <ToastViewport className="[--viewport-padding:_25px] fixed bottom-0 right-0 flex flex-col p-[var(--viewport-padding)] gap-[25px] w-[390px] max-w-[100vw] m-0 list-none z-[2147483647] outline-none" />
@@ -67,26 +54,30 @@ const ProtectedRoutes = () => {
   if (loading) return <LoadingSpinner />;
 
   return isAuthenticated ? (
-    <div className="flex">
-      <Sidebar />
-      <main className="flex-1 ml-64">
-        <Routes>
-          <Route index element={<TimeTracker />} />
-          <Route path="/" element={<TimeTracker />} />
-          <Route path="/tasks" element={<TaskManager />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/projects" element={<ProjectPage />} />
-          <Route path="/clients" element={<Clients />} />
-          <Route path="/invoices" element={<Invoices />} />
-          <Route path="/tags" element={<UserTagPage />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/planner" element={<PlannerForm />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-    </div>
+    <ChatProvider>
+      <div className="flex relative">
+        <Sidebar />
+        <main className="flex-1 ml-64">
+          <Routes>
+            <Route index element={<TimeTracker />} />
+            <Route path="/" element={<TimeTracker />} />
+            <Route path="/tasks" element={<TaskManager />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/projects" element={<ProjectPage />} />
+            <Route path="/clients" element={<Clients />} />
+            <Route path="/invoices" element={<Invoices />} />
+            <Route path="/tags" element={<UserTagPage />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/planner" element={<PlannerForm />} />
+            <Route path="/dashboard" element={<Dashboard isAuthenticated={isAuthenticated} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+        <FullScreenChat />
+        <ChatToggleButton />
+      </div>
+    </ChatProvider>
   ) : (
     <Navigate to="/login" replace />
   );
@@ -95,8 +86,5 @@ const ProtectedRoutes = () => {
 export default App;
 
 const handleOnboardingComplete = () => {
-  // Handle what happens after onboarding is complete
-  // Typically redirect to dashboard or main app
   console.log('Onboarding complete!');
-  // You might want to use navigate here if you need to redirect
 };

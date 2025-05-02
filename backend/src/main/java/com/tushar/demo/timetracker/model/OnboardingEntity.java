@@ -128,4 +128,9 @@ public class OnboardingEntity {
     public void setGoals(List<GoalEntity> goals) { this.goals = goals; }
     public PlannerEntity getPlanner() { return planner; }
     public void setPlanner(PlannerEntity planner) { this.planner = planner; }
+
+	public Object getName() {
+		return mentor.getName();
+	}
+
 }
