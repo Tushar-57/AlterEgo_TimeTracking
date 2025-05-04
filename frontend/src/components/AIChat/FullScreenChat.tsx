@@ -9,12 +9,12 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../ui/toast';
 
 const SUGGESTION_PROMPTS = [
+  'Start a timer for coding on Project X',
+  'How much time did I spend this week?',
+  'Create a new project named Sprint 5',
+  'What should I work on next?',
   'How am I doing today?',
-  'I am not sure, what should I do?',
-  'Who are you?',
-  'How can you help me?',
-  'Work on my internship application',
-  'Prepare for an interview'
+  'Who are you?'
 ];
 
 const TONES: CoachingStyle[] = ['Direct', 'Friendly', 'Encouraging', 'Nurturing', 'Patient', 'Challenging', 'Inspirational'];
@@ -38,6 +38,7 @@ const FullScreenChat: React.FC = () => {
   const [context, setContext] = useState<{ type: string; value: string } | null>(null);
   const [isAvatarLoading, setIsAvatarLoading] = useState(true);
   const [showContextPicker, setShowContextPicker] = useState(false);
+  const [actionPrompt, setActionPrompt] = useState<{ action: string; details: any } | null>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -79,7 +80,7 @@ const FullScreenChat: React.FC = () => {
           throw new Error('Empty response from server');
         }
         const data = JSON.parse(text);
-        console.log('Received onboarding data:', data); // Debug response
+        console.log('Received onboarding data:', data);
         if (!data || Object.keys(data).length === 0) {
           throw new Error('No onboarding data available');
         }
@@ -87,7 +88,7 @@ const FullScreenChat: React.FC = () => {
           name: data.name && data.name.trim() !== '' ? data.name : 'Assistant',
           tone: data.preferredTone || 'Friendly',
           avatar: data.coachAvatar || '/avatars/default.svg',
-          archetype: 'Guide', // Backend does not return archetype; use default
+          archetype: 'Guide',
           goals: data.goals || [],
         });
       } catch (error) {
@@ -118,7 +119,7 @@ const FullScreenChat: React.FC = () => {
     if (messages.length === 0 && isChatOpen && coachData) {
       addMessage({
         id: Date.now().toString(),
-        content: `Hello, I'm ${coachData.name}, your ${coachData.tone} ${coachData.archetype}! How can I assist you today?`,
+        content: `Hello, I'm ${coachData.name}, your ${coachData.tone} ${coachData.archetype}! Try commands like 'Start a timer for coding' or 'How much time did I spend this week?'`,
         sender: 'assistant',
         isRendered: true,
         timestamp: new Date(),
@@ -147,6 +148,7 @@ const FullScreenChat: React.FC = () => {
     setContext(null);
     setIsTyping(true);
     setShowSuggestions(false);
+    setActionPrompt(null);
 
     try {
       const token = localStorage.getItem('jwtToken');
@@ -159,6 +161,7 @@ const FullScreenChat: React.FC = () => {
         navigate('/login');
         return;
       }
+      console.log('Sending command:', input);
       const response = await fetch('http://localhost:8080/api/ai/chat', {
         method: 'POST',
         headers: {
@@ -175,13 +178,21 @@ const FullScreenChat: React.FC = () => {
         throw new Error(`HTTP error: ${response.status}`);
       }
       const data = await response.json();
+      console.log('Received response:', data);
       addMessage({
         id: Date.now().toString(),
         content: data.message || 'No response from AI',
         sender: 'assistant',
         isRendered: true,
         timestamp: new Date(),
-        additionalContent: ''
+        additionalContent: data.intent ? `Intent: ${data.intent}` : ''
+      });
+      if (data.requiresAction) {
+        setActionPrompt({ action: data.actionDetails.action, details: data.actionDetails });
+      }
+      toast({
+        title: 'Success',
+        description: 'Command processed successfully.',
       });
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -203,11 +214,70 @@ const FullScreenChat: React.FC = () => {
     }
   };
 
+  const handleAction = async (action: string, details: any) => {
+    try {
+      const token = localStorage.getItem('jwtToken');
+      if (!token) {
+        toast({
+          title: 'Session Expired',
+          description: 'Please log in to continue.',
+          variant: 'destructive',
+        });
+        navigate('/login');
+        return;
+      }
+      let endpoint = '';
+      let body = {};
+      switch (action) {
+        case 'createProject':
+          endpoint = '/api/projects';
+          body = { name: details.projectName, color: '#000000', description: '' };
+          break;
+        case 'createTag':
+          endpoint = '/api/tags';
+          body = { name: details.tagName, color: '#000000' };
+          break;
+        case 'stopTimer':
+          endpoint = `/api/timers/${details.timerId}/stop`;
+          body = { endTime: new Date().toISOString(), description: 'Stopped via AI', billable: false };
+          break;
+        default:
+          return;
+      }
+      const response = await fetch(`http://localhost:8080${endpoint}`, {
+        method: action === 'stopTimer' ? 'POST' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+      toast({
+        title: 'Success',
+        description: `${action === 'createProject' ? 'Project' : action === 'createTag' ? 'Tag' : 'Timer'} ${action === 'stopTimer' ? 'stopped' : 'created'} successfully.`,
+      });
+      setActionPrompt(null);
+      // Re-send the original command
+      sendMessage();
+    } catch (error) {
+      console.error(`Failed to perform ${action}:`, error);
+      toast({
+        title: 'Error',
+        description: `Failed to ${action === 'createProject' ? 'create project' : action === 'createTag' ? 'create tag' : 'stop timer'}.`,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleRestartChat = () => {
     clearMessages();
     setInput('');
     setContext(null);
     setShowSuggestions(true);
+    setActionPrompt(null);
   };
 
   const handleSuggestionClick = (prompt: string) => {
@@ -330,13 +400,13 @@ const FullScreenChat: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3, ease: [0.32, 0.72, 0.24, 1.2] }}
-              className="relative flex flex-col w-full max-w-5xl h-[90vh] bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl shadow-2xl overflow-hidden"
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="relative flex flex-col w-full max-w-5xl h-[90vh] bg-gradient-to-br from-pink-100 to-lavender-100 rounded-2xl shadow-2xl overflow-hidden"
             >
-              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-white/20 to-white/10 border-b border-gray-100">
+              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-white/30 to-white/10 border-b border-lavender-200">
                 <div className="flex items-center gap-3">
                   {isAvatarLoading || !coachData ? (
-                    <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
+                    <div className="w-10 h-10 rounded-full bg-lavender-200 animate-pulse" />
                   ) : (
                     <motion.img
                       initial={{ scale: 0.8, opacity: 0 }}
@@ -344,7 +414,7 @@ const FullScreenChat: React.FC = () => {
                       transition={{ duration: 0.2 }}
                       src={coachData.avatar}
                       alt={`${coachData.name} avatar`}
-                      className="w-10 h-10 rounded-full border border-gray-200"
+                      className="w-10 h-10 rounded-full border border-lavender-300"
                       onError={(e) => (e.currentTarget.src = '/avatars/default.svg')}
                     />
                   )}
@@ -358,9 +428,9 @@ const FullScreenChat: React.FC = () => {
                       <button
                         ref={settingsButtonRef}
                         onClick={() => setShowSettingsModal(true)}
-                        className="p-2 rounded-full bg-white/30 hover:bg-white/40 transition-all"
+                        className="p-2 rounded-full bg-white/50 hover:bg-white/70 transition-all"
                       >
-                        <Settings className="w-5 h-5 text-gray-800" />
+                        <Settings className="w-5 h-5 text-gray-700" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent className="bg-gray-800 text-white text-sm rounded-md py-1 px-2">
@@ -371,9 +441,9 @@ const FullScreenChat: React.FC = () => {
                     <TooltipTrigger asChild>
                       <button
                         onClick={handleRestartChat}
-                        className="p-2 rounded-full bg-white/30 hover:bg-white/40 transition-all"
+                        className="p-2 rounded-full bg-white/50 hover:bg-white/70 transition-all"
                       >
-                        <RefreshCw className="w-5 h-5 text-gray-800" />
+                        <RefreshCw className="w-5 h-5 text-gray-700" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent className="bg-gray-800 text-white text-sm rounded-md py-1 px-2">
@@ -384,9 +454,9 @@ const FullScreenChat: React.FC = () => {
                     <TooltipTrigger asChild>
                       <button
                         onClick={toggleChat}
-                        className="p-2 rounded-full bg-white/30 hover:bg-white/40 transition-all"
+                        className="p-2 rounded-full bg-white/50 hover:bg-white/70 transition-all"
                       >
-                        <X className="w-5 h-5 text-gray-800" />
+                        <X className="w-5 h-5 text-gray-700" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent className="bg-gray-800 text-white text-sm rounded-md py-1 px-2">
@@ -395,12 +465,12 @@ const FullScreenChat: React.FC = () => {
                   </Tooltip>
                 </div>
               </div>
-              <ChatContainer messages={messages} isTyping={isTyping} className="flex-1 px-8 py-6 overflow-y-auto" />
+              <ChatContainer messages={messages} isTyping={isTyping} className="flex-1 px-8 py-6 overflow-y-auto bg-gradient-to-b from-pink-50 to-lavender-50" />
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="p-6 bg-gradient-to-t from-white/90 to-white/70 border-t border-gray-100"
+                className="p-6 bg-gradient-to-t from-white/90 to-white/70 border-t border-lavender-200"
               >
                 <AnimatePresence>
                   {showSuggestions && (
@@ -409,7 +479,7 @@ const FullScreenChat: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
                       transition={{ duration: 0.2 }}
-                      className="flex gap-3 mb-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                      className="flex gap-3 mb-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-lavender-300 scrollbar-track-lavender-100"
                     >
                       {SUGGESTION_PROMPTS.map((prompt, index) => (
                         <motion.button
@@ -419,7 +489,7 @@ const FullScreenChat: React.FC = () => {
                           transition={{ duration: 0.2, delay: index * 0.1 }}
                           whileHover={{ scale: 1.05 }}
                           onClick={() => handleSuggestionClick(prompt)}
-                          className="px-4 py-2 bg-gradient-to-r from-pink-200/50 to-purple-200/50 text-gray-800 rounded-full text-sm font-medium transition-all shadow-sm flex-shrink-0"
+                          className="px-4 py-2 bg-gradient-to-r from-pink-200 to-lavender-200 text-gray-800 rounded-full text-sm font-medium transition-all shadow-sm flex-shrink-0"
                         >
                           {prompt}
                         </motion.button>
@@ -427,15 +497,52 @@ const FullScreenChat: React.FC = () => {
                     </motion.div>
                   )}
                 </AnimatePresence>
-                <div className="bg-white/95 rounded-xl shadow-md border border-gray-100 p-4 flex flex-col gap-3">
+                <AnimatePresence>
+                  {actionPrompt && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="mb-4 p-4 bg-lavender-100 rounded-lg shadow-sm flex items-center justify-between"
+                    >
+                      <span className="text-gray-800">
+                        {actionPrompt.action === 'createProject'
+                          ? `Project "${actionPrompt.details.projectName}" does not exist. Create it?`
+                          : actionPrompt.action === 'createTag'
+                          ? `Tag "${actionPrompt.details.tagName}" does not exist. Create it?`
+                          : `An active timer is running. Stop it?`}
+                      </span>
+                      <div className="flex gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleAction(actionPrompt.action, actionPrompt.details)}
+                          className="px-4 py-2 bg-gradient-to-r from-pink-400 to-lavender-400 text-white rounded-lg shadow-sm"
+                        >
+                          Yes
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setActionPrompt(null)}
+                          className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg shadow-sm"
+                        >
+                          Cancel
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <div className="bg-white/95 rounded-xl shadow-md border border-lavender-200 p-4 flex flex-col gap-3">
                   <div className="flex items-center gap-3">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
                           onClick={() => setShowContextPicker(true)}
-                          className="p-3 rounded-lg bg-white/30 hover:bg-white/40 transition-all"
+                          className="p-3 rounded-lg bg-white/50 hover:bg-white/70 transition-all"
                         >
-                          <Paperclip className="w-5 h-5 text-gray-800" />
+                          <Paperclip className="w-5 h-5 text-gray-700" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent className="bg-gray-800 text-white text-sm rounded-md py-1 px-2">
@@ -447,7 +554,7 @@ const FullScreenChat: React.FC = () => {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
                       placeholder="Type your message or select a suggestion..."
-                      className="flex-1 p-4 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 bg-gray-50 text-gray-900 text-base transition-all resize-none h-28"
+                      className="flex-1 p-4 rounded-lg border border-lavender-200 focus:outline-none focus:ring-2 focus:ring-lavender-300 bg-pink-50 text-gray-900 text-base transition-all resize-none h-28"
                     />
                   </div>
                   {context && (
@@ -456,12 +563,14 @@ const FullScreenChat: React.FC = () => {
                     </div>
                   )}
                   <div className="flex gap-3">
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={sendMessage}
-                      className="flex-1 bg-gradient-to-r from-pink-400 to-purple-500 text-white px-6 py-3 rounded-lg shadow-sm hover:shadow-md transition-all active:scale-[0.98] font-medium"
+                      className="flex-1 bg-gradient-to-r from-pink-400 to-lavender-400 text-white px-6 py-3 rounded-lg shadow-sm transition-all"
                     >
                       Send
-                    </button>
+                    </motion.button>
                   </div>
                 </div>
               </motion.div>
@@ -470,20 +579,20 @@ const FullScreenChat: React.FC = () => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2, ease: [0.32, 0.72, 0.24, 1.2] }}
-                  className="absolute top-12 right-4 bg-white/30 backdrop-blur-md rounded-2xl shadow-lg ring-1 ring-white/20 p-6 w-72 max-w-[90vw] z-60"
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  className="absolute top-12 right-4 bg-white/50 backdrop-blur-md rounded-2xl shadow-lg ring-1 ring-lavender-200 p-6 w-72 max-w-[90vw] z-60"
                 >
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Chat Settings</h3>
-                  <div className="flex border-b border-gray-200 mb-4">
+                  <div className="flex border-b border-lavender-200 mb-4">
                     <button
                       onClick={() => setSettingsTab('tone')}
-                      className={`flex-1 py-2 text-sm font-medium ${settingsTab === 'tone' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-600'}`}
+                      className={`flex-1 py-2 text-sm font-medium ${settingsTab === 'tone' ? 'text-lavender-600 border-b-2 border-lavender-600' : 'text-gray-600'}`}
                     >
                       Tone
                     </button>
                     <button
                       onClick={() => setSettingsTab('mentor')}
-                      className={`flex-1 py-2 text-sm font-medium ${settingsTab === 'mentor' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-600'}`}
+                      className={`flex-1 py-2 text-sm font-medium ${settingsTab === 'mentor' ? 'text-lavender-600 border-b-2 border-lavender-600' : 'text-gray-600'}`}
                     >
                       Mentor
                     </button>
@@ -504,7 +613,7 @@ const FullScreenChat: React.FC = () => {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => handleToneChange(tone)}
-                            className={`p-3 rounded-lg bg-gradient-to-r from-pink-200 to-purple-200 text-gray-800 font-medium transition-all hover:bg-opacity-80 ${coachData?.tone === tone ? 'ring-2 ring-purple-300' : ''}`}
+                            className={`p-3 rounded-lg bg-gradient-to-r from-pink-200 to-lavender-200 text-gray-800 font-medium transition-all hover:bg-opacity-80 ${coachData?.tone === tone ? 'ring-2 ring-lavender-300' : ''}`}
                           >
                             {tone}
                           </motion.button>
@@ -530,7 +639,7 @@ const FullScreenChat: React.FC = () => {
                               const avatar = AVATARS[Math.floor(Math.random() * AVATARS.length)].url;
                               handleMentorChange(name, archetype, avatar);
                             }}
-                            className={`p-3 rounded-lg bg-gradient-to-r from-pink-200 to-purple-200 text-gray-800 font-medium transition-all hover:bg-opacity-80 ${coachData?.archetype === archetype ? 'ring-2 ring-purple-300' : ''}`}
+                            className={`p-3 rounded-lg bg-gradient-to-r from-pink-200 to-lavender-200 text-gray-800 font-medium transition-all hover:bg-opacity-80 ${coachData?.archetype === archetype ? 'ring-2 ring-lavender-300' : ''}`}
                           >
                             {archetype}
                           </motion.button>
@@ -538,12 +647,14 @@ const FullScreenChat: React.FC = () => {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setShowSettingsModal(false)}
-                    className="mt-4 w-full text-gray-600 hover:text-gray-800 font-medium bg-gray-100/50 rounded-lg py-2 transition-all hover:bg-gray-200/50"
+                    className="mt-4 w-full text-gray-600 hover:text-gray-800 font-medium bg-pink-100/50 rounded-lg py-2 transition-all hover:bg-pink-200/50"
                   >
                     Close
-                  </button>
+                  </motion.button>
                 </motion.div>
               )}
               {showContextPicker && (
@@ -551,8 +662,8 @@ const FullScreenChat: React.FC = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2, ease: [0.32, 0.72, 0.24, 1.2] }}
-                  className="absolute bottom-24 left-6 bg-white/30 backdrop-blur-md rounded-2xl shadow-lg ring-1 ring-white/20 p-6 w-72 max-w-[90vw] z-60"
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  className="absolute bottom-24 left-6 bg-white/50 backdrop-blur-md rounded-2xl shadow-lg ring-1 ring-lavender-200 p-6 w-72 max-w-[90vw] z-60"
                 >
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Add Context</h3>
                   <div className="grid gap-3">
@@ -562,18 +673,20 @@ const FullScreenChat: React.FC = () => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => handleContextSelect(option.type, option.value)}
-                        className="p-3 rounded-lg bg-gradient-to-r from-pink-200 to-purple-200 text-gray-800 font-medium transition-all hover:bg-opacity-80 text-left"
+                        className="p-3 rounded-lg bg-gradient-to-r from-pink-200 to-lavender-200 text-gray-800 font-medium transition-all hover:bg-opacity-80 text-left"
                       >
                         {option.type}: {option.value}
                       </motion.button>
                     ))}
                   </div>
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setShowContextPicker(false)}
-                    className="mt-4 w-full text-gray-600 hover:text-gray-800 font-medium bg-gray-100/50 rounded-lg py-2 transition-all hover:bg-gray-200/50"
+                    className="mt-4 w-full text-gray-600 hover:text-gray-800 font-medium bg-pink-100/50 rounded-lg py-2 transition-all hover:bg-pink-200/50"
                   >
                     Close
-                  </button>
+                  </motion.button>
                 </motion.div>
               )}
             </motion.div>

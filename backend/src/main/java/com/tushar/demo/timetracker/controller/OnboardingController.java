@@ -1,6 +1,7 @@
 package com.tushar.demo.timetracker.controller;
 
 import com.tushar.demo.timetracker.assistant.domain.conversation.AI_CommandRequest;
+import com.tushar.demo.timetracker.assistant.infrastructure.service.AI_TimeEntryService;
 import com.tushar.demo.timetracker.dto.request.OnboardingRequestDTO;
 import com.tushar.demo.timetracker.exception.NoActiveTimerException;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
@@ -16,7 +17,6 @@ import com.tushar.demo.timetracker.repository.OnboardingRepository;
 import com.tushar.demo.timetracker.repository.ProjectRepository;
 import com.tushar.demo.timetracker.repository.TimeEntryRepository;
 import com.tushar.demo.timetracker.repository.UserRepository;
-import com.tushar.demo.timetracker.service.AI_TimeEntryService;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

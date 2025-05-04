@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 //import dev.langchain4j.http.client.jdk.JdkHttpClientBuilder;
 
 @Configuration
-public class AIConfig {
+public class LangChainConfig {
 
     @Value("${openai.api.key}")
     private String openAiApiKey;

@@ -1,4 +1,4 @@
-package com.tushar.demo.timetracker.repository;
+package com.tushar.demo.timetracker.assistant.infrastructure.repository;
 
 import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
+public interface AI_TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
     Optional<TimeEntry> findByUserIdAndEndTimeIsNull(Long userId);
 
     List<TimeEntry> findByUserIdAndStartTimeBetween(Long userId, LocalDateTime start, LocalDateTime end);
@@ -20,4 +20,5 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
 
     Optional<TimeEntry> findByIdAndUser(Long timerId, Users user);
 //    Optional<TimeEntry> findActiveTimerByUser(Users user);
+    
 }
