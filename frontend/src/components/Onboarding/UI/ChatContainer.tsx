@@ -1,5 +1,4 @@
 import React, { useRef, useEffect } from 'react';
-// import { Message } from '../types/onboarding';
 import { Message } from '../types/onboarding';
 import ChatBubble from './ChatBubble';
 import TypingIndicator from './TypingIndicator';
@@ -7,15 +6,15 @@ import TypingIndicator from './TypingIndicator';
 interface ChatContainerProps {
   messages: Message[];
   isTyping: boolean;
-  children?: React.ReactNode;
-  className?: string; // Added className prop
+  className?: string;
+  coachAvatar: string;
 }
 
 export const ChatContainer: React.FC<ChatContainerProps> = ({
   messages,
   isTyping,
-  children,
-  className, // Destructure className
+  className,
+  coachAvatar,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -24,18 +23,21 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   }, [messages, isTyping]);
 
   return (
-    <div
-      className={`flex-1 overflow-y-auto px-4 py-4 space-y-4 h-[calc(100vh-200px)] ${className || ''}`} // Apply className with fallback
-    >
-      {messages.map((message) => (
+    <div className={className}>
+      {messages.map((msg) => (
         <ChatBubble
-          key={message.id}
-          content={message.content}
-          isUser={message.sender === 'user'}
-        />
+          key={msg.id}
+          content={msg.content}
+          isUser={msg.sender === 'user'}
+          isAnimated={msg.isRendered}
+          coachAvatar={msg.sender === 'assistant' ? coachAvatar : undefined}
+        >
+          {msg.additionalContent && process.env.NODE_ENV === 'development' && (
+            <div className="text-sm text-gray-600 mt-1">{msg.additionalContent}</div>
+          )}
+        </ChatBubble>
       ))}
       {isTyping && <TypingIndicator />}
-      {children}
       <div ref={messagesEndRef} />
     </div>
   );

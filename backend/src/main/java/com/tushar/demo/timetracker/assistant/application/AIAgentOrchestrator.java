@@ -40,7 +40,7 @@ public class AIAgentOrchestrator {
     }
 
     public String processCommand(String userId, String command, String tone, String archetype) {
-        Intent intent = intentAgent.classifyIntent(command);
+        Intent intent = intentAgent.classifyIntent(command, ""); // Empty context for simplicity
 
         CheckerAgent.ValidationResult validationResult = checkerAgent.validateQuery(userId, command, intent, tone, archetype);
         if (!validationResult.isValid()) {
@@ -54,17 +54,17 @@ public class AIAgentOrchestrator {
         switch (intent) {
             case CREATE_TIME_ENTRY:
                 TimeEntry timeEntry = schedulerAgent.processTimeEntryCommand(userId, command);
-                return "Time entry created: " + timeEntry.getDescription();
+                return formatResponse("Time entry created: " + timeEntry.getDescription(), tone, archetype);
             case MANAGE_PROJECT:
                 Project project = projectAgent.processProjectCommand(userId, command);
-                return "Project created: " + project.getName();
+                return formatResponse("Project created: " + project.getName(), tone, archetype);
             case ANALYZE_TIME:
                 TimeSummary summary = analyticsAgent.processAnalyticsCommand(command);
-                return "Time summary: " + summary.totalMinutes() + " minutes on " + summary.projectName();
+                return formatResponse("Time summary: " + summary.totalMinutes() + " minutes on " + summary.projectName(), tone, archetype);
             case GENERAL_CHAT:
             case UNKNOWN:
             default:
-                return generalChatAgent.processQuery(userId, command).response();
+                return formatResponse(generalChatAgent.processQuery(userId, command).response(), tone, archetype);
         }
     }
 
@@ -84,5 +84,12 @@ public class AIAgentOrchestrator {
             default:
                 return "Resolve the issue and try again.";
         }
+    }
+
+    private String formatResponse(String baseMessage, String tone, String archetype) {
+        if ("Inspirational".equalsIgnoreCase(tone) && "Guide".equalsIgnoreCase(archetype)) {
+            return "You're making great progress! " + baseMessage + " Keep shining!";
+        }
+        return baseMessage;
     }
 }

@@ -57,7 +57,8 @@ public class AgentSociety {
     }
 
     public Conversation processCommand(String userId, String command, String tone, String archetype) {
-        Intent intent = intentAgent.classifyIntent(command);
+        String context = buildConversationContext(userId);
+        Intent intent = intentAgent.classifyIntent(command, context);
 
         CheckerAgent.ValidationResult validationResult = checkerAgent.validateQuery(userId, command, intent, tone, archetype);
         if (!validationResult.isValid()) {
@@ -77,9 +78,7 @@ public class AgentSociety {
             return conversation;
         }
 
-        String context = buildConversationContext(userId);
         String response;
-
         switch (intent) {
             case CREATE_TIME_ENTRY:
                 TimeEntry timeEntry = schedulerAgent.processTimeEntryCommand(userId, command);

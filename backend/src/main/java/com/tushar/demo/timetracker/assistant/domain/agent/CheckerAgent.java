@@ -14,6 +14,7 @@ import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -89,14 +90,24 @@ public class CheckerAgent {
 
     private ValidationResult validateTimeEntryCommand(Users user, String command, String tone, String archetype) {
         Map<String, Object> extracted = extractTimeEntryDetails(command);
+        String description = (String) extracted.get("description");
         String projectName = (String) extracted.get("projectName");
         List<String> tagNames = (List<String>) extracted.get("tags");
         String action = (String) extracted.get("action");
         Long duration = extracted.get("duration") != null ? Long.parseLong(extracted.get("duration").toString()) : 0L;
+        String startTimeStr = (String) extracted.get("startTime");
+        String endTimeStr = (String) extracted.get("endTime");
 
         List<String> errors = new ArrayList<>();
         Map<String, Object> suggestedAction = new HashMap<>();
 
+        // Mandatory field validation
+        if (description == null || description.trim().isEmpty()) {
+            errors.add("Task description is required.");
+            suggestedAction.put("action", "provideDescription");
+        }
+
+        // Optional field validation
         if (projectName != null && !projectName.isEmpty()) {
             Optional<Project> project = projectRepository.findByNameAndUser(projectName, user);
             if (project.isEmpty()) {
@@ -117,12 +128,22 @@ public class CheckerAgent {
             }
         }
 
+        // Duration validation
         if (duration > 1440) {
             errors.add("Duration exceeds 24 hours. Please specify a duration up to 1440 minutes.");
             suggestedAction.put("action", "adjustDuration");
             suggestedAction.put("duration", duration);
         }
 
+        // Time validation
+        LocalDateTime startTime = startTimeStr != null ? LocalDateTime.parse(startTimeStr) : LocalDateTime.now();
+        LocalDateTime endTime = endTimeStr != null ? LocalDateTime.parse(endTimeStr) : null;
+        if (endTime != null && startTime != null && !endTime.isAfter(startTime)) {
+            errors.add("End time must be after start time.");
+            suggestedAction.put("action", "adjustTime");
+        }
+
+        // Active timer check
         Optional<TimeEntry> activeTimer = timeEntryRepository.findByUserIdAndEndTimeIsNull(user.getId());
         if ("stop".equalsIgnoreCase(action)) {
             if (activeTimer.isEmpty()) {
@@ -142,6 +163,26 @@ public class CheckerAgent {
             suggestedAction.put("timerId", activeTimer.get().getId());
         }
 
+        // Confirmation prompt for time entry creation
+        if (errors.isEmpty() && "create".equalsIgnoreCase(action)) {
+            suggestedAction.put("action", "confirmTimeEntry");
+            suggestedAction.put("description", description);
+            suggestedAction.put("projectName", projectName);
+            suggestedAction.put("tagNames", tagNames);
+            suggestedAction.put("startTime", startTimeStr);
+            suggestedAction.put("duration", duration);
+            StringBuilder promptMessage = new StringBuilder("Confirm time entry: '" + description + "' from " + startTimeStr);
+            if (duration > 0) {
+                promptMessage.append(" for " + duration + " minutes");
+            }
+            promptMessage.append(". Add project or tags?");
+            return new ValidationResult(
+                    false,
+                    formatMessage(promptMessage.toString(), tone, archetype),
+                    suggestedAction
+            );
+        }
+
         if (errors.isEmpty()) {
             return new ValidationResult(true, "All dependencies validated successfully", null);
         } else {
@@ -154,18 +195,63 @@ public class CheckerAgent {
     }
 
     private ValidationResult validateProjectCommand(Users user, String command, String tone, String archetype) {
-        String projectName = extractProjectName(command);
+        Map<String, Object> extracted = extractProjectDetails(command);
+        String projectName = (String) extracted.get("name");
+        String action = (String) extracted.get("action"); // e.g., "create", "update", "delete"
+
+        List<String> errors = new ArrayList<>();
+        Map<String, Object> suggestedAction = new HashMap<>();
+
+        // Mandatory field validation
+        if (projectName == null || projectName.trim().isEmpty()) {
+            errors.add("Project name is required.");
+            suggestedAction.put("action", "provideProjectName");
+        }
+
         if (projectName != null && !projectName.isEmpty()) {
             Optional<Project> project = projectRepository.findByNameAndUser(projectName, user);
-            if (project.isPresent()) {
-                return new ValidationResult(
-                        false,
-                        formatMessage("Project '" + projectName + "' already exists.", tone, archetype),
-                        Map.of("action", "updateProject", "projectName", projectName)
-                );
+            if ("create".equalsIgnoreCase(action)) {
+                if (project.isPresent()) {
+                    errors.add("Project '" + projectName + "' already exists.");
+                    suggestedAction.put("action", "updateProject");
+                    suggestedAction.put("projectName", projectName);
+                } else {
+                    suggestedAction.put("action", "confirmProjectCreation");
+                    suggestedAction.put("projectName", projectName);
+                    suggestedAction.put("description", extracted.get("description"));
+                    return new ValidationResult(
+                            false,
+                            formatMessage("Confirm creation of project '" + projectName + "'?", tone, archetype),
+                            suggestedAction
+                    );
+                }
+            } else if ("update".equalsIgnoreCase(action) || "delete".equalsIgnoreCase(action)) {
+                if (project.isEmpty()) {
+                    errors.add("Project '" + projectName + "' does not exist.");
+                    suggestedAction.put("action", "createProject");
+                    suggestedAction.put("projectName", projectName);
+                } else {
+                    suggestedAction.put("action", action.equalsIgnoreCase("update") ? "confirmProjectUpdate" : "confirmProjectDeletion");
+                    suggestedAction.put("projectName", projectName);
+                    suggestedAction.put("description", extracted.get("description"));
+                    return new ValidationResult(
+                            false,
+                            formatMessage("Confirm " + (action.equalsIgnoreCase("update") ? "update" : "deletion") + " of project '" + projectName + "'?", tone, archetype),
+                            suggestedAction
+                    );
+                }
             }
         }
-        return new ValidationResult(true, "Project creation is valid", null);
+
+        if (errors.isEmpty()) {
+            return new ValidationResult(true, "Project action is valid", null);
+        } else {
+            return new ValidationResult(
+                    false,
+                    formatMessage(String.join(" ", errors), tone, archetype),
+                    suggestedAction
+            );
+        }
     }
 
     private ValidationResult validateAnalyticsCommand(Users user, String command, String tone, String archetype) {
@@ -186,10 +272,13 @@ public class CheckerAgent {
     private Map<String, Object> extractTimeEntryDetails(String command) {
         String promptTemplate = """
                 Extract the following details from the user's command:
+                - description: The task description, if mentioned (e.g., "Coding"). Set to null if not mentioned.
                 - projectName: The project name, if mentioned (e.g., "Project X"). Set to null if not mentioned.
                 - tags: A list of tag names, if mentioned (e.g., ["coding", "urgent"]). Set to empty list if not mentioned.
                 - action: The action to perform ("create" for new entries, "stop" for stopping an active timer).
                 - duration: The duration in minutes, if specified (e.g., 60). Set to 0 if not specified.
+                - startTime: The start time in ISO format (e.g., "2025-05-03T10:00:00"). Use current time if not specified.
+                - endTime: The end time in ISO format, if specified. Set to null if not mentioned.
                 
                 Command: {{command}}
                 
@@ -201,7 +290,36 @@ public class CheckerAgent {
         try {
             return objectMapper.readValue(response, Map.class);
         } catch (Exception e) {
-            return Map.of("projectName", null, "tags", List.of(), "action", "create", "duration", 0);
+            return Map.of(
+                    "description", null,
+                    "projectName", null,
+                    "tags", List.of(),
+                    "action", "create",
+                    "duration", 0,
+                    "startTime", null,
+                    "endTime", null
+            );
+        }
+    }
+
+    private Map<String, Object> extractProjectDetails(String command) {
+        String promptTemplate = """
+                Extract the following details from the user's command:
+                - name: The project name, if mentioned (e.g., "Sprint 5"). Set to null if not mentioned.
+                - description: The project description, if mentioned (e.g., "New client"). Set to empty string if not mentioned.
+                - action: The action to perform ("create", "update", "delete"). Default to "create" if not specified.
+                
+                Command: {{command}}
+                
+                Return a JSON object with the extracted details.
+                """;
+        Prompt prompt = PromptTemplate.from(promptTemplate)
+                .apply(Map.of("command", command));
+        String response = chatLanguageModel.chat(prompt.text());
+        try {
+            return objectMapper.readValue(response, Map.class);
+        } catch (Exception e) {
+            return Map.of("name", null, "description", "", "action", "create");
         }
     }
 
@@ -222,6 +340,6 @@ public class CheckerAgent {
         if ("Inspirational".equalsIgnoreCase(tone) && "Guide".equalsIgnoreCase(archetype)) {
             return "Let's keep moving forward! " + baseMessage + " You're doing great—let's resolve this together!";
         }
-        return baseMessage; // Default tone
+        return baseMessage;
     }
 }

@@ -1,12 +1,12 @@
-import React from 'react';
+// import React from 'react';
 import { motion } from 'framer-motion';
-import { Tone } from '../types/onboarding';
 
 interface ChatBubbleProps {
   content?: string | React.ReactNode;
   children?: React.ReactNode;
   isUser: boolean;
   isAnimated?: boolean;
+  coachAvatar?: string; // Added coachAvatar prop
 }
 
 const UserAvatar = () => (
@@ -15,10 +15,13 @@ const UserAvatar = () => (
   </div>
 );
 
-const BotAvatar = () => (
-  <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center mr-2 shrink-0">
-    <span className="text-white text-sm">AI</span>
-  </div>
+const BotAvatar = ({ coachAvatar }: { coachAvatar?: string }) => (
+  <img
+    src={coachAvatar || '/avatars/default.svg'}
+    alt="Coach Avatar"
+    className="w-8 h-8 rounded-full border border-lavender-300 mr-2 shrink-0"
+    onError={(e) => (e.currentTarget.src = '/avatars/default.svg')}
+  />
 );
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({
@@ -26,6 +29,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   children,
   isUser,
   isAnimated = true,
+  coachAvatar,
 }) => {
   const baseClasses = 'max-w-[80%] rounded-2xl p-4 shadow-sm';
 
@@ -57,7 +61,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
       transition={{ duration: 0.3 }}
       className={`flex ${isUser ? 'justify-end' : 'justify-start'} gap-2 mb-4`}
     >
-      {!isUser && <BotAvatar />}
+      {!isUser && <BotAvatar coachAvatar={coachAvatar} />}
       <div className={isUser ? userBubbleClasses : assistantBubbleClasses}>
         {content || children}
       </div>
