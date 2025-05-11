@@ -19,6 +19,7 @@ Track time, boost productivity, and stay motivated with AlterEgo, an AI-powered 
   - Personalized mentor persona (name, tone, archetype, avatar) defined during onboarding.
   - Handles general queries and time management commands (e.g., “start timer”) via LangChain.
   - Context-aware responses with dynamic goal and milestone integration.
+- 🧠 **Agent Society**: Powered by 8 specialized agents (e.g., Intent, Scheduler) for context-aware task management.
 
 ### Authentication & Security
 - 🔐 **JWT-Based Authentication**
