@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, Briefcase, Users, Sparkles } from 'lucide-react';
-import { UserRole } from '../types/onboarding';
+import { UserRole } from '../utils/onboardingUtils';
 import { useNavigate } from 'react-router-dom';
 import { BackButton } from '../UI/BackButton';
 

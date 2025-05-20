@@ -1,3 +1,5 @@
 .DS_Store
 node_modules
 dist/
+application.properties
+backend/src/main/resources/application.properties

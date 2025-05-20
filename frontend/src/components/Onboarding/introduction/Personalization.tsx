@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserRole, Answer } from '../types/onboarding';
+import { UserRole, Answer } from '../utils/onboardingUtils';
 import { BackButton } from '../UI/BackButton';
 import { BookOpen, Briefcase, DollarSign, Star, Pencil, X, Plus } from 'lucide-react';
 

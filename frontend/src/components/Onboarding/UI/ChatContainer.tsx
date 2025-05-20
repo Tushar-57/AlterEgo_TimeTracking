@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Message } from '../types/onboarding';
+import { Message } from '../utils/onboardingUtils';
 import ChatBubble from './ChatBubble';
 import TypingIndicator from './TypingIndicator';
 
@@ -20,9 +20,15 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // useEffect(() => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // }, [messages, isTyping]);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+  if (messagesEndRef.current) {
+    messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}, [messages, isTyping]);
 
   return (
     <div className={className}>

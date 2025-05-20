@@ -1,7 +1,7 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Clock, Bell, Calendar, Target, CheckCircle } from 'lucide-react';
-import { PlannerData, ChatBubbleProps, Goal, Availability, SmartCriteria } from '../types/onboarding';
+import { PlannerData, ChatBubbleProps, Goal, Availability, SmartCriteria } from '../utils/onboardingUtils';
 import { BackButton } from '../UI/BackButton';
 import { GoalForm } from '../goals/StepGoals';
 

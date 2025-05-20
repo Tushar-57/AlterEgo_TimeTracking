@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Target, CheckCircle, AlertCircle } from 'lucide-react';
-import { Goal, UserRole, SmartCriteria } from '../types/onboarding';
+import { Goal, UserRole, SmartCriteria } from '../utils/onboardingUtils';
 import {
   SUGGESTED_GOALS_STUDENT,
   SUGGESTED_GOALS_WORK,
   SUGGESTED_GOALS_FREELANCER,
   SUGGESTED_GOALS_OTHER,
-} from '../types/onboarding';
+} from '../utils/onboardingUtils';
 import { BackButton } from '../UI/BackButton';
 
 interface StepGoalsProps {

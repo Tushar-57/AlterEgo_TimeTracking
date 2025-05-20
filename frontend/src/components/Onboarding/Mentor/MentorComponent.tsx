@@ -1,249 +1,7 @@
-// import React, { useState } from 'react';
-// import { motion, AnimatePresence } from 'framer-motion';
-// import { Mentor, MentorArchetype, CoachingStyle } from '../types/onboarding';
-// import { AVATARS, RANDOM_NAMES } from '../types/onboarding';
-// import { Brain, Lightbulb, Target, Compass, Map, Users, Heart, Sparkles, Zap, Shield } from 'lucide-react';
-// import { BackButton } from '../UI/BackButton';
-
-// interface StepMentorProps {
-//   onSelect: (mentor: Mentor) => void;
-//   onBack: () => void;
-// }
-
-// const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
-//   const [currentSubStep, setCurrentSubStep] = useState<'archetype' | 'style' | 'name' | 'avatar'>('archetype');
-//   const [archetype, setArchetype] = useState<MentorArchetype | null>(null);
-//   const [style, setStyle] = useState<CoachingStyle | null>(null);
-//   const [name, setName] = useState('');
-//   const [avatar, setAvatar] = useState('');
-
-//   const archetypes = [
-//     { type: 'Innovator', icon: <Lightbulb className="w-8 h-8" />, description: 'Sparks creativity and innovative solutions', color: 'from-blue-100 to-indigo-200' },
-//     { type: 'Sage', icon: <Brain className="w-8 h-8" />, description: 'Offers wisdom and deep insights', color: 'from-emerald-100 to-teal-200' },
-//     { type: 'Challenger', icon: <Target className="w-8 h-8" />, description: 'Drives you to exceed your limits', color: 'from-orange-100 to-amber-200' },
-//     { type: 'Master', icon: <Compass className="w-8 h-8" />, description: 'Guides with expertise and precision', color: 'from-violet-100 to-purple-200' },
-//     { type: 'Guide', icon: <Map className="w-8 h-8" />, description: 'Navigates with patience and support', color: 'from-rose-100 to-pink-200' },
-//   ];
-
-//   const styles = [
-//     { type: 'Direct', icon: <Zap className="w-8 h-8" />, description: 'Clear and straightforward guidance', color: 'from-yellow-100 to-orange-200' },
-//     { type: 'Friendly', icon: <Users className="w-8 h-8" />, description: 'Warm and approachable support', color: 'from-green-100 to-emerald-200' },
-//     { type: 'Encouraging', icon: <Heart className="w-8 h-8" />, description: 'Boosts your confidence and morale', color: 'from-pink-100 to-rose-200' },
-//     { type: 'Nurturing', icon: <Sparkles className="w-8 h-8" />, description: 'Caring and empathetic coaching', color: 'from-purple-100 to-violet-200' },
-//     { type: 'Patient', icon: <Shield className="w-8 h-8" />, description: 'Supportive and unhurried guidance', color: 'from-blue-100 to-cyan-200' },
-//     { type: 'Challenging', icon: <Target className="w-8 h-8" />, description: 'Pushes you to achieve greatness', color: 'from-red-100 to-rose-200' },
-//     { type: 'Inspirational', icon: <Lightbulb className="w-8 h-8" />, description: 'Ignites your passion and vision', color: 'from-indigo-100 to-blue-200' },
-//   ];
-
-//   const subStepTitles: Record<'archetype' | 'style' | 'name' | 'avatar', string> = {
-//     archetype: 'Choose Your Coach’s Archetype',
-//     style: 'Select Coaching Style',
-//     name: 'Name Your Coach',
-//     avatar: 'Pick an Avatar',
-//   };
-
-//   const randomizeName = () => {
-//     const randomIndex = Math.floor(Math.random() * RANDOM_NAMES.length);
-//     setName(RANDOM_NAMES[randomIndex]);
-//     setCurrentSubStep('avatar');
-//   };
-
-//   const handleArchetypeSelect = (selectedArchetype: MentorArchetype) => {
-//     setArchetype(selectedArchetype);
-//     setCurrentSubStep('style');
-//   };
-
-//   const handleStyleSelect = (selectedStyle: CoachingStyle) => {
-//     setStyle(selectedStyle);
-//     setCurrentSubStep('name');
-//   };
-
-//   const handleNameSubmit = () => {
-//     if (name) {
-//       setCurrentSubStep('avatar');
-//     }
-//   };
-
-//   const handleAvatarSelect = (selectedAvatar: string) => {
-//     setAvatar(selectedAvatar);
-//     if (archetype && style && name) {
-//       onSelect({ archetype, style, name, avatar: selectedAvatar });
-//     }
-//   };
-
-//   return (
-//     <AnimatePresence mode="wait">
-//       {currentSubStep === 'archetype' && (
-//         <motion.div
-//           key="archetype"
-//           initial={{ opacity: 0, y: 20 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           exit={{ opacity: 0, y: -20 }}
-//           transition={{ duration: 0.3 }}
-//           className="w-full max-w-2xl mx-auto p-4"
-//         >
-//           <div className="flex justify-between items-center mb-4">
-//             <motion.div
-//               initial={{ opacity: 0, y: -20 }}
-//               animate={{ opacity: 1, y: 0 }}
-//               className="text-center"
-//             >
-//               <h2 className="text-2xl font-bold text-gray-900 mb-3">{subStepTitles.archetype}</h2>
-//               <p className="text-gray-600">Select the archetype that best suits your coaching needs.</p>
-//             </motion.div>
-//             <BackButton onClick={onBack} />
-//           </div>
-//           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//             {archetypes.map((arch, index) => (
-//               <motion.button
-//                 key={arch.type}
-//                 initial={{ opacity: 0, y: 20 }}
-//                 animate={{ opacity: 1, y: 0 }}
-//                 transition={{ delay: index * 0.1 }}
-//                 onClick={() => handleArchetypeSelect(arch.type as MentorArchetype)}
-//                 className="group relative overflow-hidden rounded-lg bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-300"
-//               >
-//                 <div className="relative z-10">
-//                   <div className={`inline-block p-3 rounded-lg bg-gradient-to-br ${arch.color} text-white mb-4 group-hover:scale-110 transition-transform duration-300`}>
-//                     {arch.icon}
-//                   </div>
-//                   <h3 className="text-lg font-bold text-gray-900 mb-2">{arch.type}</h3>
-//                   <p className="text-gray-600 text-sm">{arch.description}</p>
-//                 </div>
-//                 <div className={`absolute inset-0 bg-gradient-to-br ${arch.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-//               </motion.button>
-//             ))}
-//           </div>
-//         </motion.div>
-//       )}
-
-//       {currentSubStep === 'style' && (
-//         <motion.div
-//           key="style"
-//           initial={{ opacity: 0, y: 20 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           exit={{ opacity: 0, y: -20 }}
-//           transition={{ duration: 0.3 }}
-//           className="w-full max-w-2xl mx-auto p-4"
-//         >
-//           <motion.div
-//             initial={{ opacity: 0, y: -20 }}
-//             animate={{ opacity: 1, y: 0 }}
-//             className="text-center mb-8"
-//           >
-//             <h2 className="text-2xl font-bold text-gray-900 mb-3">{subStepTitles.style}</h2>
-//             <p className="text-gray-600">Choose the coaching style that resonates with you.</p>
-//           </motion.div>
-//           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//             {styles.map((sty, index) => (
-//               <motion.button
-//                 key={sty.type}
-//                 initial={{ opacity: 0, y: 20 }}
-//                 animate={{ opacity: 1, y: 0 }}
-//                 transition={{ delay: index * 0.1 }}
-//                 onClick={() => handleStyleSelect(sty.type as CoachingStyle)}
-//                 className="group relative overflow-hidden rounded-lg bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-300"
-//               >
-//                 <div className="relative z-10">
-//                   <div className={`inline-block p-3 rounded-lg bg-gradient-to-br ${sty.color} text-white mb-4 group-hover:scale-110 transition-transform duration-300`}>
-//                     {sty.icon}
-//                   </div>
-//                   <h3 className="text-lg font-bold text-gray-900 mb-2">{sty.type}</h3>
-//                   <p className="text-gray-600 text-sm">{sty.description}</p>
-//                 </div>
-//                 <div className={`absolute inset-0 bg-gradient-to-br ${sty.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-//               </motion.button>
-//             ))}
-//           </div>
-//         </motion.div>
-//       )}
-
-//       {currentSubStep === 'name' && (
-//         <motion.div
-//           key="name"
-//           initial={{ opacity: 0, y: 20 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           exit={{ opacity: 0, y: -20 }}
-//           transition={{ duration: 0.3 }}
-//           className="w-full max-w-2xl mx-auto p-4"
-//         >
-//           <motion.div
-//             initial={{ opacity: 0, y: -20 }}
-//             animate={{ opacity: 1, y: 0 }}
-//             className="text-center mb-8"
-//           >
-//             <h2 className="text-2xl font-bold text-gray-900 mb-3">{subStepTitles.name}</h2>
-//             <p className="text-gray-600">Give your coach a name that feels right.</p>
-//           </motion.div>
-//           <div className="bg-white rounded-lg p-6 shadow-md max-w-md mx-auto">
-//             <div className="flex gap-3">
-//               <input
-//                 type="text"
-//                 value={name}
-//                 onChange={(e) => setName(e.target.value)}
-//                 placeholder="Enter coach name"
-//                 className="flex-1 border border-gray-300 rounded-lg p-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a8d8ea] transition-all"
-//               />
-//               <button
-//                 onClick={randomizeName}
-//                 className="bg-gradient-to-r from-[#a8d8ea] to-[#b4e7ce] text-white px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-300"
-//               >
-//                 Randomize
-//               </button>
-//             </div>
-//             <button
-//               onClick={handleNameSubmit}
-//               disabled={!name}
-//               className="mt-3 w-full bg-gradient-to-r from-[#a8d8ea] to-[#b4e7ce] text-white px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-50"
-//             >
-//               Next
-//             </button>
-//           </div>
-//         </motion.div>
-//       )}
-
-//       {currentSubStep === 'avatar' && (
-//         <motion.div
-//           key="avatar"
-//           initial={{ opacity: 0, y: 20 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           exit={{ opacity: 0, y: -20 }}
-//           transition={{ duration: 0.3 }}
-//           className="w-full max-w-2xl mx-auto p-4"
-//         >
-//           <motion.div
-//             initial={{ opacity: 0, y: -20 }}
-//             animate={{ opacity: 1, y: 0 }}
-//             className="text-center mb-8"
-//           >
-//             <h2 className="text-2xl font-bold text-gray-900 mb-3">{subStepTitles.avatar}</h2>
-//             <p className="text-gray-600">Pick an avatar for your coach.</p>
-//           </motion.div>
-//           <div className="flex gap-4 justify-center">
-//             {AVATARS.map((a) => (
-//               <motion.img
-//                 key={a.id}
-//                 src={a.url}
-//                 alt={a.alt}
-//                 onClick={() => handleAvatarSelect(a.url)}
-//                 whileHover={{ scale: 1.15, rotate: 5 }}
-//                 className={`w-16 h-16 rounded-full cursor-pointer shadow-sm transition-all ${
-//                   avatar === a.url ? 'ring-4 ring-[#a8d8ea] glow' : ''
-//                 }`}
-//               />
-//             ))}
-//           </div>
-//         </motion.div>
-//       )}
-//     </AnimatePresence>
-//   );
-// };
-
-// export default StepMentor;
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mentor, MentorArchetype, CoachingStyle } from '../types/onboarding';
-import { AVATARS, RANDOM_NAMES } from '../types/onboarding';
+import { Mentor, MentorArchetype, CoachingStyle } from '../utils/onboardingUtils';
+import { AVATARS, RANDOM_NAMES } from '../utils/onboardingUtils';
 import { Brain, Lightbulb, Target, Compass, Map, Users, Heart, Sparkles, Zap, Shield, CheckCircle } from 'lucide-react';
 import { BackButton } from '../UI/BackButton';
 
@@ -258,6 +16,7 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
   const [style, setStyle] = useState<CoachingStyle | null>(null);
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [customTone, setCustomTone] = useState(''); // New state for custom tone
 
   const archetypes = [
     { type: 'Innovator', icon: <Lightbulb className="w-8 h-8" />, description: 'Sparks creativity and innovative solutions', tagline: 'Creativity' },
@@ -265,6 +24,7 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
     { type: 'Challenger', icon: <Target className="w-8 h-8" />, description: 'Drives you to exceed your limits', tagline: 'Ambition' },
     { type: 'Master', icon: <Compass className="w-8 h-8" />, description: 'Guides with expertise and precision', tagline: 'Precision' },
     { type: 'Guide', icon: <Map className="w-8 h-8" />, description: 'Navigates with patience and support', tagline: 'Support' },
+    { type: 'Mentor', icon: <Users className="w-8 h-8" />, description: 'Fosters growth through collaboration', tagline: 'Teamwork' },
   ];
 
   const styles = [
@@ -274,7 +34,6 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
     { type: 'Nurturing', icon: <Sparkles className="w-8 h-8" />, description: 'Caring and empathetic coaching', tagline: 'Empathy' },
     { type: 'Patient', icon: <Shield className="w-8 h-8" />, description: 'Supportive and unhurried guidance', tagline: 'Patience' },
     { type: 'Challenging', icon: <Target className="w-8 h-8" />, description: 'Pushes you to achieve greatness', tagline: 'Greatness' },
-    { type: 'Inspirational', icon: <Lightbulb className="w-8 h-8" />, description: 'Ignites your passion and vision', tagline: 'Vision' },
   ];
 
   const subStepTitles: Record<'archetype' | 'style' | 'name' | 'avatar', string> = {
@@ -297,15 +56,20 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
   };
 
   const handleArchetypeSelect = (selectedArchetype: MentorArchetype) => {
-    console.log('Selected archetype:', selectedArchetype); // Temporary debug
     setArchetype(selectedArchetype);
     setCurrentSubStep('style');
   };
 
   const handleStyleSelect = (selectedStyle: CoachingStyle) => {
-    console.log('Selected style:', selectedStyle); // Temporary debug
     setStyle(selectedStyle);
     setCurrentSubStep('name');
+  };
+
+  const handleCustomToneSubmit = () => {
+    if (customTone.trim()) {
+      setStyle(customTone.trim()); // Set custom tone as style
+      setCurrentSubStep('name');
+    }
   };
 
   const handleNameSubmit = () => {
@@ -328,6 +92,7 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
     } else if (currentSubStep === 'name') {
       setCurrentSubStep('style');
       setStyle(null);
+      setCustomTone(''); // Reset custom tone on back
     } else if (currentSubStep === 'avatar') {
       setCurrentSubStep('name');
       setAvatar('');
@@ -435,6 +200,29 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
           >
             Choose the coaching style that resonates with you.
           </motion.p>
+          {/* Custom Tone Input Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            className="mt-6 mb-8 max-w-md mx-auto"
+          >
+            <input
+              type="text"
+              value={customTone}
+              onChange={(e) => setCustomTone(e.target.value)}
+              placeholder="Or enter a celebrity name for custom tone (e.g., Morgan Freeman)"
+              className="w-full p-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-50 text-gray-900 transition-all duration-200"
+            />
+            <button
+              onClick={handleCustomToneSubmit}
+              disabled={!customTone.trim()}
+              className="mt-3 w-full bg-gradient-to-r from-blue-400 to-cyan-500 text-white px-4 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+            >
+              Use Custom Tone
+            </button>
+          </motion.div>
+          {/* Style Selection Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {styles.map((sty, index) => (
               <motion.button
