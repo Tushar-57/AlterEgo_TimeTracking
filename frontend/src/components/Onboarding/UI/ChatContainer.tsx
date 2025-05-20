@@ -3,11 +3,12 @@ import { Message } from '../types/onboarding';
 import ChatBubble from './ChatBubble';
 import TypingIndicator from './TypingIndicator';
 
-interface ChatContainerProps {
+interface ChatContainerProps { 
   messages: Message[];
   isTyping: boolean;
   className?: string;
-  coachAvatar: string;
+  coachAvatar?: string;
+  children?: React.ReactNode;
 }
 
 export const ChatContainer: React.FC<ChatContainerProps> = ({
@@ -15,6 +16,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   isTyping,
   className,
   coachAvatar,
+  children,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -38,6 +40,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         </ChatBubble>
       ))}
       {isTyping && <TypingIndicator />}
+      {children}
       <div ref={messagesEndRef} />
     </div>
   );

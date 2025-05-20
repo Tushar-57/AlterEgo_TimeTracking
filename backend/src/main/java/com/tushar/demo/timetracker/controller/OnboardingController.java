@@ -66,6 +66,8 @@ public class OnboardingController {
             }
             OnboardingEntity entity = OnboardingEntity.fromRequestDTO(request, user);
             OnboardingEntity savedEntity = onboardingRepository.save(entity);
+            user.setOnboardingCompleted(true);
+            userRepo.save(user);
             return ResponseEntity.ok(savedEntity.toResponseDTO());
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

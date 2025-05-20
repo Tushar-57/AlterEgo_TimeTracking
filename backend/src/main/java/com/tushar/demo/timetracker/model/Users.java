@@ -22,6 +22,9 @@ public class Users {
     @Column(name = "email_verified")
     private boolean emailVerified;
     private boolean tokenInvalidated = false;
+    
+    @Column(name = "onboarding_completed")
+    private boolean onboardingCompleted = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -87,6 +90,13 @@ public class Users {
 	public void setEmailVerified(boolean emailVerified) {
 		this.emailVerified = emailVerified;
 	}
+	public boolean isOnboardingCompleted() {
+        return onboardingCompleted;
+    }
+
+    public void setOnboardingCompleted(boolean onboardingCompleted) {
+        this.onboardingCompleted = onboardingCompleted;
+    }
 	public boolean isEnabled() {
 		
 		return true;

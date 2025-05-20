@@ -10,6 +10,7 @@ public class OnboardingRequestDTO {
     private Availability schedule;
     private List<Goal> goals;
     private Planner planner;
+    private List<AnswerDTO> answers; // Added answers
 
     // Getters and setters
     public String getRole() { return role; }
@@ -26,6 +27,8 @@ public class OnboardingRequestDTO {
     public void setGoals(List<Goal> goals) { this.goals = goals; }
     public Planner getPlanner() { return planner; }
     public void setPlanner(Planner planner) { this.planner = planner; }
+    public List<AnswerDTO> getAnswers() { return answers; }
+    public void setAnswers(List<AnswerDTO> answers) { this.answers = answers; }
 
     public static class Mentor {
         private String archetype;
@@ -194,5 +197,19 @@ public class OnboardingRequestDTO {
         public void setCalendarSync(boolean calendarSync) { this.calendarSync = calendarSync; }
         public boolean isTaskManagementSync() { return taskManagementSync; }
         public void setTaskManagementSync(boolean taskManagementSync) { this.taskManagementSync = taskManagementSync; }
+    }
+
+    public static class AnswerDTO {
+        private String id;
+        private String answer; // Title
+        private String description;
+
+        // Getters and setters
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
+        public String getAnswer() { return answer; }
+        public void setAnswer(String answer) { this.answer = answer; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
     }
 }

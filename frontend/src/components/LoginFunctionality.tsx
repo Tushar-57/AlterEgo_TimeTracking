@@ -1,27 +1,23 @@
-// LoginClassic.tsx
 import { useState } from 'react';
 import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';  // Import the useAuth hook to access context
+import { useAuth } from '../context/AuthContext';
 import skeletonImage from '../images/Skeleton1.jpg';
 import { useToast } from './Calendar_updated/components/hooks/use-toast';
 
 export default function LoginClassic() {
-
   const [email, setEmail] = useState('@gmail.com');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated, login } = useAuth();  // Destructure the login function from the context
+  const { isAuthenticated, login } = useAuth();
   const { toast } = useToast();
-
   const location = useLocation();
-  
+
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
-  
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -32,12 +28,13 @@ export default function LoginClassic() {
       setLoading(false);
       return;
     }
-  
+
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
+
     try {
       const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
@@ -50,15 +47,21 @@ export default function LoginClassic() {
         throw new Error(errorData.message || 'Login failed');
       }
 
-      const data = await response.json(); // Parse response once
-      console.info('FROM FE -> JSON Response from Backend for login ! ', data);
+      const data = await response.json();
       const token = data.token;
-      console.log('FROM FE -> JWT Token received: ', token);
 
       localStorage.setItem('jwtToken', token.trim());
-      login(token, { email: data.user?.email, name: data.user?.name });
+
+      login(token, {
+        email: data.user.email,
+        name: data.user.name,
+        onboardingCompleted: data.user.onboardingCompleted, // Pass onboardingCompleted
+      });
+
       toast({ title: 'Success', description: 'Logged in successfully!' });
-      navigate('/', { replace: true });
+
+      // Redirect based on onboarding status
+      navigate(data.user.onboardingCompleted ? '/' : '/onboarding', { replace: true });
     } catch (error: any) {
       console.error('Login error:', error);
       toast({
@@ -71,6 +74,7 @@ export default function LoginClassic() {
       setLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen flex bg-[#FFF5E9] p-8">
       <div className="w-full max-w-7xl mx-auto bg-white rounded-3xl overflow-hidden flex shadow-xl">
@@ -205,94 +209,3 @@ export default function LoginClassic() {
     </div>
   );
 }
-
-// LoginClassic.tsx
-// import React, { useState } from 'react';
-// import { Button } from '../components/Calendar_updated/components/ui/button';
-// import { Input } from '../components/Calendar_updated/components/ui/input';
-// import { useToast } from '../components/Calendar_updated/components/hooks/use-toast';
-// import { useAuth } from '../context/AuthContext';
-// import { useNavigate, Link } from 'react-router-dom';
-
-// export default function LoginClassic() {
-//   const [formData, setFormData] = useState({ email: '', password: '' });
-//   const [loading, setLoading] = useState(false);
-//   const { login } = useAuth();
-//   const { toast } = useToast();
-//   const navigate = useNavigate();
-
-//   const handleSubmit = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     setLoading(true);
-//     try {
-//       const response = await fetch('http://localhost:8080/api/auth/login', {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify(formData),
-//       });
-
-//       if (!response.ok) {
-//         const errorData = await response.json();
-//         throw new Error(errorData.message || 'Login failed');
-//       }
-
-//       const data = await response.json();
-//       login(data.token, { email: formData.email, name: data.user?.name });
-//       toast({ title: 'Success', description: 'Logged in successfully!' });
-//       navigate('/', { replace: true });
-//     } catch (error: any) {
-//       toast({
-//         title: 'Error',
-//         description: error.message || 'Failed to log in.',
-//         variant: 'destructive',
-//       });
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
-//       <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-//         <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">Log In</h2>
-//         <form onSubmit={handleSubmit} className="space-y-4">
-//           <div>
-//             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-//               Email
-//             </label>
-//             <Input
-//               id="email"
-//               type="email"
-//               value={formData.email}
-//               onChange={e => setFormData({ ...formData, email: e.target.value })}
-//               required
-//               className="mt-1"
-//             />
-//           </div>
-//           <div>
-//             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-//               Password
-//             </label>
-//             <Input
-//               id="password"
-//               type="password"
-//               value={formData.password}
-//               onChange={e => setFormData({ ...formData, password: e.target.value })}
-//               required
-//               className="mt-1"
-//             />
-//           </div>
-//           <Button type="submit" disabled={loading} className="w-full">
-//             {loading ? 'Logging in...' : 'Log In'}
-//           </Button>
-//         </form>
-//         <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-//           Don't have an account?{' '}
-//           <Link to="/signup" className="text-indigo-600 dark:text-indigo-400 hover:underline">
-//             Sign up
-//           </Link>
-//         </p>
-//       </div>
-//     </div>
-//   );
-// }

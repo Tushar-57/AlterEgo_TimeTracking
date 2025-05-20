@@ -11,6 +11,7 @@ import StepPlanner from './planner/StepPlanner';
 import ProgressBar from './UI/ProgressBar';
 import { createMessage } from './utils/onboardingUtils';
 import StepMentor from './Mentor/MentorComponent';
+import { ChildProcess } from 'node:child_process';
 
 interface ChatOnboardingProps {
   onComplete: (data: {
@@ -32,6 +33,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
   const [selectedGoals, setSelectedGoals] = useState<Goal[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<Answer[]>([]);
   const [selectedMentor, setMentor] = useState<Mentor | null>(null);
+  const [coachAvatar, setCoachAvatar] = useState<string>(''); // Added for avatar
   const [plannerData, setPlannerData] = useState<PlannerData>({
     goals: [],
     availability: {
@@ -103,9 +105,9 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
       <div className="flex flex-col gap-2">
         <span>My priorities are:</span>
         {answers.map((answer) => (
-          <span key={answer.id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
-            {answer.answer}
-          </span>
+          <div key={answer.id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
+            <span className="font-semibold">{answer.answer}</span>: {answer.description}
+          </div>
         ))}
       </div>,
       'user'
@@ -172,6 +174,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
 
   const handleMentorSelect = async (selectedMentor: Mentor) => {
     setMentor(selectedMentor);
+    setCoachAvatar(selectedMentor.avatar);
     await addMessage(
       <div className="flex flex-col gap-2">
         <span>My AI AlterEgo:</span>
@@ -192,6 +195,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
     const onboardingData: any = {
       role: selectedRole!,
       goals: plannerData.goals,
+      answers: selectedAnswers,
       mentor: selectedMentor,
       preferredTone: selectedMentor.style,
       coachAvatar: selectedMentor.avatar,
@@ -304,13 +308,13 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
     };
   }, []);
 
-  return (
-    <div className="h-screen w-full flex flex-col bg-gradient-to-br from-blue-50 to-cyan-50">
+  return ( 
+    <div className="min-h-screen w-full flex flex-col bg-gradient-to-br from-blue-50 to-cyan-50">
       <div className="p-4 z-20">
         <ProgressBar currentStep={currentStep} tone={null} />
       </div>
-      <div className="flex-1 overflow-hidden relative">
-        <ChatContainer messages={messages} isTyping={isTyping} className="pb-24">
+      <div className="flex-1 overflow-auto relative">
+        <ChatContainer messages={messages} isTyping={isTyping} className="pb-32 min-h-full" coachAvatar="">
           <AnimatePresence mode="wait">
             {!isTyping && currentStep !== 'complete' && (
               <motion.div

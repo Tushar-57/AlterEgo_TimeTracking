@@ -32,7 +32,7 @@ const App = () => (
         <Routes>
           <Route path="/login" element={<LoginClassic />} />
           <Route path="/signup" element={<SignupClassic />} />
-          <Route path="/onboarding" element={<ChatOnboarding onComplete={handleOnboardingComplete} />} />
+          <Route path="/onboarding" element={<ProtectedOnboarding />} />
           <Route path="/*" element={<ProtectedRoutes />} />
         </Routes>
         <ToastViewport className="[--viewport-padding:_25px] fixed bottom-0 right-0 flex flex-col p-[var(--viewport-padding)] gap-[25px] w-[390px] max-w-[100vw] m-0 list-none z-[2147483647] outline-none" />
@@ -41,19 +41,45 @@ const App = () => (
   </Router>
 );
 
+const ProtectedOnboarding = () => {
+  const { isAuthenticated, user, loading } = useAuth();
+
+  if (loading) return <LoadingSpinner />;
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.onboardingCompleted) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <ChatOnboarding onComplete={() => console.log('Onboarding complete!')} />;
+};
+
 const ProtectedRoutes = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       navigate('/login', { replace: true });
+    } else if (!loading && isAuthenticated && user && !user.onboardingCompleted) {
+      navigate('/onboarding', { replace: true });
     }
-  }, [isAuthenticated, loading, navigate]);
+  }, [isAuthenticated, user, loading, navigate]);
 
   if (loading) return <LoadingSpinner />;
 
-  return isAuthenticated ? (
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user && !user.onboardingCompleted) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return (
     <ChatProvider>
       <div className="flex relative">
         <Sidebar />
@@ -78,13 +104,7 @@ const ProtectedRoutes = () => {
         <ChatToggleButton />
       </div>
     </ChatProvider>
-  ) : (
-    <Navigate to="/login" replace />
   );
 };
 
 export default App;
-
-const handleOnboardingComplete = () => {
-  console.log('Onboarding complete!');
-};

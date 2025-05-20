@@ -65,6 +65,7 @@ public class AuthController {
 		newUser.setEmail(normalizedEmail);
 		newUser.setPassword(passwordEncoder.encode(signupRequest.password()));
 		newUser.setEmailVerified(false);
+		newUser.setOnboardingCompleted(false);
 		try {
 			Users savedUser = userRepository.save(newUser);
 			logger.info("New user registered: {}", savedUser.getEmail());
@@ -95,7 +96,7 @@ public class AuthController {
 					.orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
 			return ResponseEntity.ok(Map.of("token", jwt, "user",
-					Map.of("id", user.getId(), "name", user.getName(), "email", user.getEmail())));
+					Map.of("id", user.getId(), "name", user.getName(), "email", user.getEmail(), "onboardingCompleted", user.isOnboardingCompleted())));
 
 		} catch (AuthenticationException e) {
 			logger.warn("Failed login attempt for email: {}", loginRequest.email());
@@ -113,7 +114,7 @@ public class AuthController {
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
             return ResponseEntity.ok(Map.of(
                 "valid", true,
-                "user", Map.of("id", user.getId(), "name", user.getName(), "email", user.getEmail())
+                "user", Map.of("id", user.getId(), "name", user.getName(), "email", user.getEmail(), "onboardingCompleted", user.isOnboardingCompleted())
             ));
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("valid", false));

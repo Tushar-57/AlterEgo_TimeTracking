@@ -5,6 +5,7 @@ import com.tushar.demo.timetracker.dto.response.OnboardingResponseDTO;
 import jakarta.persistence.*;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Entity
 @Table(name = "onboarding")
@@ -35,8 +36,12 @@ public class OnboardingEntity {
 
     @Embedded
     private AvailabilityEntity schedule;
+
     @Embedded
     private PlannerEntity planner;
+
+    @Column(name = "priorities", columnDefinition = "TEXT") // Added priorities
+    private String priorities;
 
     // Mapping methods
     public static OnboardingEntity fromRequestDTO(OnboardingRequestDTO dto, Users user) {
@@ -102,6 +107,14 @@ public class OnboardingEntity {
         plannerEntity.setTaskManagementSync(dto.getPlanner().getIntegrations() != null && dto.getPlanner().getIntegrations().isTaskManagementSync());
         entity.setPlanner(plannerEntity);
 
+        // Serialize answers to JSON
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            entity.setPriorities(mapper.writeValueAsString(dto.getAnswers()));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize priorities", e);
+        }
+
         return entity;
     }
 
@@ -128,9 +141,10 @@ public class OnboardingEntity {
     public void setGoals(List<GoalEntity> goals) { this.goals = goals; }
     public PlannerEntity getPlanner() { return planner; }
     public void setPlanner(PlannerEntity planner) { this.planner = planner; }
+    public String getPriorities() { return priorities; }
+    public void setPriorities(String priorities) { this.priorities = priorities; }
 
-	public Object getName() {
-		return mentor.getName();
-	}
-
+    public Object getName() {
+        return mentor.getName();
+    }
 }
