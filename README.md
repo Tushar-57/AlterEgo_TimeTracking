@@ -2,6 +2,15 @@
 
 Track time, boost productivity, and stay motivated with AlterEgo, an AI-powered app featuring a personalized mentor to guide you through tasks and goals.
 
+# Application Demo
+Click the thumbnail below to view the AlterEgo Time Tracking demo:
+
+<a href="https://drive.google.com/file/d/1uSWtXf84HJaQ7-PIMalHH_3yC6s1vLiD/view?usp=sharing">
+  <img src="https://drive.google.com/thumbnail?id=1_GsdkOQ8WqvHbWyzdHYzu6Ht5aliIuwW" 
+       alt="Demo - Alter Ego https://drive.google.com/file/d/1uSWtXf84HJaQ7-PIMalHH_3yC6s1vLiD/view?usp=sharing" 
+       style="width: 400px; height: auto; border-radius: 8px;">
+</a>
+
 ## Features
 
 ### Core Functionality
