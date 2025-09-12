@@ -3,24 +3,39 @@
 
 import os
 from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import asyncio
 from datetime import datetime
-
+from contextlib import asynccontextmanager
+from app.agents.registry import get_agent_registry
 from app.llm import get_llm_service, reset_llm_service, ChatMessage, CompletionRequest
 from app.api.knowledge import router as knowledge_router
+from app.agents.factory import initialize_agents
+from app.agents.base import AgentType
+import logging
+
+
+# Load environment variables from .env file
+load_dotenv()
+
+logger = logging.getLogger("agent_factory")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Ensure LLM service is initialized before agents
+    await get_llm_service()
+    await initialize_agents()
+    yield
+    # (Optional) Add shutdown/cleanup logic here
 
 app = FastAPI(
     title="AI Agent Ecosystem API",
     description="Backend API for the AI Agent Ecosystem",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Add CORS middleware
@@ -34,6 +49,7 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(knowledge_router)
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -66,38 +82,44 @@ async def api_health_check():
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     try:
-        # Get the LLM service and use the real providers
-        llm_service = await get_llm_service()
-        
-        # Create the completion request
-        completion_request = CompletionRequest(
-            messages=[
-                ChatMessage(
-                    role="system", 
-                    content=f"You are the {request.agent} agent in an AI ecosystem. Respond helpfully and mention your role."
-                ),
-                ChatMessage(role="user", content=request.message)
-            ],
-            max_tokens=500,
-            temperature=0.7
-        )
-        
-        # Get response from the actual LLM provider
-        completion_response = await llm_service.chat_completion(completion_request)
-        
+        registry = get_agent_registry()
+        # Find orchestrator agent by type
+        logger.info(f"{registry.get_agent_ids()}")
+        orchestrators = registry.get_agents_by_type(AgentType.ORCHESTRATOR)
+        orchestrator = orchestrators[0] if orchestrators else None
+        if orchestrator is None:
+            logging.error("Orchestrator agent not found in registry. Agent ecosystem may not be initialized.")
+            return ChatResponse(
+                response="I'm the orchestrator agent. I encountered an issue: Orchestrator agent not found.",
+                agent="orchestrator",
+                reasoning="Error: Orchestrator agent not found in registry.",
+                timestamp=datetime.now()
+            )
+        state = {
+            "user_input": request.message,
+            "context": {},
+            "conversation_id": request.conversation_id,
+            "agent": orchestrator.agent_id
+        }
+        result = await orchestrator.execute(state)
+        # Support both tuple and single return
+        if isinstance(result, tuple):
+            response = result[0]
+            reasoning = result[1] if len(result) > 1 else None
+        else:
+            response = result
+            reasoning = None
         return ChatResponse(
-            response=completion_response.content,
-            agent=request.agent,
-            reasoning=f"Processed request using {llm_service.get_current_provider()} provider",
+            response=response,
+            agent=orchestrator.agent_id,
+            reasoning=reasoning,
             timestamp=datetime.now()
         )
-        
     except Exception as e:
-        # Only fall back to demo if there's a real error
-        print(f"LLM Service Error: {e}")
+        logging.error(f"Orchestrator Error: {e}")
         return ChatResponse(
-            response=f"I'm the **{request.agent}** agent. I encountered an issue connecting to the LLM service: {str(e)}. Please check your provider configuration.",
-            agent=request.agent,
+            response=f"I'm the orchestrator agent. I encountered an issue: {str(e)}.",
+            agent="orchestrator",
             reasoning=f"Error: {str(e)}",
             timestamp=datetime.now()
         )
@@ -225,4 +247,5 @@ async def test_connection(request: ConnectionTestRequest):
 
 if __name__ == "__main__":
     import uvicorn
+    logger.info("[main.py] FastAPI startup: initializing agent ecosystem.")
     uvicorn.run(app, host="0.0.0.0", port=8000)
