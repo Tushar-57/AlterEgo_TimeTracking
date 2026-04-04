@@ -8,6 +8,7 @@ from datetime import datetime
 recognizer = sr.Recognizer()
 is_active = True  # Global state variable
 
+
 def listen_command():
     with sr.Microphone() as source:
         print("🎤 Listening...")
@@ -29,19 +30,21 @@ def listen_command():
         print("⚠️ Could not reach STT service.")
         return ""
 
+
 def respond(text):
     if not text:
         return
     print(f"🤖 Assistant: {text}")
-    tts = gTTS(text=text, lang='en')
-    
+    tts = gTTS(text=text, lang="en")
+
     buffer = BytesIO()
     tts.write_to_fp(buffer)
     buffer.seek(0)
-    
+
     data, samplerate = sf.read(buffer)
     sd.play(data, samplerate)
     sd.wait()
+
 
 def process_command(command):
     global is_active
@@ -56,7 +59,7 @@ def process_command(command):
         if any(word in command for word in ["stop", "pause", "sleep"]):
             is_active = False
             return "Going to sleep. Say 'start' to wake me up."
-        
+
         # Normal commands
         if "hello" in command or "hi" in command:
             return "Hey there! How can I help you today?"
@@ -77,6 +80,7 @@ def process_command(command):
             is_active = True
             return "I'm back! How can I help you?"
         return ""
+
 
 if __name__ == "__main__":
     respond("Voice assistant is ready. Say 'stop' to pause or 'start' to resume.")
