@@ -678,7 +678,7 @@ export const CalendarSection = ({ events, refreshEvents }: CalendarSectionProps)
   );
 
   const renderYearView = () => (
-    <div className="grid grid-cols-4 gap-4 p-4">
+    <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
       {yearData.map((month) => (
         <div key={month.month} className="border rounded-lg overflow-hidden">
           <div className="bg-gray-100 p-2 border-b">
@@ -718,20 +718,20 @@ export const CalendarSection = ({ events, refreshEvents }: CalendarSectionProps)
   );
 
   return (
-    <section className="flex flex-col w-full h-full gap-4 p-4 overflow-auto">
+    <section className="flex h-full w-full flex-col gap-3 overflow-auto p-2 sm:gap-4 sm:p-4">
       <motion.div
-        className="sticky top-0 z-10 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 pt-4 pb-2 px-6 border-b rounded-b-lg shadow-sm"
+        className="sticky top-0 z-10 rounded-b-lg border-b bg-gradient-to-r from-gray-50 to-gray-100 px-3 pb-2 pt-3 shadow-sm dark:from-gray-800 dark:to-gray-900 sm:px-6 sm:pt-4"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="flex items-center justify-between relative self-stretch w-full">
+        <div className="relative flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-1">
             <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-l-lg p-2 bg-white dark:bg-gray-700 h-10 shadow-sm hover:bg-gray-000 dark:hover:bg-gray-600"
+                className="h-9 rounded-l-lg bg-white p-2 shadow-sm hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 sm:h-10"
                 onClick={() => handleNavigation("prev")}
               >
                 <ChevronLeftIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
@@ -740,17 +740,17 @@ export const CalendarSection = ({ events, refreshEvents }: CalendarSectionProps)
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
                 variant="ghost"
-                className="px-6 py-2 bg-white dark:bg-gray-700 rounded-none h-10 shadow-sm hover:bg-gray-000 dark:hover:bg-gray-600"
+                className="h-9 rounded-none bg-white px-4 py-2 shadow-sm hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 sm:h-10 sm:px-6"
                 onClick={() => setCurrentDate(new Date())}
               >
-                <span className="text-base font-medium text-gray-900 dark:text-gray-100">{getButtonText()}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100 sm:text-base">{getButtonText()}</span>
               </Button>
             </motion.div>
             <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-r-lg p-2 bg-white dark:bg-gray-700 h-10 shadow-sm hover:bg-gray-000 dark:hover:bg-gray-600"
+                className="h-9 rounded-r-lg bg-white p-2 shadow-sm hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 sm:h-10"
                 onClick={() => handleNavigation("next")}
               >
                 <ChevronRightIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
@@ -758,11 +758,11 @@ export const CalendarSection = ({ events, refreshEvents }: CalendarSectionProps)
             </motion.div>
           </div>
 
-          <ToggleGroup type="single" value={view} onValueChange={handleViewChange}>
+          <ToggleGroup type="single" value={view} onValueChange={handleViewChange} className="flex overflow-x-auto">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <ToggleGroupItem
                 value="day"
-                className="px-6 py-2 rounded-lg h-10 text-base font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-000 dark:hover:bg-gray-600"
+                className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
               >
                 Daily
               </ToggleGroupItem>
@@ -770,7 +770,7 @@ export const CalendarSection = ({ events, refreshEvents }: CalendarSectionProps)
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <ToggleGroupItem
                 value="week"
-                className="px-6 py-2 rounded-lg h-10 text-base font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-000 dark:hover:bg-gray-600"
+                className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
               >
                 Weekly
               </ToggleGroupItem>
@@ -778,7 +778,7 @@ export const CalendarSection = ({ events, refreshEvents }: CalendarSectionProps)
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <ToggleGroupItem
                 value="month"
-                className="px-6 py-2 rounded-lg h-10 text-base font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-000 dark:hover:bg-gray-600"
+                className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
               >
                 Monthly
               </ToggleGroupItem>
@@ -786,14 +786,14 @@ export const CalendarSection = ({ events, refreshEvents }: CalendarSectionProps)
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <ToggleGroupItem
                 value="year"
-                className="px-6 py-2 rounded-lg h-10 text-base font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-000 dark:hover:bg-gray-600"
+                className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
               >
                 Yearly
               </ToggleGroupItem>
             </motion.div>
           </ToggleGroup>
 
-          <div className="w-[200px] flex items-center">
+          <div className="flex w-full items-center lg:w-[200px]">
             <motion.div
               className="flex items-center gap-2 p-2 flex-1 bg-white dark:bg-gray-700 rounded-lg shadow-sm"
               whileHover={{ scale: 1.02 }}
@@ -807,7 +807,7 @@ export const CalendarSection = ({ events, refreshEvents }: CalendarSectionProps)
           </div>
         </div>
       </motion.div>
-      <div className="flex-1 overflow-auto relative" style={{ minHeight: "1728px" }}>
+      <div className="relative flex-1 overflow-auto" style={{ minHeight: "1728px" }}>
         {view === "day" && renderDayView()}
         {view === "week" && renderWeekView()}
         {view === "month" && renderMonthView()}

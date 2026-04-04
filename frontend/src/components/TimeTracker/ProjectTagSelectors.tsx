@@ -244,8 +244,8 @@ export const ProjectTagSelectors = ({
   const tagInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="flex flex-wrap gap-4 mt-4">
-      <div className="relative">
+    <div className="mt-4 flex flex-wrap gap-3 sm:gap-4">
+      <div className="relative w-full sm:w-auto">
         <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
           <Button
             variant="outline"
@@ -255,7 +255,7 @@ export const ProjectTagSelectors = ({
               setShowProjectSelect(!showProjectSelect);
             }}
             disabled={timerState.status === 'running'}
-            className="flex items-center gap-2 px-4 py-2 bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] dark:text-[#B0C4DE] hover:bg-[#D8BFD8]/20 rounded-xl shadow-sm"
+            className="flex w-full items-center justify-between gap-2 rounded-xl border-[#D8BFD8]/50 bg-[#F7F7F7] px-4 py-2 text-[#6B7280] shadow-sm hover:bg-[#D8BFD8]/20 dark:bg-[#3C4A5E] dark:text-[#B0C4DE] sm:w-auto"
           >
             <Briefcase className="h-4 w-4" />
             {getProjectNameById(currentTask.projectId, projects)}
@@ -268,7 +268,7 @@ export const ProjectTagSelectors = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="absolute z-50 mt-2 w-60 rounded-xl bg-[#F7F7F7] dark:bg-[#3C4A5E] shadow-lg border border-[#D8BFD8]/30"
+            className="absolute z-50 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-[#D8BFD8]/30 bg-[#F7F7F7] shadow-lg dark:bg-[#3C4A5E]"
             ref={projectRef}
           >
             <div className="py-2 max-h-64 overflow-auto">
@@ -305,7 +305,7 @@ export const ProjectTagSelectors = ({
           </motion.div>
         )}
       </div>
-      <div className="relative">
+      <div className="relative w-full sm:w-auto">
         <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
           <Button
             variant="outline"
@@ -315,7 +315,7 @@ export const ProjectTagSelectors = ({
               setShowTagInput(!showTagInput);
             }}
             disabled={timerState.status === 'running'}
-            className="flex items-center gap-2 px-4 py-2 bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] dark:text-[#B0C4DE] hover:bg-[#D8BFD8]/20 rounded-xl shadow-sm"
+            className="flex w-full items-center justify-between gap-2 rounded-xl border-[#D8BFD8]/50 bg-[#F7F7F7] px-4 py-2 text-[#6B7280] shadow-sm hover:bg-[#D8BFD8]/20 dark:bg-[#3C4A5E] dark:text-[#B0C4DE] sm:w-auto"
           >
             <TagsIcon className="h-4 w-4" />
             Tags
@@ -328,7 +328,7 @@ export const ProjectTagSelectors = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="absolute z-50 mt-2 w-72 rounded-xl bg-[#F7F7F7] dark:bg-[#3C4A5E] shadow-lg border border-[#D8BFD8]/30"
+            className="absolute z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-[#D8BFD8]/30 bg-[#F7F7F7] shadow-lg dark:bg-[#3C4A5E]"
             ref={tagRef}
           >
             <div className="p-4">

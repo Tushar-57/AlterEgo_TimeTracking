@@ -43,7 +43,7 @@ export const SettingsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg bg-[#F7F7F7] dark:bg-[#2D3748] border-[#D8BFD8]/30 rounded-2xl shadow-lg">
+      <DialogContent className="max-w-[95vw] sm:max-w-lg bg-[#F7F7F7] dark:bg-[#2D3748] border-[#D8BFD8]/30 rounded-2xl shadow-lg">
         <DialogHeader>
           <DialogTitle className="text-[#2D3748] dark:text-[#E6E6FA] font-serif text-xl">Settings</DialogTitle>
           <DialogDescription className="text-[#6B7280] dark:text-[#B0C4DE] font-serif">
@@ -55,19 +55,19 @@ export const SettingsDialog = ({
           <TabsList className="grid grid-cols-3 bg-[#FFFFFF] dark:bg-[#3C4A5E] rounded-xl border border-[#D8BFD8]/30">
             <TabsTrigger
               value="general"
-              className="text-[#6B7280] dark:text-[#B0C4DE] font-serif data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA]"
+              className="px-2 text-xs sm:text-sm text-[#6B7280] dark:text-[#B0C4DE] font-serif data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA]"
             >
               General
             </TabsTrigger>
             <TabsTrigger
               value="pomodoro"
-              className="text-[#6B7280] dark:text-[#B0C4DE] font-serif data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA]"
+              className="px-2 text-xs sm:text-sm text-[#6B7280] dark:text-[#B0C4DE] font-serif data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA]"
             >
               Pomodoro
             </TabsTrigger>
             <TabsTrigger
               value="notifications"
-              className="text-[#6B7280] dark:text-[#B0C4DE] font-serif data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA]"
+              className="px-2 text-xs sm:text-sm text-[#6B7280] dark:text-[#B0C4DE] font-serif data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA]"
             >
               Notifications
             </TabsTrigger>

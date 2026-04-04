@@ -97,11 +97,11 @@ export const UserTagPage = () => {
   }, [isAuthenticated]);
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6">
       <h1 className="text-2xl font-bold mb-6 text-gray-800">Tags Management 🏷️</h1>
       
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
           <Input
             label="Tag Name"
             value={editingTags?.name || newTags.name}
@@ -165,7 +165,7 @@ export const UserTagPage = () => {
                 </div>
             </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
             type="submit" 
             variant="primary"
@@ -200,7 +200,8 @@ export const UserTagPage = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
         </div>
         ) : (
-            <Table className="bg-white rounded-lg shadow-md">
+            <div className="overflow-x-auto rounded-lg bg-white shadow-md">
+            <Table className="min-w-[32rem] bg-white">
             <Table.Header>
                 <Table.Row>
                 <Table.Head>Name</Table.Head>
@@ -241,6 +242,7 @@ export const UserTagPage = () => {
                 ))}
             </Table.Body>
             </Table>
+              </div>
         )}
     </div>
   );

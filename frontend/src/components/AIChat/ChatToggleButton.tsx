@@ -8,13 +8,13 @@ const ChatToggleButton: React.FC = () => {
   return (
     <button
       onClick={toggleChat}
-      className={`fixed bottom-8 right-8 z-50 p-4 rounded-full shadow-lg transition-all duration-300 ${
+      className={`fixed bottom-4 right-4 z-50 rounded-full p-3 shadow-lg transition-all duration-300 md:bottom-8 md:right-8 md:p-4 ${
         isChatOpen
           ? 'bg-gradient-to-r from-blue-400 to-cyan-500 scale-110'
           : 'bg-gray-900 hover:bg-gray-800'
       }`}
     >
-      <MessageCircle className="w-6 h-6 text-white" />
+      <MessageCircle className="h-5 w-5 text-white md:h-6 md:w-6" />
     </button>
   );
 };

@@ -35,7 +35,7 @@ export function TimerControls({
       : pomodoroTime;
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
       <motion.div
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
@@ -44,13 +44,13 @@ export function TimerControls({
           variant="default"
           size="lg"
           onClick={toggleTimer}
-          className="bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/80 rounded-full p-6"
+          className="bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/80 rounded-full p-4 sm:p-6"
           disabled={currentTime === 0 && currentMode !== 'stopwatch'}
         >
           {status === 'running' ? (
-            <Pause className="h-6 w-6" />
+            <Pause className="h-5 w-5 sm:h-6 sm:w-6" />
           ) : (
-            <Play className="h-6 w-6" />
+            <Play className="h-5 w-5 sm:h-6 sm:w-6" />
           )}
         </Button>
       </motion.div>
@@ -63,10 +63,10 @@ export function TimerControls({
           variant="outline"
           size="lg"
           onClick={stopTimer}
-          className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20 rounded-full p-6"
+          className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20 rounded-full p-4 sm:p-6"
           disabled={status === 'stopped' && !timerState.activeTimerId}
         >
-          <Square className="h-6 w-6" />
+          <Square className="h-5 w-5 sm:h-6 sm:w-6" />
         </Button>
       </motion.div>
 
@@ -78,9 +78,9 @@ export function TimerControls({
           variant="outline"
           size="lg"
           onClick={resetTimer}
-          className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20 rounded-full p-6"
+          className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20 rounded-full p-4 sm:p-6"
         >
-          <RefreshCw className="h-6 w-6" />
+          <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6" />
         </Button>
       </motion.div>
     </div>

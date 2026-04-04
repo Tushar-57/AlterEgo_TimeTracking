@@ -40,8 +40,8 @@ const CoachWorkspace = () => {
   }, []);
 
   return (
-    <div className="h-screen w-full bg-gray-50">
-      <div className="h-14 border-b border-gray-200 bg-white px-6 flex items-center justify-between">
+    <div className="flex min-h-screen w-full flex-col bg-gray-50">
+      <div className="flex min-h-14 flex-col gap-1 border-b border-gray-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <h1 className="text-sm font-semibold tracking-wide text-gray-700">AI Coach Workspace</h1>
         <span className="text-xs text-gray-500">Powered by Agentic LLM Orchestrator</span>
       </div>
@@ -49,11 +49,10 @@ const CoachWorkspace = () => {
         <iframe
           title="AI Coach"
           src={coachSrc}
-          className="w-full border-0"
-          style={{ height: 'calc(100vh - 56px)' }}
+          className="min-h-[60vh] w-full flex-1 border-0"
         />
       ) : (
-        <div className="h-[calc(100vh-56px)] w-full px-6 py-8 text-sm text-gray-700">
+        <div className="w-full flex-1 px-4 py-8 text-sm text-gray-700 sm:px-6">
           Unable to load AI Coach because the current route points back to itself. Configure either
           VITE_AGENTIC_COACH_URL or VITE_AGENTIC_API_ORIGIN for this frontend deployment.
         </div>

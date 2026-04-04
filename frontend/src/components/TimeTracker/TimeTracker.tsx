@@ -844,7 +844,7 @@ export default function TimeTracker() {
   const QuoteComponent = useMemo(() => {
     return () => (
       <motion.div
-        className="relative flex items-center justify-between gap-4 mb-8 p-6 rounded-xl bg-[#F7F7F7] dark:bg-[#2D3748] border border-[#D8BFD8]/30 shadow-inner"
+        className="relative mb-8 flex items-center justify-between gap-3 rounded-xl border border-[#D8BFD8]/30 bg-[#F7F7F7] p-4 shadow-inner sm:gap-4 sm:p-6 dark:bg-[#2D3748]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -856,7 +856,7 @@ export default function TimeTracker() {
       >
         <div className="flex-1">
           <motion.div
-            className="text-center text-[#6B7280] dark:text-[#E6E6FA] font-serif text-lg italic"
+            className="text-center font-serif text-base italic text-[#6B7280] sm:text-lg dark:text-[#E6E6FA]"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -904,7 +904,7 @@ export default function TimeTracker() {
     return (
       <div className="flex flex-col items-center mt-6">
         <motion.div
-          className="text-6xl font-mono font-serif text-[#2D3748] dark:text-[#E6E6FA]"
+          className="text-4xl sm:text-6xl font-mono font-serif text-[#2D3748] dark:text-[#E6E6FA]"
           animate={{ scale: timerState.status === 'running' ? [1, 1.03, 1] : 1 }}
           transition={{ duration: 2, repeat: timerState.status === 'running' ? Infinity : 0 }}
         >
@@ -966,7 +966,7 @@ export default function TimeTracker() {
         setShowSettingsDialog={setShowSettingsDialog}
         setShowKeyboardShortcutsDialog={setShowKeyboardShortcutsDialog}
       />
-      <main className="max-w-5xl mx-auto py-12 px-6">
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10 md:py-12">
         {fetchError && (
           <motion.div
             className="bg-[#FECACA]/20 border border-[#FECACA]/50 text-[#DC2626] p-4 rounded-xl mb-8 shadow-sm"
@@ -985,7 +985,7 @@ export default function TimeTracker() {
 
         <QuoteComponent />
 
-        <div className="bg-[#FFFFFF] dark:bg-[#2D3748] rounded-2xl shadow-lg p-8 mb-8">
+        <div className="mb-8 rounded-2xl bg-[#FFFFFF] p-4 shadow-lg sm:p-6 md:p-8 dark:bg-[#2D3748]">
           <div className="relative">
             <Input
               type="text"
@@ -995,7 +995,7 @@ export default function TimeTracker() {
                 setCurrentTask(prev => ({ ...prev, description: e.target.value }));
                 setDescriptionError(false);
               }}
-              className={`w-full text-xl p-6 bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#2D3748] dark:text-[#E6E6FA] font-serif rounded-xl focus:ring-2 focus:ring-[#D8BFD8] shadow-sm ${descriptionError ? 'border-[#DC2626] border-2' : ''}`}
+              className={`w-full rounded-xl border-[#D8BFD8]/50 bg-[#F7F7F7] p-4 font-serif text-base text-[#2D3748] shadow-sm focus:ring-2 focus:ring-[#D8BFD8] sm:p-6 sm:text-xl dark:bg-[#3C4A5E] dark:text-[#E6E6FA] ${descriptionError ? 'border-[#DC2626] border-2' : ''}`}
               disabled={timerState.status === 'running'}
               id="task-description-input"
             />
@@ -1025,11 +1025,11 @@ export default function TimeTracker() {
             onValueChange={(value: string) => handleTimerModeChange(value as TimerMode)}
             className="mt-6"
           >
-            <TabsList className="grid grid-cols-3 bg-[#F7F7F7] dark:bg-[#3C4A5E] rounded-xl border border-[#D8BFD8]/30 shadow-sm">
+            <TabsList className="grid grid-cols-3 rounded-xl border border-[#D8BFD8]/30 bg-[#F7F7F7] shadow-sm dark:bg-[#3C4A5E]">
               <TabsTrigger
                 value="stopwatch"
                 disabled={timerState.status !== 'stopped'}
-                className="flex items-center gap-2 py-2 font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA] data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
+                className="flex items-center gap-1 py-2 text-xs font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
               >
                 <Timer className="h-4 w-4" />
                 Stopwatch
@@ -1037,7 +1037,7 @@ export default function TimeTracker() {
               <TabsTrigger
                 value="countdown"
                 disabled={timerState.status !== 'stopped'}
-                className="flex items-center gap-2 py-2 font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA] data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
+                className="flex items-center gap-1 py-2 text-xs font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
               >
                 <AlarmClock className="h-4 w-4" />
                 Countdown
@@ -1045,7 +1045,7 @@ export default function TimeTracker() {
               <TabsTrigger
                 value="pomodoro"
                 disabled={timerState.status !== 'stopped'}
-                className="flex items-center gap-2 py-2 font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] dark:data-[state=active]:text-[#E6E6FA] data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
+                className="flex items-center gap-1 py-2 text-xs font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
               >
                 <Coffee className="h-4 w-4" />
                 Pomodoro

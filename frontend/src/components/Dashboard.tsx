@@ -46,7 +46,15 @@ export const getColorForProject = (projectId: number | null): string => {
 export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
   const [currentDate] = useState(new Date());
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const fetchTimeEntriesDirect = async (start: Date, end: Date) => {
     try {
@@ -145,6 +153,12 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
     fetchData();
   }, [currentDate, isAuthenticated]);
 
+  const mobileEvents = [...calendarEvents].sort((a, b) => {
+    const topA = Number.parseFloat(a.position.top);
+    const topB = Number.parseFloat(b.position.top);
+    return topA - topB;
+  });
+
   const handleEventDrag = async (
     eventId: number,
     newPosition: { top: string; left: string }
@@ -195,8 +209,36 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
     }
   };
 
+  if (isMobile) {
+    return (
+      <div className="min-h-screen w-full bg-gray-50 p-4">
+        <div className="mx-auto max-w-3xl space-y-3">
+          <div className="rounded-xl bg-white p-4 shadow-sm">
+            <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
+            <p className="text-sm text-gray-500">Your scheduled entries in a mobile-friendly view.</p>
+          </div>
+
+          {mobileEvents.length === 0 ? (
+            <div className="rounded-xl bg-white p-6 text-center text-sm text-gray-500 shadow-sm">
+              No scheduled entries found for this period.
+            </div>
+          ) : (
+            mobileEvents.map((event) => (
+              <div key={event.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                  {event.time} {event.period}
+                </div>
+                <div className="text-base font-semibold text-gray-900">{event.title}</div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return ( 
-    <div className="flex flex-row w-full h-screen">
+    <div className="flex flex-row w-full min-h-screen">
       <div className="flex flex-col flex-1 min-h-[1728px]">
         <div className="relative flex-1 overflow-y-auto">
           <CalendarSection

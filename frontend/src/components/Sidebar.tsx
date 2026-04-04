@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import { 
@@ -13,18 +13,31 @@ import {
   UserPlus,
   LucideCalendarCheck2,
   WatchIcon,
-  CalendarRangeIcon, LayoutDashboard
+  CalendarRangeIcon,
+  LayoutDashboard,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const NavItem = ({ icon: Icon, label, to }: { icon: LucideIcon; label: string; to: string }) => {
+const NavItem = ({
+  icon: Icon,
+  label,
+  to,
+  onNavigate,
+}: {
+  icon: LucideIcon;
+  label: string;
+  to: string;
+  onNavigate?: () => void;
+}) => {
   const location = useLocation();
   const isActive = location.pathname === to;
 
   return (
     <Link 
       to={to}
-      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 ${
+      onClick={onNavigate}
+      className={`group flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 ${
         isActive 
           ? 'bg-black text-white shadow-md' 
           : 'text-gray-500 hover:bg-gray-100 hover:shadow-sm'
@@ -36,50 +49,88 @@ const NavItem = ({ icon: Icon, label, to }: { icon: LucideIcon; label: string; t
   );
 };
 
-const Sidebar = () => {
+type SidebarProps = {
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+};
+
+const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
   const { logout } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (mobileOpen) {
+      onMobileClose();
+    }
+  }, [location.pathname, mobileOpen, onMobileClose]);
+
   return (
-    <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r border-gray-100 p-6">
-      <div className="flex items-center space-x-3 mb-8">
-        <WatchIcon className="w-8 h-8" />
-        {/* <NavItem icon={WatchIcon} label='Time Tracker' to='/'/> */}
-        <span className="text-xl font-light">Alter Ego</span>
+    <>
+      <div
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 md:hidden ${
+          mobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        onClick={onMobileClose}
+        aria-hidden="true"
+      />
+
+      <aside
+        className={`fixed left-0 top-0 z-50 h-screen w-64 border-r border-gray-100 bg-white p-6 shadow-xl transition-transform duration-300 md:z-20 md:translate-x-0 md:shadow-none ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+      <div className="mb-8 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <WatchIcon className="w-8 h-8" />
+          <span className="text-xl font-light">Alter Ego</span>
+        </div>
+        <button
+          type="button"
+          onClick={onMobileClose}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 md:hidden"
+          aria-label="Close navigation menu"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
-      <div className="space-y-1">
+      <div className="flex h-[calc(100%-5.5rem)] flex-col space-y-1 overflow-y-auto pb-4">
         <div className="mb-6">
         <div className="text-xs font-medium text-gray-400 mb-3 px-4">OVERVIEW</div>
-          <NavItem icon={Timer} label="Timer" to="/" />
-          <NavItem icon={LayoutDashboard} label="Dashboard" to="/dashboard" />
+          <NavItem icon={Timer} label="Timer" to="/" onNavigate={onMobileClose} />
+          <NavItem icon={LayoutDashboard} label="Dashboard" to="/dashboard" onNavigate={onMobileClose} />
           <div className="mb-6">
           </div>
         </div>
         <div className="mb-6">
           <div className="text-xs font-medium text-gray-400 mb-3 px-4">PLANNER</div>
-          <NavItem icon={LucideCalendarCheck2} label="Tasks" to="/tasks" />
-          <NavItem icon={CalendarRangeIcon} label="AI Planner" to="/planner" />
-          <NavItem icon={Clock} label="AI Coach" to="/coach" />
+          <NavItem icon={LucideCalendarCheck2} label="Tasks" to="/tasks" onNavigate={onMobileClose} />
+          <NavItem icon={CalendarRangeIcon} label="AI Planner" to="/planner" onNavigate={onMobileClose} />
+          <NavItem icon={Clock} label="AI Coach" to="/coach" onNavigate={onMobileClose} />
           <br/>
         </div>
 
         <div className="mb-6">
           <div className="text-xs font-medium text-gray-400 mb-3 px-4">ANALYZE</div>
-          <NavItem icon={BarChart2} label="Analytics" to="/analytics" />
-          <NavItem icon={PieChart} label="Reports" to="/reports" />
+          <NavItem icon={BarChart2} label="Analytics" to="/analytics" onNavigate={onMobileClose} />
+          <NavItem icon={PieChart} label="Reports" to="/reports" onNavigate={onMobileClose} />
         </div>
 
         <div className="mb-6">
           <div className="text-xs font-medium text-gray-400 mb-3 px-4">MANAGE</div>
-          <NavItem icon={Users} label="Projects" to="/projects" />
-          <NavItem icon={UserPlus} label="Clients" to="/clients" />
-          <NavItem icon={FileText} label="Invoices" to="/invoices" />
-          <NavItem icon={Tag} label="Tags" to="/tags" />
+          <NavItem icon={Users} label="Projects" to="/projects" onNavigate={onMobileClose} />
+          <NavItem icon={UserPlus} label="Clients" to="/clients" onNavigate={onMobileClose} />
+          <NavItem icon={FileText} label="Invoices" to="/invoices" onNavigate={onMobileClose} />
+          <NavItem icon={Tag} label="Tags" to="/tags" onNavigate={onMobileClose} />
         </div>
 
-        <div className="absolute bottom-4 left-6 right-6 space-y-1">
-          <NavItem icon={Settings} label="Settings" to="/settings" />
+        <div className="mt-auto space-y-1 border-t border-gray-100 pt-4">
+          <NavItem icon={Settings} label="Settings" to="/settings" onNavigate={onMobileClose} />
           <div
-            onClick={logout}
+            onClick={() => {
+              onMobileClose();
+              logout();
+            }}
             className="flex items-center space-x-3 px-4 py-3 text-gray-500 hover:bg-gray-100 rounded-lg transition-all duration-200 cursor-pointer"
           >
             <svg 
@@ -95,7 +146,8 @@ const Sidebar = () => {
         </div>
       </div>
 
-    </div>
+    </aside>
+    </>
   );
 };
 

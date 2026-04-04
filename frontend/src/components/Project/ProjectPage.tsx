@@ -99,11 +99,11 @@ const ProjectPage = () => {
   }, [isAuthenticated]);
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6">
       <h1 className="text-2xl font-bold mb-6 text-gray-800">Project Management</h1>
       
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
           <Input
             label="Project Name"
             value={editingProject?.name || newProject.name}
@@ -115,57 +115,59 @@ const ProjectPage = () => {
           
           <div className="flex flex-col gap-1">
             <label className="text-sm text-gray-600">Color</label>
-            <div className="flex gap-2 flex-wrap">
-                {COLORS.map((color) => (
+            <div className="flex flex-wrap gap-2">
+              {COLORS.map((color) => (
                 <button
-                    key={color}
-                    type="button"
-                    onClick={() => 
+                  key={color}
+                  type="button"
+                  onClick={() =>
                     editingProject
-                        ? setEditingProject({...editingProject, color})
-                        : setNewProject({...newProject, color})
-                    }
-                    className={`w-8 h-8 rounded-full border-2 ${
-                    (editingProject?.color === color || newProject.color === color) 
-                        ? 'border-black' 
-                        : 'border-transparent'
-                    }`}
-                    style={{ backgroundColor: color }}
+                      ? setEditingProject({ ...editingProject, color })
+                      : setNewProject({ ...newProject, color })
+                  }
+                  className={`h-8 w-8 rounded-full border-2 ${
+                    editingProject?.color === color || newProject.color === color
+                      ? 'border-black'
+                      : 'border-transparent'
+                  }`}
+                  style={{ backgroundColor: color }}
                 />
-                ))}
-                <label className="relative cursor-pointer">
-                    <div 
-                        className="w-8 h-8 rounded-full border-2 border-dashed flex items-center justify-center"
-                        style={{ 
-                        borderColor: editingProject?.color || newProject.color,
-                        backgroundColor: (editingProject?.color === 'custom' || newProject.color === 'custom') 
-                            ? 'transparent' 
-                            : 'white'
-                        }}
-                    >
-                        <Plus 
-                        className="w-4 h-4" 
-                        style={{ 
-                            color: editingProject?.color || newProject.color 
-                        }}
-                        />
-                    </div>
-                    <input
-                        type="color"
-                        value={editingProject?.color || newProject.color}
-                        onChange={(e) => {
-                        const color = e.target.value;
-                        if (editingProject) {
-                            setEditingProject({...editingProject, color});
-                        } else {
-                            setNewProject({...newProject, color});
-                        }
-                        }}
-                        className="absolute opacity-0 w-0 h-0"
-                    />
-                    </label>
+              ))}
+              <label className="relative cursor-pointer">
+                <div
+                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed"
+                  style={{
+                    borderColor: editingProject?.color || newProject.color,
+                    backgroundColor:
+                      editingProject?.color === 'custom' || newProject.color === 'custom'
+                        ? 'transparent'
+                        : 'white',
+                  }}
+                >
+                  <Plus
+                    className="h-4 w-4"
+                    style={{
+                      color: editingProject?.color || newProject.color,
+                    }}
+                  />
                 </div>
+                <input
+                  type="color"
+                  value={editingProject?.color || newProject.color}
+                  onChange={(e) => {
+                    const color = e.target.value;
+                    if (editingProject) {
+                      setEditingProject({ ...editingProject, color });
+                    } else {
+                      setNewProject({ ...newProject, color });
+                    }
+                  }}
+                  className="absolute h-0 w-0 opacity-0"
+                />
+              </label>
             </div>
+          </div>
+
           <Input
             label="Client"
             value={editingProject?.client || newProject.client}
@@ -174,7 +176,7 @@ const ProjectPage = () => {
               : setNewProject({...newProject, client: e.target.value})}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
             type="submit" 
             variant="primary"
@@ -209,7 +211,8 @@ const ProjectPage = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
         </div>
         ) : (
-            <Table className="bg-white rounded-lg shadow-md">
+            <div className="overflow-x-auto rounded-lg bg-white shadow-md">
+            <Table className="min-w-[40rem] bg-white">
             <Table.Header>
                 <Table.Row>
                 <Table.Head>Name</Table.Head>
@@ -252,6 +255,7 @@ const ProjectPage = () => {
                 ))}
             </Table.Body>
             </Table>
+              </div>
         )}
     </div>
   );

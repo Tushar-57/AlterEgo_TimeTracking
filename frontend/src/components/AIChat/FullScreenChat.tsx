@@ -626,9 +626,9 @@ const FullScreenChat: React.FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="relative flex flex-col w-full max-w-5xl h-[90vh] bg-gradient-to-br from-pink-100 to-lavender-100 rounded-2xl shadow-2xl overflow-hidden"
+              className="relative flex h-[92dvh] w-[95vw] max-w-5xl flex-col overflow-hidden rounded-xl bg-gradient-to-br from-pink-100 to-lavender-100 shadow-2xl sm:h-[90vh] sm:w-full sm:rounded-2xl"
             >
-              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-white/30 to-white/10 border-b border-lavender-200">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-lavender-200 bg-gradient-to-r from-white/30 to-white/10 p-3 sm:p-4">
                 <div className="flex items-center gap-3">
                   {isAvatarLoading || !coachData ? (
                     <div className="w-10 h-10 rounded-full bg-lavender-200 animate-pulse" />
@@ -643,7 +643,7 @@ const FullScreenChat: React.FC = () => {
                       onError={(e) => (e.currentTarget.src = '/avatars/default.svg')}
                     />
                   )}
-                  <h2 className="text-xl font-bold text-gray-800">
+                  <h2 className="max-w-[12rem] truncate text-base font-bold text-gray-800 sm:max-w-none sm:text-xl">
                     {coachData?.name || 'Assistant'} ({coachData?.archetype || 'Guide'})
                   </h2>
                 </div>
@@ -693,14 +693,14 @@ const FullScreenChat: React.FC = () => {
               <ChatContainer
                 messages={messages}
                 isTyping={isTyping}
-                className="flex-1 px-8 py-6 overflow-y-auto bg-gradient-to-b from-pink-50 to-lavender-50"
+                className="flex-1 overflow-y-auto bg-gradient-to-b from-pink-50 to-lavender-50 px-3 py-3 sm:px-8 sm:py-6"
                 coachAvatar={coachData?.avatar || '/avatars/default.svg'}
               />
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="p-6 bg-gradient-to-t from-white/90 to-white/70 border-t border-lavender-200"
+                className="border-t border-lavender-200 bg-gradient-to-t from-white/90 to-white/70 p-3 sm:p-6"
               >
                 <AnimatePresence>
                   {showSuggestions && (
@@ -734,9 +734,9 @@ const FullScreenChat: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
                       transition={{ duration: 0.2 }}
-                      className="mb-4 p-4 bg-lavender-100 rounded-lg shadow-sm flex items-center justify-between border-l-4 border-lavender-400"
+                      className="mb-4 flex flex-col gap-3 rounded-lg border-l-4 border-lavender-400 bg-lavender-100 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-start gap-2">
                         <AlertCircle className="w-5 h-5 text-lavender-600" />
                         <span className="text-gray-800 font-medium">
                           {actionPrompt.action === 'createProject'
@@ -758,7 +758,7 @@ const FullScreenChat: React.FC = () => {
                             : `Action required: ${actionPrompt.action}`}
                         </span>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {actionPrompt.action === 'confirmTimeEntry' ? (
                           <>
                             <motion.button
@@ -819,7 +819,7 @@ const FullScreenChat: React.FC = () => {
                   )}
                 </AnimatePresence>
                 <div className="bg-white/95 rounded-xl shadow-md border border-lavender-200 p-4 flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
@@ -838,7 +838,7 @@ const FullScreenChat: React.FC = () => {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
                       placeholder="Type your message or select a suggestion..."
-                      className="flex-1 p-4 rounded-lg border border-lavender-200 focus:outline-none focus:ring-2 focus:ring-lavender-300 bg-pink-50 text-gray-900 text-base transition-all resize-none h-28"
+                      className="h-24 resize-none rounded-lg border border-lavender-200 bg-pink-50 p-4 text-base text-gray-900 transition-all focus:outline-none focus:ring-2 focus:ring-lavender-300 sm:h-28 sm:flex-1"
                     />
                   </div>
                   {context && (
@@ -866,7 +866,7 @@ const FullScreenChat: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="absolute top-12 right-4 bg-white/50 backdrop-blur-md rounded-2xl shadow-lg ring-1 ring-lavender-200 p-6 w-72 max-w-[90vw] z-60"
+                  className="absolute right-2 top-12 z-60 w-[min(20rem,calc(100vw-1rem))] rounded-2xl bg-white/50 p-4 shadow-lg ring-1 ring-lavender-200 backdrop-blur-md sm:right-4 sm:p-6"
                 >
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Chat Settings</h3>
                   <div className="flex border-b border-lavender-200 mb-4">
@@ -949,7 +949,7 @@ const FullScreenChat: React.FC = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="absolute bottom-24 left-6 bg-white/50 backdrop-blur-md rounded-2xl shadow-lg ring-1 ring-lavender-200 p-6 w-72 max-w-[90vw] z-60"
+                  className="absolute bottom-20 left-2 z-60 w-[min(20rem,calc(100vw-1rem))] rounded-2xl bg-white/50 p-4 shadow-lg ring-1 ring-lavender-200 backdrop-blur-md sm:left-6 sm:p-6"
                 >
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Add Context</h3>
                   <div className="grid gap-3">

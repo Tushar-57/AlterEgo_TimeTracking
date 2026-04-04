@@ -147,8 +147,8 @@ export const TimerHeader = ({
   setShowSettingsDialog: (show: boolean) => void;
   setShowKeyboardShortcutsDialog: (show: boolean) => void;
 }) => (
-  <header className="bg-gradient-to-r from-[#F7F7F7] to-[#E6E6FA] dark:from-[#2D3748] dark:to-[#3C4A5E] shadow-sm py-4 px-6">
-    <div className="max-w-7xl mx-auto flex justify-between items-center">
+  <header className="bg-gradient-to-r from-[#F7F7F7] to-[#E6E6FA] dark:from-[#2D3748] dark:to-[#3C4A5E] shadow-sm px-4 py-3 sm:px-6 sm:py-4">
+    <div className="max-w-7xl mx-auto flex justify-between items-center gap-3">
       <div className="flex items-center space-x-3">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
@@ -157,9 +157,9 @@ export const TimerHeader = ({
         >
           <Clock className="text-[#D8BFD8] h-8 w-8" />
         </motion.div>
-        <h1 className="text-2xl font-serif font-bold text-[#2D3748] dark:text-[#E6E6FA]">TimeTracker</h1>
+        <h1 className="text-lg sm:text-2xl font-serif font-bold text-[#2D3748] dark:text-[#E6E6FA]">TimeTracker</h1>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1 sm:gap-3">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -257,7 +257,7 @@ export const TimerHeader = ({
             whileHover={{ scale: 1.1, boxShadow: '0 0 12px rgba(216, 191, 216, 0.4)' }}
             transition={{ duration: 0.2 }}
           >
-            <div className="bg-gradient-to-br from-[#D8BFD8] to-[#B0C4DE] rounded-full h-9 w-9 flex items-center justify-center text-white font-medium shadow-sm">
+            <div className="bg-gradient-to-br from-[#D8BFD8] to-[#B0C4DE] rounded-full h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center text-white font-medium shadow-sm">
               {user.name ? user.name[0] : user.email[0]}
             </div>
           </motion.div>

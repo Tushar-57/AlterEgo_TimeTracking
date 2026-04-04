@@ -197,15 +197,15 @@ export const TimeEntriesList = ({
   setSortBy: (value: 'newest' | 'oldest' | 'duration') => void;
   formatTime: (seconds: number) => string;
 }) => (
-  <div className="mt-10 bg-[#FFFFFF] dark:bg-[#2D3748] rounded-2xl shadow-lg p-8 border border-[#D8BFD8]/30">
-    <div className="flex justify-between items-center mb-6">
+  <div className="mt-10 rounded-2xl border border-[#D8BFD8]/30 bg-[#FFFFFF] p-4 shadow-lg sm:p-6 md:p-8">
+    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h2 className="text-xl font-serif font-semibold flex items-center text-[#2D3748] dark:text-[#E6E6FA]">
         <Calendar className="mr-2 h-5 w-5 text-[#D8BFD8]" />
         Recent Time Entries
       </h2>
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Select onValueChange={setSortBy} value={sortBy}>
-          <SelectTrigger className="w-44 bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] dark:text-[#B0C4DE]">
+          <SelectTrigger className="w-full sm:w-44 bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] dark:text-[#B0C4DE]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50">
@@ -218,7 +218,7 @@ export const TimeEntriesList = ({
           <Button
             variant="outline"
             onClick={() => exportTimeEntries(timeEntries)}
-            className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#B0C4DE] hover:bg-[#D8BFD8]/20 shadow-sm"
+            className="w-full sm:w-auto bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#B0C4DE] hover:bg-[#D8BFD8]/20 shadow-sm"
           >
             <Download className="h-4 w-4 mr-2" />
             Export Entries
@@ -254,9 +254,9 @@ export const TimeEntriesList = ({
               transition={{ duration: 0.4, ease: 'easeOut' }}
             >
               <div className="border border-[#D8BFD8]/30 rounded-xl p-5 bg-[#F7F7F7] dark:bg-[#3C4A5E] hover:bg-[#D8BFD8]/10 transition-all shadow-sm hover:shadow-md">
-                <div className="grid grid-cols-3 gap-4 items-center">
-                  <div className="col-span-2">
-                    <h3 className="font-serif text-lg font-semibold mb-2 text-[#2D3748] dark:text-[#E6E6FA]">
+                  <div className="grid grid-cols-1 gap-3 items-start sm:grid-cols-3 sm:items-center">
+                    <div className="sm:col-span-2">
+                      <h3 className="mb-2 font-serif text-base sm:text-lg font-semibold text-[#2D3748] dark:text-[#E6E6FA]">
                       {entry.description || 'Untitled Task'}
                     </h3>
                     <div className="flex items-center gap-4 text-sm text-[#6B7280] dark:text-[#B0C4DE] flex-wrap">
@@ -278,7 +278,7 @@ export const TimeEntriesList = ({
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center justify-end gap-3">
+                  <div className="flex items-center justify-start gap-3 sm:justify-end">
                     {entry.billable && <DollarSign className="h-5 w-5 text-[#D8BFD8]" />}
                     <span className="font-mono text-xl text-[#2D3748] dark:text-[#E6E6FA]">{formatTime(entry.duration)}</span>
                   </div>

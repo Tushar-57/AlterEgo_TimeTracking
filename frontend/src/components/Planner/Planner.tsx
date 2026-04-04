@@ -117,7 +117,7 @@ export const PlannerForm: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6">
       <h1 className="text-2xl font-bold mb-6 text-gray-800">Plan Your Work</h1>
       
       {successMessage && (
@@ -127,7 +127,7 @@ export const PlannerForm: React.FC = () => {
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6">
+      <form onSubmit={handleSubmit} className="rounded-lg bg-white p-4 shadow-md sm:p-6">
         {/* Vision & Objectives */}
         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-4 pb-2 border-b border-gray-200">Vision &amp; Objectives</h2>
@@ -157,7 +157,7 @@ export const PlannerForm: React.FC = () => {
 
           <div className="mb-4">
             <label className="block text-gray-700 font-medium mb-2">Timeframe</label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="block text-sm text-gray-500 mb-1">Start Date</label>
                 <input
@@ -183,7 +183,7 @@ export const PlannerForm: React.FC = () => {
 
           <div className="mb-4">
             <label className="block text-gray-700 font-medium mb-2">SMART Checks</label>
-            <div className="flex flex-wrap gap-6">
+            <div className="flex flex-wrap gap-4">
               {(['S', 'M', 'A', 'R', 'T'] as const).map(letter => {
                 const labels = {
                   S: 'Specific',
@@ -246,7 +246,7 @@ export const PlannerForm: React.FC = () => {
           
           <div className="mb-4">
             <label className="block text-gray-700 font-medium mb-2">Do-Not-Disturb Window</label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="block text-sm text-gray-500 mb-1">Start Time</label>
                 <input

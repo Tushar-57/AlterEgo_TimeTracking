@@ -220,11 +220,11 @@ export const TimerPopup = ({
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-50 flex items-center justify-center p-4" onKeyDown={e => e.stopPropagation()} tabIndex={0}>
-      <div className="bg-white rounded-2xl w-[600px] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+      <div className="flex max-h-[90vh] w-full max-w-[600px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b">
+        <div className="flex items-center justify-between border-b px-4 py-3 sm:px-6 sm:py-4">
           <h2 className="text-lg font-semibold text-gray-800">Time Entry</h2>
-          <div className="flex space-x-2">
+          <div className="flex space-x-1 sm:space-x-2">
             <button onClick={() => setManualMode(!manualMode)} title={manualMode ? 'Auto Mode' : 'Manual Mode'} className="p-2 hover:bg-gray-100 rounded">
               <Edit2 className="w-5 h-5 text-gray-600" />
             </button>
@@ -238,7 +238,7 @@ export const TimerPopup = ({
         </div>
 
         {/* Body */}
-        <div className="p-6 flex-1 overflow-auto grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-5 overflow-auto p-4 sm:gap-6 sm:p-6">
           {/* Task & Meta */}
           <div className="space-y-4">
             <input
@@ -249,7 +249,7 @@ export const TimerPopup = ({
               className="w-full text-lg font-medium px-4 py-2 border rounded focus:ring-2 focus:ring-indigo-500"
             />
 
-            <div className="flex space-x-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:space-x-4 sm:gap-4">
               <select value={category} onChange={e => setCategory(e.target.value)} className="flex-1 px-3 py-2 border rounded focus:ring-2 focus:ring-indigo-500">
                 <option value="work">Work</option>
                 <option value="meeting">Meeting</option>
@@ -258,7 +258,7 @@ export const TimerPopup = ({
               </select>
 
               {/* Tag Input */}
-              <div className="flex-1 flex space-x-2">
+              <div className="flex flex-1 space-x-2">
                 <input
                   type="text"
                   value={newTag}
@@ -309,7 +309,7 @@ export const TimerPopup = ({
               )}
             </DragDropContext>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="block text-sm text-gray-600">Project</label>
               <select
@@ -361,7 +361,7 @@ export const TimerPopup = ({
 
           {/* Manual Mode Inputs */}
           {manualMode && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-sm text-gray-600">Start</label>
                 <input
@@ -393,12 +393,12 @@ export const TimerPopup = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t flex justify-end space-x-4 bg-gray-50">
-          <button onClick={onClose} className="px-4 py-2 text-gray-700 rounded hover:bg-gray-200 transition">Cancel</button>
+        <div className="flex flex-col-reverse gap-2 border-t bg-gray-50 px-4 py-3 sm:flex-row sm:justify-end sm:space-x-4 sm:gap-0 sm:px-6 sm:py-4">
+          <button onClick={onClose} className="w-full rounded px-4 py-2 text-gray-700 transition hover:bg-gray-200 sm:w-auto">Cancel</button>
           <button 
             onClick={handleComplete} 
             disabled={isSubmitting}
-            className="px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded shadow hover:from-indigo-600 hover:to-purple-600 transition"
+            className="w-full rounded bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-2 text-white shadow transition hover:from-indigo-600 hover:to-purple-600 sm:w-auto"
           >
             {isSubmitting ? "Saving..." : "Save"}
           </button>

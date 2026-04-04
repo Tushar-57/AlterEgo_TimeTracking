@@ -726,7 +726,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4"
       >
         <motion.div
           ref={popupRef}
@@ -734,7 +734,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 50 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="bg-white dark:bg-gray-900 rounded-xl p-6 w-[600px] shadow-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-gray-800 dark:to-gray-900"
+          className="w-full max-w-[600px] rounded-xl border border-gray-200 bg-gradient-to-br from-indigo-50 to-blue-50 p-4 shadow-xl dark:border-gray-700 dark:bg-gray-900 dark:from-gray-800 dark:to-gray-900 sm:p-6"
         >
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Add Task</h3>
@@ -748,7 +748,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="col-span-2">
               <label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-200">
                 Description

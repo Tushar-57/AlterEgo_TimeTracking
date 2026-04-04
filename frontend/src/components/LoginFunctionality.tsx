@@ -76,10 +76,10 @@ export default function LoginClassic() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#FFF5E9] p-8">
-      <div className="w-full max-w-7xl mx-auto bg-white rounded-3xl overflow-hidden flex shadow-xl">
+    <div className="min-h-screen bg-[#FFF5E9] p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl lg:flex-row">
         {/* Left side with illustration */}
-        <div className="w-1/2 p-12 bg-[#FFF5E9] relative overflow-hidden">
+        <div className="relative hidden overflow-hidden bg-[#FFF5E9] p-12 lg:block lg:w-1/2">
           <div className="absolute -top-16 -left-16 w-64 h-64 bg-[#B32C1A] rounded-full opacity-20"></div>
           <div className="absolute top-32 -right-8 w-16 h-16 bg-[#FFC7B4] rounded-full opacity-40"></div>
           <div className="absolute bottom-24 left-24 w-32 h-32 bg-[#B32C1A] rounded-full opacity-10"></div>
@@ -110,10 +110,10 @@ export default function LoginClassic() {
         </div>
 
         {/* Right side with login form */}
-        <div className="w-1/2 p-12 flex flex-col justify-center">
+        <div className="flex w-full flex-col justify-center p-6 sm:p-8 lg:w-1/2 lg:p-12">
           <div className="max-w-md mx-auto w-full">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-[#4A154B] mb-3">Login to your Account</h2>
+            <div className="text-center mb-10 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl font-bold text-[#4A154B] mb-3">Login to your Account</h2>
               <p className="text-[#4A154B]/80">See, how you can live and grow more, Powered with AI</p>
             </div>
 

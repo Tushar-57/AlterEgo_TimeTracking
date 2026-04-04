@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import TimeTracker from './components/TimeTracker/TimeTracker';
 import Analytics from './components/Analytics';
@@ -19,10 +20,10 @@ import { ChatProvider } from './components/AIChat/ChatContext';
 import FullScreenChat from './components/AIChat/FullScreenChat';
 import ChatToggleButton from './components/AIChat/ChatToggleButton';
 
-const Reports = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Reports Page</div>;
-const Clients = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Clients Page</div>;
-const Invoices = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Invoices Page</div>;
-const Settings = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Settings Page</div>;
+const Reports = () => <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">Reports Page</div>;
+const Clients = () => <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">Clients Page</div>;
+const Invoices = () => <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">Invoices Page</div>;
+const Settings = () => <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">Settings Page</div>;
 
 const App = () => (
   <Router>
@@ -59,6 +60,7 @@ const ProtectedOnboarding = () => {
 const ProtectedRoutes = () => {
   const { isAuthenticated, user, loading } = useAuth();
   const navigate = useNavigate();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -67,6 +69,17 @@ const ProtectedRoutes = () => {
       navigate('/onboarding', { replace: true });
     }
   }, [isAuthenticated, user, loading, navigate]);
+
+  useEffect(() => {
+    if (mobileNavOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+
+    document.body.style.overflow = '';
+  }, [mobileNavOpen]);
 
   if (loading) return <LoadingSpinner />;
 
@@ -80,9 +93,22 @@ const ProtectedRoutes = () => {
 
   return (
     <ChatProvider>
-      <div className="flex relative">
-        <Sidebar />
-        <main className="flex-1 ml-64">
+      <div className="relative flex min-h-screen overflow-x-hidden bg-gray-50">
+        <div className="fixed left-0 right-0 top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 md:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <span className="text-sm font-semibold text-gray-900">Alter Ego</span>
+          <div className="w-10" aria-hidden="true" />
+        </div>
+
+        <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
+        <main className="min-w-0 flex-1 ml-0 pt-16 md:ml-64 md:pt-0">
           <Routes>
             <Route index element={<TimeTracker />} />
             <Route path="/" element={<TimeTracker />} />

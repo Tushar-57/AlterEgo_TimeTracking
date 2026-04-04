@@ -236,7 +236,25 @@ body {
 
 html, body, #root {
   height: 100%;
-  overflow: auto;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+@media (max-width: 767px) {
+  .calendar-content {
+    height: auto;
+    max-height: none;
+  }
+
+  .chat-fullscreen-container {
+    border-radius: 12px;
+  }
+
+  .sticky-header {
+    top: 64px;
+  }
 }
 
 /* Styles for FullScreenChat */
