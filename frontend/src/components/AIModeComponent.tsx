@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, Sparkles, X, Check, Bot, Volume2, Hourglass, Loader } from 'lucide-react';
+import { Mic, X, Bot, Loader } from 'lucide-react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { useAuth } from '../context/AuthContext';
 import { analytics } from '../lib/analytics';
@@ -9,18 +9,6 @@ type AIError = {
   type: 'network' | 'parsing' | 'auth' | 'validation';
   message: string;
   recoverable: boolean;
-};
-
-type ConversationState = {
-  step: number;
-  context: object;
-  requiredFields: string[];
-};
-
-type ActionPayload = {
-  action: string;
-  payload: any;
-  confirmationQuestion?: string;
 };
 
 interface VoiceAIModeProps {
@@ -33,7 +21,7 @@ interface VoiceAIModeProps {
 }
 
 const FILTERED_WORDS = ['password', 'credit card'];
-const DEBOUNCE_TIME = 500;
+const DEBOUNCE_TIME = 1000;
 
 const VoiceAIMode: React.FC<VoiceAIModeProps> = ({ 
   onProcessingStart,
@@ -49,10 +37,6 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
     const [error, setError] = useState<AIError | null>(null);
     const [voiceFeedback, setVoiceFeedback] = useState('');
     const [isAnimating, setIsAnimating] = useState(false);
-    const [smartSuggestions, setSmartSuggestions] = useState<string[]>([]);
-    const [requiresConfirmation, setRequiresConfirmation] = useState(false);
-    const [pendingAction, setPendingAction] = useState<ActionPayload | null>(null);
-    const [conversation, setConversation] = useState<ConversationState | null>(null);
     const [projectConfirmation, setProjectConfirmation] = useState<{
       required: boolean;
       projectName: string;
@@ -60,7 +44,6 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
     }>({ required: false, projectName: '', tempCommand: '' });
     
     const abortController = useRef(new AbortController());
-    const timeoutRef = useRef<number>();
 
     const {
         transcript,
@@ -69,31 +52,18 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
         browserSupportsSpeechRecognition
     } = useSpeechRecognition();
 
+  const trackEvent = useCallback((event: string, metadata?: object) => {
+    if (import.meta.env.PROD) {
+      analytics.track(event, metadata);
+    }
+  }, []);
+
     // Analytics
     useEffect(() => {
       if (isAuthenticated) {
         trackEvent('AI Component Mounted');
       }
-    }, [isAuthenticated]);
-
-    const handleFollowUp = useCallback((input: string) => {
-        if (!conversation) return;
-        
-        setConversation(prev => {
-          if (!prev) return null;
-          
-          const newContext = { 
-            ...prev.context, 
-            [prev.requiredFields[prev.step]]: input 
-          };
-          
-          return {
-            ...prev,
-            context: newContext,
-            step: prev.step + 1
-          };
-        });
-      }, [conversation]);
+    }, [isAuthenticated, trackEvent]);
 
     // Enhanced error classification
   const classifyError = useCallback((err: unknown): AIError => {
@@ -114,29 +84,6 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
       sanitized = sanitized.replace(new RegExp(word, 'gi'), '****');
     });
     return sanitized;
-  }, []);
-
-  // Performance: Debounced processing
-  const DEBOUNCE_TIME = 1000; // Increased from 500ms
-
-// Modify the processing useEffect
-  useEffect(() => {
-      if (!transcript) return;
-
-      const handler = setTimeout(() => {
-          const cleanText = sanitizeInput(transcript);
-          setVoiceFeedback("Processing your command...");
-          sendToAI(cleanText);
-          resetTranscript();
-      }, DEBOUNCE_TIME);
-
-      return () => clearTimeout(handler);
-  }, [transcript]);
-
-  const trackEvent = useCallback((event: string, metadata?: object) => {
-    if (process.env.NODE_ENV === 'production') {
-      analytics.track(event, metadata);
-    }
   }, []);
 
   const toggleListening = useCallback(() => {
@@ -185,15 +132,6 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
   //   }
   // }, [pendingAction, onActivityLog]);
 
-  const cancelAction = useCallback(() => {
-    setRequiresConfirmation(false);
-    setPendingAction(null);
-    setVoiceFeedback('Action cancelled');
-    setTimeout(() => setVoiceFeedback(''), 2000);
-  }, []);
-  
-  
-  
   const handleProjectConfirmation = async (confirmed: boolean) => {
     if (confirmed) {
       // Create the project
@@ -219,12 +157,6 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
       setAiStatus('processing');
       trackEvent('Voice Command Received', { length: text.length });
       onActivityLog?.(`Processing: "${text}"`);
-
-      const context = {
-        activeTimer,
-        selectedProjectId,
-        timeOfDay: new Date().getHours()
-      };
 
       const response = await fetch('/api/ai/parseCommand', {
         method: 'POST',
@@ -273,11 +205,11 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
       onProcessingEnd?.(true);
 
     } catch (err) {
-      const error = classifyError(err);
-      setError(error);
-      trackEvent('AI Error', { error: error.message });
+      const aiError = classifyError(err);
+      setError(aiError);
+      trackEvent('AI Error', { error: aiError.message });
       
-      if(error.recoverable) {
+      if (aiError.recoverable) {
         setVoiceFeedback("Oops! Please try that again");
         setTimeout(() => {
           setError(null);
@@ -289,7 +221,20 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
     } finally {
       setIsAnimating(false);
     }
-  }, [activeTimer, selectedProjectId, trackEvent, onActivityLog, onProcessingEnd]);
+  }, [activeTimer, selectedProjectId, trackEvent, onActivityLog, onProcessingEnd, classifyError]);
+
+    useEffect(() => {
+      if (!transcript) return;
+
+      const handler = setTimeout(() => {
+        const cleanText = sanitizeInput(transcript);
+        setVoiceFeedback("Processing your command...");
+        sendToAI(cleanText);
+        resetTranscript();
+      }, DEBOUNCE_TIME);
+
+      return () => clearTimeout(handler);
+    }, [transcript, resetTranscript, sanitizeInput, sendToAI]);
 
   // Accessibility: Keyboard shortcuts
   useEffect(() => {

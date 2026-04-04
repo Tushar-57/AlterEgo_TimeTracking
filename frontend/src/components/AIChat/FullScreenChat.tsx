@@ -7,7 +7,6 @@ import { Message, MentorArchetype, CoachingStyle, AVATARS, RANDOM_NAMES } from '
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../Calendar_updated/components/ui/tooltip';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../ui/toast';
-import { ReactNode } from 'react';
 
 const SUGGESTION_PROMPTS = [
   'Start a timer for coding on Project X',
@@ -27,6 +26,45 @@ interface Tag {
   color: string;
 }
 
+interface ProjectSummary {
+  id: number;
+  name: string;
+}
+
+interface ActionDetails {
+  action?: string;
+  projectName?: string;
+  tagName?: string;
+  timerId?: number;
+  description?: string;
+  duration?: number;
+  startTime?: string;
+  projectId?: number | null;
+  tagIds?: number[];
+  tagNames?: string[];
+}
+
+interface ActionPromptState {
+  action: string;
+  details: ActionDetails;
+  originalCommand: string;
+}
+
+interface ChatApiResponse {
+  message?: string;
+  intent?: string;
+  requiresAction?: boolean;
+  actionDetails?: ActionDetails;
+}
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Unknown error';
+};
+
 const FullScreenChat: React.FC = () => {
   const { isChatOpen, toggleChat, messages, addMessage, clearMessages, isTyping, setIsTyping } = useChat();
   const navigate = useNavigate();
@@ -45,7 +83,7 @@ const FullScreenChat: React.FC = () => {
   const [context, setContext] = useState<{ type: string; value: string } | null>(null);
   const [isAvatarLoading, setIsAvatarLoading] = useState(true);
   const [showContextPicker, setShowContextPicker] = useState(false);
-  const [actionPrompt, setActionPrompt] = useState<{ action: string; details: any; originalCommand: string } | null>(null);
+  const [actionPrompt, setActionPrompt] = useState<ActionPromptState | null>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const hasFetchedCoachData = useRef(false);
 
@@ -63,7 +101,7 @@ const FullScreenChat: React.FC = () => {
           navigate('/login');
           return;
         }
-        const response = await fetch('http://localhost:8080/api/onboarding/getOnboardingData', {
+        const response = await fetch('/api/onboarding/getOnboardingData', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) {
@@ -101,11 +139,12 @@ const FullScreenChat: React.FC = () => {
           goals: data.goals || [],
         });
         hasFetchedCoachData.current = true;
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage = getErrorMessage(error);
         console.error('Failed to fetch coach data:', error);
         toast({
           title: 'Error',
-          description: `Failed to load your profile: ${error.message || 'Unknown error'}. Using default settings.`,
+          description: `Failed to load your profile: ${errorMessage}. Using default settings.`,
           variant: 'destructive',
         });
         setCoachData({
@@ -185,7 +224,7 @@ const FullScreenChat: React.FC = () => {
         return;
       }
       console.log('Sending command:', normalizedInput);
-      const response = await fetch('http://localhost:8080/api/ai/chat', {
+      const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -201,7 +240,7 @@ const FullScreenChat: React.FC = () => {
         const errorText = await response.text();
         throw new Error(`HTTP error: ${response.status}, Details: ${errorText}`);
       }
-      const data = await response.json();
+      const data: ChatApiResponse = await response.json();
       console.log('Received response:', data);
       addMessage({
         id: Date.now().toString(),
@@ -209,9 +248,9 @@ const FullScreenChat: React.FC = () => {
         sender: 'assistant',
         isRendered: true,
         timestamp: new Date(),
-        additionalContent: process.env.NODE_ENV === 'development' ? `Intent: ${data.intent || 'UNKNOWN'}` : ''
+        additionalContent: import.meta.env.DEV ? `Intent: ${data.intent || 'UNKNOWN'}` : ''
       });
-      if (data.requiresAction) {
+      if (data.requiresAction && data.actionDetails?.action) {
         setActionPrompt({ action: data.actionDetails.action, details: data.actionDetails, originalCommand: normalizedInput });
       } else {
         setActionPrompt(null);
@@ -220,16 +259,17 @@ const FullScreenChat: React.FC = () => {
         title: 'Success',
         description: 'Command processed successfully.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       console.error('Failed to send message:', error);
       toast({
         title: 'Error',
-        description: `Failed to send message: ${error.message || 'Unknown error'}. Please try again.`,
+        description: `Failed to send message: ${errorMessage}. Please try again.`,
         variant: 'destructive',
       });
       addMessage({
         id: Date.now().toString(),
-        content: `Network error: ${error.message || 'Unknown error'}. Please try again.`,
+        content: `Network error: ${errorMessage}. Please try again.`,
         sender: 'assistant',
         isRendered: true,
         timestamp: new Date(),
@@ -243,12 +283,12 @@ const FullScreenChat: React.FC = () => {
 
   const fetchProjectId = async (projectName: string, token: string): Promise<number | null> => {
     try {
-      const response = await fetch('http://localhost:8080/api/projects/userProjects', {
+      const response = await fetch('/api/projects/userProjects', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-      const projects = await response.json();
-      const project = projects.find((p: any) => p.name === projectName);
+      const projects: ProjectSummary[] = await response.json();
+      const project = projects.find((p) => p.name === projectName);
       return project ? project.id : null;
     } catch (error) {
       console.error(`Failed to fetch project ID for ${projectName}:`, error);
@@ -258,7 +298,7 @@ const FullScreenChat: React.FC = () => {
 
   const fetchTagIds = async (tagNames: string[], token: string): Promise<{ ids: number[]; tags: Tag[] }> => {
     try {
-      const response = await fetch('http://localhost:8080/api/tags', {
+      const response = await fetch('/api/tags', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
@@ -273,7 +313,7 @@ const FullScreenChat: React.FC = () => {
     }
   };
 
-  const handleAction = async (action: string, details: any, confirmWithoutChanges: boolean = false) => {
+  const handleAction = async (action: string, details: ActionDetails, confirmWithoutChanges: boolean = false) => {
     try {
       const token = localStorage.getItem('jwtToken');
       if (!token) {
@@ -287,33 +327,38 @@ const FullScreenChat: React.FC = () => {
       }
       let endpoint = '';
       let method = 'POST';
-      let body: any = {};
+      let body: Record<string, unknown> = {};
       let successMessage = '';
       switch (action) {
-        case 'createProject':
+        case 'createProject': {
           endpoint = '/api/projects';
-          body = { name: details.projectName, color: '#000000', client: '' };
+          body = { name: details.projectName ?? '', color: '#000000', client: '' };
           successMessage = `Project "${details.projectName}" created successfully. Try re-entering your command to apply it.`;
           break;
-        case 'createTag':
+        }
+        case 'createTag': {
           endpoint = '/api/tags';
-          body = { name: details.tagName, color: '#000000' };
+          body = { name: details.tagName ?? '', color: '#000000' };
           successMessage = `Tag "${details.tagName}" created successfully. Try re-entering your command to apply it.`;
           break;
-        case 'stopTimer':
+        }
+        case 'stopTimer': {
           endpoint = `/api/timers/${details.timerId}/stop`;
           body = { endTime: new Date().toISOString(), description: details.description || 'Stopped via AI', billable: false };
           successMessage = 'Timer stopped successfully.';
           break;
-        case 'adjustDuration':
-          setInput(`Log ${details.duration / 60} hours for ${actionPrompt?.originalCommand || ''}`);
+        }
+        case 'adjustDuration': {
+          setInput(`Log ${(details.duration ?? 0) / 60} hours for ${actionPrompt?.originalCommand || ''}`);
           setActionPrompt(null);
           return;
-        case 'provideDescription':
+        }
+        case 'provideDescription': {
           setInput(`Create time entry with description ${details.description || 'task'} ${actionPrompt?.originalCommand || ''}`);
           setActionPrompt(null);
           return;
-        case 'confirmTimeEntry':
+        }
+        case 'confirmTimeEntry': {
           endpoint = '/api/timers/addTimer';
           const currentTime = new Date().toISOString();
           const startTime = details.startTime ? new Date(details.startTime).toISOString() : currentTime;
@@ -326,11 +371,12 @@ const FullScreenChat: React.FC = () => {
             projectId = await fetchProjectId(details.projectName, token);
             if (!projectId) throw new Error(`Project "${details.projectName}" not found. Create it with 'create project ${details.projectName}'.`);
           }
-          if (!confirmWithoutChanges && details.tagNames?.length) {
-            const { ids, tags } = await fetchTagIds(details.tagNames, token);
+          const tagNames = details.tagNames ?? [];
+          if (!confirmWithoutChanges && tagNames.length > 0) {
+            const { ids, tags } = await fetchTagIds(tagNames, token);
             tagIds = ids;
-            if (tagIds.length !== details.tagNames.length) {
-              const missingTags = details.tagNames.filter((name: string) => !tags.some(t => t.name === name));
+            if (tagIds.length !== tagNames.length) {
+              const missingTags = tagNames.filter((name) => !tags.some((tag) => tag.name === name));
               throw new Error(`Tags not found: ${missingTags.join(', ')}. Create them with 'add tag <name>'.`);
             }
           }
@@ -344,14 +390,19 @@ const FullScreenChat: React.FC = () => {
             positionTop: '',
             positionLeft: ''
           };
-          successMessage = `Time entry "${details.description || 'Unnamed Task'}" created for ${details.duration || 0} minutes${projectId ? ` with project "${details.projectName}" (ID: ${projectId})` : ''}${tagIds.length ? ` and tags "${details.tagNames.join(', ')}"` : ''}.`;
+          successMessage = `Time entry "${details.description || 'Unnamed Task'}" created for ${details.duration || 0} minutes${projectId ? ` with project "${details.projectName}" (ID: ${projectId})` : ''}${tagIds.length ? ` and tags "${tagNames.join(', ')}"` : ''}.`;
           break;
-        case 'confirmProjectCreation':
+        }
+        case 'confirmProjectCreation': {
           endpoint = '/api/projects';
-          body = { name: details.projectName, color: '#000000', client: details.description || '' };
+          body = { name: details.projectName ?? '', color: '#000000', client: details.description || '' };
           successMessage = `Project "${details.projectName}" created successfully.`;
           break;
-        case 'confirmProjectUpdate':
+        }
+        case 'confirmProjectUpdate': {
+          if (!details.projectName) {
+            throw new Error('Project name is required for project update');
+          }
           const project = await fetchProjectId(details.projectName, token);
           if (!project) throw new Error(`Project "${details.projectName}" not found`);
           endpoint = `/api/projects/${project}`;
@@ -359,7 +410,11 @@ const FullScreenChat: React.FC = () => {
           method = 'PUT';
           successMessage = `Project "${details.projectName}" updated successfully.`;
           break;
-        case 'confirmProjectDeletion':
+        }
+        case 'confirmProjectDeletion': {
+          if (!details.projectName) {
+            throw new Error('Project name is required for project deletion');
+          }
           const projectToDelete = await fetchProjectId(details.projectName, token);
           if (!projectToDelete) throw new Error(`Project "${details.projectName}" not found`);
           endpoint = `/api/projects/${projectToDelete}`;
@@ -367,10 +422,11 @@ const FullScreenChat: React.FC = () => {
           body = {};
           successMessage = `Project "${details.projectName}" deleted successfully.`;
           break;
+        }
         default:
           return;
       }
-      const response = await fetch(`http://localhost:8080${endpoint}`, {
+      const response = await fetch(endpoint, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -399,14 +455,15 @@ const FullScreenChat: React.FC = () => {
         setInput(actionPrompt.originalCommand);
         sendMessage();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const actionErrorMessage = getErrorMessage(error);
       console.error(`Failed to perform ${action}:`, error);
       const errorMessage = `Failed to ${action === 'createProject' || action === 'confirmProjectCreation' ? 'create project' : 
                               action === 'createTag' ? 'create tag' : 
                               action === 'stopTimer' ? 'stop timer' : 
                               action === 'confirmProjectUpdate' ? 'update project' : 
                               action === 'confirmTimeEntry' ? 'create time entry' : 
-                              'delete project'}: ${error.message || 'Unknown error'}`;
+                              'delete project'}: ${actionErrorMessage}`;
       toast({
         title: 'Error',
         description: errorMessage,
@@ -450,7 +507,7 @@ const FullScreenChat: React.FC = () => {
         navigate('/login');
         return;
       }
-      const response = await fetch('http://localhost:8080/api/onboarding/updateTone', {
+      const response = await fetch('/api/onboarding/updateTone', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -465,11 +522,12 @@ const FullScreenChat: React.FC = () => {
         title: 'Success',
         description: 'Tone updated successfully.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       console.error('Failed to update tone:', error);
       toast({
         title: 'Error',
-        description: `Failed to update tone: ${error.message || 'Unknown error'}.`,
+        description: `Failed to update tone: ${errorMessage}.`,
         variant: 'destructive',
       });
     }
@@ -488,7 +546,7 @@ const FullScreenChat: React.FC = () => {
         navigate('/login');
         return;
       }
-      const response = await fetch('http://localhost:8080/api/onboarding/updateMentor', {
+      const response = await fetch('/api/onboarding/updateMentor', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -511,11 +569,12 @@ const FullScreenChat: React.FC = () => {
         title: 'Success',
         description: 'Mentor updated successfully.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error);
       console.error('Failed to update mentor:', error);
       toast({
         title: 'Error',
-        description: `Failed to update mentor: ${error.message || 'Unknown error'}.`,
+        description: `Failed to update mentor: ${errorMessage}.`,
         variant: 'destructive',
       });
     }
@@ -675,7 +734,7 @@ const FullScreenChat: React.FC = () => {
                             : actionPrompt.action === 'provideDescription'
                             ? `Please provide a description for the time entry.`
                             : actionPrompt.action === 'confirmTimeEntry'
-                            ? `Confirm time entry: "${actionPrompt.details.description}" from ${actionPrompt.details.startTime}${actionPrompt.details.duration > 0 ? ` for ${actionPrompt.details.duration} minutes` : ''}${actionPrompt.details.projectName ? ` with project "${actionPrompt.details.projectName}"` : ''}${actionPrompt.details.tagNames?.length ? ` and tags "${actionPrompt.details.tagNames.join(', ')}"` : ''}. Proceed or modify?`
+                            ? `Confirm time entry: "${actionPrompt.details.description}" from ${actionPrompt.details.startTime}${(actionPrompt.details.duration ?? 0) > 0 ? ` for ${actionPrompt.details.duration} minutes` : ''}${actionPrompt.details.projectName ? ` with project "${actionPrompt.details.projectName}"` : ''}${actionPrompt.details.tagNames?.length ? ` and tags "${actionPrompt.details.tagNames.join(', ')}"` : ''}. Proceed or modify?`
                             : actionPrompt.action === 'confirmProjectCreation'
                             ? `Confirm creation of project "${actionPrompt.details.projectName}"${actionPrompt.details.description ? ` (Description: ${actionPrompt.details.description})` : ''}?`
                             : actionPrompt.action === 'confirmProjectUpdate'

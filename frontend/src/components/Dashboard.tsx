@@ -2,9 +2,18 @@ import { useEffect, useState } from "react";
 import { useToast } from "./Calendar_updated/components/hooks/use-toast";
 import { CalendarSection } from "./Calendar_updated/screens/Fantastical/sections/CalendarSection/CalendarSection";
 import { CalendarEvent, DraggableEvent } from "./Calendar_updated/components/DraggableEvent";
-import { NavigationMenuSection } from "./Calendar_updated/screens/Fantastical/sections/NavigationMenuSection/NavigationMenuSection";
 
-export const calculatePosition = (startTime: string, duration: number) => {
+interface TimerEntryResponse {
+  id: number;
+  startTime: string;
+  duration: number;
+  description?: string;
+  projectId: number | null;
+  positionTop?: string;
+  positionLeft?: string;
+}
+
+export const calculatePosition = (startTime: string) => {
   const startDate = new Date(startTime);
   const hours = startDate.getHours();
   const minutes = startDate.getMinutes();
@@ -29,14 +38,12 @@ export const getColorForProject = (projectId: number | null): string => {
 };
 
 export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate] = useState(new Date());
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchTimeEntriesDirect = async (start: Date, end: Date) => {
     try {
-      setLoading(true);
       const token = localStorage.getItem("jwtToken");
       if (!token) {
         toast({
@@ -52,7 +59,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
       };
 
       const res = await fetch(
-        `http://localhost:8080/api/timers?start=${formatDate(start)}&end=${formatDate(end)}`,
+        `/api/timers?start=${formatDate(start)}&end=${formatDate(end)}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -73,14 +80,14 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
         throw new Error(`HTTP error! status: ${res.status}`);
       }
 
-      const data = await res.json();
-      const transformed: CalendarEvent[] = data.map((entry: any) => {
+      const data: TimerEntryResponse[] = await res.json();
+      const transformed: CalendarEvent[] = data.map((entry) => {
         const startDate = new Date(entry.startTime);
         const hours = startDate.getHours();
         const minutes = startDate.getMinutes().toString().padStart(2, "0");
         const position = entry.positionTop && entry.positionLeft
           ? { top: entry.positionTop, left: entry.positionLeft }
-          : calculatePosition(entry.startTime, entry.duration);
+          : calculatePosition(entry.startTime);
         return {
           id: entry.id,
           time: `${hours % 12 || 12}:${minutes}`,
@@ -104,8 +111,6 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
         variant: "destructive",
       });
       return [];
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -139,7 +144,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
         return;
       }
 
-      const res = await fetch(`http://localhost:8080/api/timers/${eventId}/position`, {
+      const res = await fetch(`/api/timers/${eventId}/position`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

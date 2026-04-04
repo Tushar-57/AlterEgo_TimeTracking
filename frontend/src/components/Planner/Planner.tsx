@@ -1,6 +1,5 @@
-import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { Loader2, Check } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
 
 type FormData = {
   objectiveTitle: string;
@@ -60,10 +59,18 @@ export const PlannerForm: React.FC = () => {
           smart: { ...prev.smart, [name]: value },
         };
       }
+
+      if (name === 'workHours' && typeof value === 'number') {
+        return {
+          ...prev,
+          workHours: Number.isNaN(value) ? 0 : value,
+        };
+      }
+
       return {
         ...prev,
-        [name]: value,
-      } as any;
+        [name]: String(value),
+      };
     });
   };
 
@@ -73,7 +80,7 @@ export const PlannerForm: React.FC = () => {
     
     try {
       const token = localStorage.getItem('jwtToken');
-      const response = await fetch('http://localhost:8080/api/plans', {
+      const response = await fetch('/api/plans', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

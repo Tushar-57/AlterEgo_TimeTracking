@@ -2,12 +2,6 @@ import React, { useState } from 'react';
 import { useTaskStore } from '../store/taskStore';
 import { 
   Plus, 
-  CheckSquare, 
-  Clock, 
-  Tag, 
-  User,
-  Calendar as CalendarIcon,
-  AlertCircle,
   MoreVertical,
   Filter
 } from 'lucide-react';
@@ -26,7 +20,7 @@ const statusColors = {
 };
 
 const TaskManager = () => {
-  const { tasks, addTask, updateTask, deleteTask, updateTaskStatus } = useTaskStore();
+  const { tasks, addTask } = useTaskStore();
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [newTask, setNewTask] = useState({
     title: '',

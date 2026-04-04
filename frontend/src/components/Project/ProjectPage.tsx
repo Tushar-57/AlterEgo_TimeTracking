@@ -29,13 +29,11 @@ const ProjectPage = () => {
   const fetchProjects = async () => {
     setLoading(true);
     try {
-      console.log(localStorage.getItem('jwtToken'))
-      const res = await fetch('http://localhost:8080/api/projects/userProjects', {
+      const res = await fetch('/api/projects/userProjects', {
         headers: { 
           Authorization: `Bearer ${localStorage.getItem('jwtToken')}` 
         }
       });
-      console.log(res.statusText)
   
       // if (res.status === 401) {
       //   localStorage.removeItem('jwtToken');
@@ -58,8 +56,8 @@ const ProjectPage = () => {
     e.preventDefault();
     try {
       const url = editingProject 
-        ? `http://localhost:8080/api/projects/${editingProject.id}`
-        : 'http://localhost:8080/api/projects';
+        ? `/api/projects/${editingProject.id}`
+        : '/api/projects';
       
       const method = editingProject ? 'PUT' : 'POST';
 
@@ -86,7 +84,7 @@ const ProjectPage = () => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
     
     try {
-      const res = await fetch(`http://localhost:8080/api/projects/${id}`, {
+      const res = await fetch(`/api/projects/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` }
       });

@@ -11,7 +11,7 @@ export default function SignupClassic() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [, setSuccess] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -46,17 +46,18 @@ export default function SignupClassic() {
 
     setLoading(true);
     try {
-      const response = await authSignup({ name, email, password });
+      await authSignup({ name, email, password });
       setSuccess(true);
       toast({
         title: 'Success',
         description: 'Account created successfully! Please log in.',
       });
       setTimeout(() => navigate('/login', { replace: true }), 1000); // Redirect after 1s to show toast
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Signup error:', err);
+      const errMessage = err instanceof Error ? err.message : '';
       const message =
-        err.message === 'This email is already registered'
+        errMessage === 'This email is already registered'
           ? 'This email is already registered'
           : 'Registration failed - please try again later';
       setError(message);
@@ -71,7 +72,7 @@ export default function SignupClassic() {
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+    window.location.href = '/oauth2/authorization/google';
   };
 
   return (

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import skeletonImage from '../images/Skeleton1.jpg';
 import { useToast } from './Calendar_updated/components/hooks/use-toast';
@@ -12,7 +12,6 @@ export default function LoginClassic() {
   const navigate = useNavigate();
   const { isAuthenticated, login } = useAuth();
   const { toast } = useToast();
-  const location = useLocation();
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -36,7 +35,7 @@ export default function LoginClassic() {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -62,14 +61,15 @@ export default function LoginClassic() {
 
       // Redirect based on onboarding status
       navigate(data.user.onboardingCompleted ? '/' : '/onboarding', { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to log in.';
       console.error('Login error:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to log in.',
+        description: message,
         variant: 'destructive',
       });
-      setError(error.message || 'Failed to log in.');
+      setError(message);
     } finally {
       setLoading(false);
     }

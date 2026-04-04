@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import type { LucideIcon } from 'lucide-react';
 import { 
   Timer, 
   BarChart2, 
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const NavItem = ({ icon: Icon, label, to }: { icon: any; label: string; to: string }) => {
+const NavItem = ({ icon: Icon, label, to }: { icon: LucideIcon; label: string; to: string }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
 
@@ -57,6 +58,7 @@ const Sidebar = () => {
           <div className="text-xs font-medium text-gray-400 mb-3 px-4">PLANNER</div>
           <NavItem icon={LucideCalendarCheck2} label="Tasks" to="/tasks" />
           <NavItem icon={CalendarRangeIcon} label="AI Planner" to="/planner" />
+          <NavItem icon={Clock} label="AI Coach" to="/coach" />
           <br/>
         </div>
 

@@ -27,13 +27,11 @@ export const UserTagPage = () => {
   const fetchTags = async () => {
     setLoading(true);
     try {
-      console.log(localStorage.getItem('jwtToken'))
-      const res = await fetch('http://localhost:8080/api/tags', {
+      const res = await fetch('/api/tags', {
         headers: { 
           Authorization: `Bearer ${localStorage.getItem('jwtToken')}` 
         }
       });
-      console.log(res.statusText)
   
       // if (res.status === 401) {
       //   localStorage.removeItem('jwtToken');
@@ -56,8 +54,8 @@ export const UserTagPage = () => {
     e.preventDefault();
     try {
       const url = editingTags 
-        ? `http://localhost:8080/api/tags/${editingTags.id}`
-        : 'http://localhost:8080/api/tags';
+        ? `/api/tags/${editingTags.id}`
+        : '/api/tags';
       
       const method = editingTags ? 'PUT' : 'POST';
 
@@ -84,7 +82,7 @@ export const UserTagPage = () => {
     if (!window.confirm('Are you sure you want to delete this Tag?')) return;
     
     try {
-      const res = await fetch(`http://localhost:8080/api/tags/${id}`, {
+      const res = await fetch(`/api/tags/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` }
       });

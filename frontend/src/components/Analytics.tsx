@@ -1,4 +1,5 @@
 import React from 'react';
+import type { ComponentType } from 'react';
 import { 
   Clock, 
   Calendar, 
@@ -17,7 +18,7 @@ const StatCard = ({
   change, 
   changeType 
 }: { 
-  icon: any; 
+  icon: ComponentType<{ className?: string }>;
   label: string; 
   value: string; 
   change: string;
