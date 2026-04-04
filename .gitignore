@@ -3,3 +3,19 @@ node_modules
 dist/
 application.properties
 backend/src/main/resources/application.properties
+
+# Python and runtime artifacts in POCs
+POCs/**/__pycache__/
+POCs/**/*.py[cod]
+POCs/**/.langgraph_api/
+
+# Generated binary/cache artifacts
+POCs/**/*.pkl
+POCs/**/*.pckl
+POCs/**/*.webm
+
+# Local environment files
+POCs/**/.env
+.env
+.env.*
+!.env.unified.example
