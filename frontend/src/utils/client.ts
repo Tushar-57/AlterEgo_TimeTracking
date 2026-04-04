@@ -4,7 +4,8 @@ export async function api<T>(url: string, options: RequestInit = {}) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || res.statusText);
       return data as T;
-    } catch (err: any) {
-      throw new Error(err.message || 'Network error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Network error';
+      throw new Error(message);
     }
   }

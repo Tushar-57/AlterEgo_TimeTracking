@@ -63,9 +63,43 @@
 //   return fetch(url, { ...options, headers });
 // };
 // utils/auth.ts
-export const API_URL = 'http://localhost:8080/api';
+export const API_URL = '/api';
 
-export const login = async (credentials: any) => {
+type AuthCredentials = {
+  email: string;
+  password: string;
+  name?: string;
+};
+
+type AuthErrorPayload = {
+  message?: string;
+  error?: string;
+};
+
+const readAuthError = async (response: Response): Promise<string> => {
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    return '';
+  }
+
+  const payload: unknown = await response.json().catch(() => ({}));
+  if (!payload || typeof payload !== 'object') {
+    return '';
+  }
+
+  const typedPayload = payload as AuthErrorPayload;
+  if (typeof typedPayload.message === 'string' && typedPayload.message.trim()) {
+    return typedPayload.message;
+  }
+
+  if (typeof typedPayload.error === 'string' && typedPayload.error.trim()) {
+    return typedPayload.error;
+  }
+
+  return '';
+};
+
+export const login = async (credentials: AuthCredentials) => {
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
@@ -76,18 +110,18 @@ export const login = async (credentials: any) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Login failed');
+      const errorMessage = await readAuthError(response);
+      throw new Error(errorMessage || 'Login failed');
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Login Error:', error);
-    throw error;
+    throw error instanceof Error ? error : new Error('Login failed');
   }
 };
 
-export const signup = async (credentials: any) => {
+export const signup = async (credentials: AuthCredentials) => {
   try {
     const response = await fetch(`${API_URL}/auth/signup`, {
       method: 'POST',
@@ -98,14 +132,14 @@ export const signup = async (credentials: any) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Signup failed');
+      const errorMessage = await readAuthError(response);
+      throw new Error(errorMessage || 'Signup failed');
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Signup Error:', error);
-    throw error;
+    throw error instanceof Error ? error : new Error('Signup failed');
   }
 };
 
@@ -165,13 +199,17 @@ export const fetchWithToken = async <T>(
 
     if (!response.ok) {
       const contentType = response.headers.get('content-type');
-      const errorData = contentType?.includes('application/json')
-        ? await response.json().catch(() => ({}))
-        : await response.text().catch(() => null);
+      const errorData: AuthErrorPayload | null = contentType?.includes('application/json')
+        ? await response.json().catch(() => ({} as AuthErrorPayload))
+        : null;
+      const fallbackText = !contentType?.includes('application/json')
+        ? await response.text().catch(() => null)
+        : null;
       
       throw new Error(
         errorData?.message ||
         errorData?.error ||
+        fallbackText ||
         `Request to ${url} failed with status ${response.status} ${response.statusText}`
       );
     }

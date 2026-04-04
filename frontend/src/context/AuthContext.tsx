@@ -93,14 +93,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('AuthContext: Sending /api/auth/validate request');
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
-        const response = await fetchWithToken('http://localhost:8080/api/auth/validate', {
+        const data = await fetchWithToken<{ valid: boolean; user: User }>('/api/auth/validate', {
           method: 'GET',
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
 
         console.log('AuthContext: Validate response received');
-        const data = await response;
         if (data.valid === true) {
           console.log('AuthContext: Token valid, setting authenticated');
           setState({
@@ -127,14 +126,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           navigate('/login', { replace: true });
           return false;
         }
-      } catch (error: any) {
-        console.error('AuthContext: Token validation error:', error.message);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Session expired. Please log in again.';
+        console.error('AuthContext: Token validation error:', message);
         setState(prev => ({
           ...prev,
           loading: false,
           isAuthenticated: false,
           user: null,
-          error: { status: error.message.includes('401') ? 401 : 500, message: 'Session expired. Please log in again.' },
+          error: { status: message.includes('401') ? 401 : 500, message: 'Session expired. Please log in again.' },
         }));
         localStorage.removeItem('jwtToken');
         navigate('/login', { replace: true });
