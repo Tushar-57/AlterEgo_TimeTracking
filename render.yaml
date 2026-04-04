@@ -1,0 +1,38 @@
+databases:
+  - name: timetracker-postgres
+    databaseName: timetracker
+    user: timetracker
+
+services:
+  - type: web
+    name: timetracker-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile.unified
+    autoDeploy: true
+    healthCheckPath: /api/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: timetracker-postgres
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: timetracker-postgres
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: timetracker-postgres
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 86400
+      - key: OPENAI_MODEL_NAME
+        value: gpt-4o-mini
+      - key: APP_CORS_ALLOWED_ORIGIN_PATTERNS
+        value: https://*.vercel.app,https://*.netlify.app,http://localhost:5173,http://localhost:3000,http://localhost:8088
+      - key: OPENAI_API_KEY
+        sync: false
