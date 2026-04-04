@@ -1,0 +1,23 @@
+{
+  "name": "AlterEgo",
+  "entrypoint": "main.py",
+  "dependencies": [
+    "langgraph",
+    "pydantic",
+    "fastapi",
+    "colorlog",
+    "langchain",
+    "langchain-openai",
+    "python-dotenv",
+    "faiss-cpu"
+  ],
+  "graphs": {
+    "main_graph": "./main.py:graph"
+  },
+  "env": {
+    "OPENAI_API_KEY": "{{OPENAI_API_KEY}}",
+    "LANGCHAIN_TRACING_V2": "true",
+    "LANGCHAIN_API_KEY": "{{LANGCHAIN_API_KEY}}",
+    "LANGCHAIN_PROJECT": "AlterEgo"
+  }
+}
