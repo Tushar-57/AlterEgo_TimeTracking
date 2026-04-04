@@ -50,6 +50,11 @@ public class AIController {
 
     @PostMapping("/testt")
     public ResponseEntity<?> testEndpoint(@RequestBody AI_CommandRequest request, Authentication authentication) {
+        if (!isAuthenticatedUser(authentication)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication is required"));
+        }
+
         try {
             Users user = userRepo.findByEmail(authentication.getName())
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -72,6 +77,11 @@ public class AIController {
 
     @PostMapping("/parseCommand")
     public ResponseEntity<?> parseCommand(@RequestBody AI_CommandRequest request, Authentication authentication) {
+        if (!isAuthenticatedUser(authentication)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication is required"));
+        }
+
         try {
             Users user = userRepo.findByEmail(authentication.getName())
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -97,5 +107,11 @@ public class AIController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    private boolean isAuthenticatedUser(Authentication authentication) {
+        return authentication != null
+                && authentication.isAuthenticated()
+                && !"anonymousUser".equalsIgnoreCase(authentication.getName());
     }
 }

@@ -107,6 +107,11 @@ public class AuthController {
 
 	@GetMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+					.body(Map.of("valid", false, "message", "Missing or invalid Authorization header"));
+		}
+
         String token = authHeader.substring(7);
         if (jwtUtils.validateToken(token)) {
             String email = jwtUtils.getUsernameFromToken(token);

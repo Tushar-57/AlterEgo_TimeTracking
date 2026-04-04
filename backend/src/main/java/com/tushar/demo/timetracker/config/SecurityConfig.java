@@ -1,7 +1,9 @@
 package com.tushar.demo.timetracker.config;
 
+import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -13,13 +15,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-//import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 
 
 @Configuration
@@ -28,6 +27,9 @@ public class SecurityConfig {
 
     private final JwtAuthEntryPoint authEntryPoint;
     private final JwtAuthFilter jwtAuthFilter;
+
+    @Value("${app.cors.allowed-origin-patterns:http://localhost:5173,http://localhost:3000,http://localhost:8088}")
+    private String allowedOriginPatternsProperty;
     
     public SecurityConfig(JwtAuthEntryPoint authEntryPoint, JwtAuthFilter jwtAuthFilter) {
         this.authEntryPoint = authEntryPoint;
@@ -47,8 +49,8 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/auth/**", "/h2-console/**", "/api/timers/**", "/api/ai/**").permitAll()
-                .requestMatchers("/api/onboarding").authenticated()
+                .requestMatchers("/api/auth/**", "/h2-console/**").permitAll()
+                .requestMatchers("/api/onboarding/**").authenticated()
                 .anyRequest().authenticated()
             )
             .headers(headers -> headers
@@ -63,7 +65,7 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedOriginPatterns(parseAllowedOriginPatterns());
 //        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedMethods(List.of("*"));
         config.setAllowedHeaders(List.of("*"));
@@ -74,6 +76,13 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config); // Apply to all endpoints
         return source;
+    }
+
+    private List<String> parseAllowedOriginPatterns() {
+        return Arrays.stream(allowedOriginPatternsProperty.split(","))
+            .map(String::trim)
+            .filter(pattern -> !pattern.isEmpty())
+            .toList();
     }
 
     @Bean

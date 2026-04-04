@@ -53,6 +53,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
 
     public Users getCurrentUser(Authentication authentication) {
+        if (authentication == null
+                || authentication.getName() == null
+                || "anonymousUser".equalsIgnoreCase(authentication.getName())) {
+            throw new UsernameNotFoundException("User not authenticated");
+        }
+
         String email = authentication.getName();
         return userRepository.findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));

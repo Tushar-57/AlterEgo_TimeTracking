@@ -90,9 +90,9 @@ public class TimerController {
     public ResponseEntity<ApiResponse<TimeEntry>> startTimeEntry(
             @Valid @RequestBody StartTimeEntryRequest request,
             Authentication authentication) {
-        logger.info("Starting time entry for user: {}", authentication.getName());
+        logger.info("Starting time entry for user: {}", authName(authentication));
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
+            if (!isAuthenticatedUser(authentication)) {
                 logger.warn("Unauthorized attempt to start timer");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
@@ -102,7 +102,7 @@ public class TimerController {
             logger.info("Timer started successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(entry, "Timer started successfully"));
         } catch (Exception e) {
-            logger.error("Failed to start timer for user: {}", authentication.getName(), e);
+            logger.error("Failed to start timer for user: {}", authName(authentication), e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Creation failed", Map.of("message", e.getMessage())));
         }
@@ -113,9 +113,9 @@ public class TimerController {
             @PathVariable Long id,
             @Valid @RequestBody StopTimeEntryRequest request,
             Authentication authentication) {
-        logger.info("Stopping timer with id: {} for user: {}", id, authentication.getName());
+        logger.info("Stopping timer with id: {} for user: {}", id, authName(authentication));
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
+            if (!isAuthenticatedUser(authentication)) {
                 logger.warn("Unauthorized attempt to stop timer");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
@@ -137,7 +137,7 @@ public class TimerController {
             logger.info("Timer stopped successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(updatedEntry, "Timer stopped successfully"));
         } catch (Exception e) {
-            logger.error("Failed to stop timer for user: {}", authentication.getName(), e);
+            logger.error("Failed to stop timer for user: {}", authName(authentication), e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Stop failed", Map.of("message", e.getMessage())));
         }
@@ -150,7 +150,7 @@ public class TimerController {
             @RequestParam(required = false) LocalDateTime end,
             @RequestParam(required = false, defaultValue = "10") int limit) {
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
+            if (!isAuthenticatedUser(authentication)) {
                 logger.warn("Unauthorized attempt to fetch time entries");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
@@ -177,9 +177,9 @@ public class TimerController {
 
     @GetMapping("/active")
     public ResponseEntity<ApiResponse<TimeEntry>> getActiveTimer(Authentication authentication) {
-        logger.info("Fetching active timer for user: {}", authentication.getName());
+        logger.info("Fetching active timer for user: {}", authName(authentication));
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
+            if (!isAuthenticatedUser(authentication)) {
                 logger.warn("Unauthorized attempt to fetch active timer");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
@@ -189,11 +189,11 @@ public class TimerController {
             logger.info("Active timer fetched for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(activeTimer, "Active timer fetched successfully"));
         } catch (NoActiveTimerException e) {
-            logger.info("No active timer found for user: {}", authentication.getName());
+            logger.info("No active timer found for user: {}", authName(authentication));
             return ResponseEntity.status(HttpStatus.NO_CONTENT)
                     .body(ApiResponse.success(null, "No active timer found"));
         } catch (Exception e) {
-            logger.error("Failed to fetch active timer for user: {}", authentication.getName(), e);
+            logger.error("Failed to fetch active timer for user: {}", authName(authentication), e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Fetch failed", Map.of("message", e.getMessage())));
         }
@@ -204,9 +204,9 @@ public class TimerController {
             @PathVariable Long id,
             @RequestBody PositionUpdateRequest position,
             Authentication authentication) {
-        logger.info("Updating position for timer with id: {} for user: {}", id, authentication.getName());
+        logger.info("Updating position for timer with id: {} for user: {}", id, authName(authentication));
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
+            if (!isAuthenticatedUser(authentication)) {
                 logger.warn("Unauthorized attempt to update timer position");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
@@ -216,7 +216,7 @@ public class TimerController {
             logger.info("Timer position updated successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(entry, "Timer position updated successfully"));
         } catch (Exception e) {
-            logger.error("Failed to update timer position for user: {}", authentication.getName(), e);
+            logger.error("Failed to update timer position for user: {}", authName(authentication), e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Update failed", Map.of("message", e.getMessage())));
         }
@@ -226,9 +226,9 @@ public class TimerController {
     public ResponseEntity<ApiResponse<TimeEntry>> addTimeEntry(
             @Valid @RequestBody addTimeEntryRequest request,
             Authentication authentication) {
-        logger.info("Adding time entry for user: {}", authentication.getName());
+        logger.info("Adding time entry for user: {}", authName(authentication));
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
+            if (!isAuthenticatedUser(authentication)) {
                 logger.warn("Unauthorized attempt to start timer");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
@@ -238,9 +238,19 @@ public class TimerController {
             logger.info("Popup - Timer added successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(entry, "Timer started successfully"));
         } catch (Exception e) {
-            logger.error("Failed to add time entry for user: {}", authentication.getName(), e);
+            logger.error("Failed to add time entry for user: {}", authName(authentication), e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Creation failed", Map.of("message", e.getMessage())));
         }
+    }
+
+    private boolean isAuthenticatedUser(Authentication authentication) {
+        return authentication != null
+                && authentication.isAuthenticated()
+                && !"anonymousUser".equalsIgnoreCase(authentication.getName());
+    }
+
+    private String authName(Authentication authentication) {
+        return authentication != null ? authentication.getName() : "anonymous";
     }
 }
