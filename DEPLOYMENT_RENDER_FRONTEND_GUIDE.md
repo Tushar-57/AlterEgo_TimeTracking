@@ -121,6 +121,24 @@ Once both Vercel URLs are known, update backend CORS to exact domains:
 2. GET https://<agentic-backend>.onrender.com/api/health
 3. Open both Vercel apps and verify authentication plus chat/timer API calls.
 
+## Optional: Keep Free-Tier Services Warm
+
+Render free services can sleep after inactivity. This repository includes a scheduled GitHub Actions workflow at `.github/workflows/render-keepalive.yml` that checks every 5 minutes and pings based on your configured interval.
+
+Set these GitHub repository variables:
+
+- `KEEPALIVE_ENABLED=true`
+- `KEEPALIVE_URLS=https://<timetracker-backend>.onrender.com/health,https://<agentic-backend>.onrender.com/api/health`
+- `KEEPALIVE_TIMEOUT_SECONDS=10` (optional)
+- `KEEPALIVE_RETRIES=3` (optional)
+- `KEEPALIVE_INTERVAL_MINUTES=10` (optional, integer >= 1)
+
+Notes:
+
+- You can disable keepalive without code changes by setting `KEEPALIVE_ENABLED=false`.
+- The workflow runs every 5 minutes, but only sends pings when the current UTC minute matches your configured `KEEPALIVE_INTERVAL_MINUTES` cadence.
+- Keepalive reduces cold starts but does not guarantee permanent uptime on free tier.
+
 ## Do You Need render.yaml Now?
 
 No. For manual Web Service deployment, Render does not need render.yaml.

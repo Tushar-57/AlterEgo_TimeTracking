@@ -1,0 +1,82 @@
+name: Render Keepalive
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    env:
+      KEEPALIVE_ENABLED: ${{ vars.KEEPALIVE_ENABLED || 'true' }}
+      KEEPALIVE_URLS: ${{ vars.KEEPALIVE_URLS }}
+      KEEPALIVE_TIMEOUT_SECONDS: ${{ vars.KEEPALIVE_TIMEOUT_SECONDS || '10' }}
+      KEEPALIVE_RETRIES: ${{ vars.KEEPALIVE_RETRIES || '3' }}
+      KEEPALIVE_INTERVAL_MINUTES: ${{ vars.KEEPALIVE_INTERVAL_MINUTES || '10' }}
+    steps:
+      - name: Ping configured endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          enabled="${KEEPALIVE_ENABLED,,}"
+          if [[ "$enabled" != "true" ]]; then
+            echo "KEEPALIVE_ENABLED=$KEEPALIVE_ENABLED. Skipping keepalive run."
+            exit 0
+          fi
+
+          if [[ -z "${KEEPALIVE_URLS:-}" ]]; then
+            echo "KEEPALIVE_URLS is empty. Configure repository variable KEEPALIVE_URLS with comma-separated URLs."
+            exit 0
+          fi
+
+          if ! [[ "${KEEPALIVE_INTERVAL_MINUTES}" =~ ^[0-9]+$ ]] || [[ "${KEEPALIVE_INTERVAL_MINUTES}" -lt 1 ]]; then
+            echo "Invalid KEEPALIVE_INTERVAL_MINUTES=${KEEPALIVE_INTERVAL_MINUTES}. Expected integer >= 1."
+            exit 1
+          fi
+
+          current_minute="$(date -u +%M)"
+          if (( 10#$current_minute % KEEPALIVE_INTERVAL_MINUTES != 0 )); then
+            echo "Skipping this tick at minute $current_minute. Next ping runs on configured interval of $KEEPALIVE_INTERVAL_MINUTES minutes."
+            exit 0
+          fi
+
+          failed=0
+
+          while IFS= read -r raw_url; do
+            url="$(echo "$raw_url" | xargs)"
+            if [[ -z "$url" ]]; then
+              continue
+            fi
+
+            echo "Pinging: $url"
+            success=0
+
+            for attempt in $(seq 1 "$KEEPALIVE_RETRIES"); do
+              status_code="$(curl -L -sS -o /dev/null --max-time "$KEEPALIVE_TIMEOUT_SECONDS" -w "%{http_code}" "$url" || true)"
+
+              if [[ "$status_code" =~ ^2[0-9]{2}$ || "$status_code" =~ ^3[0-9]{2}$ ]]; then
+                echo "Attempt $attempt/$KEEPALIVE_RETRIES succeeded with HTTP $status_code"
+                success=1
+                break
+              fi
+
+              echo "Attempt $attempt/$KEEPALIVE_RETRIES failed with HTTP ${status_code:-000}"
+            done
+
+            if [[ "$success" -ne 1 ]]; then
+              failed=1
+              echo "Failed to wake endpoint after $KEEPALIVE_RETRIES attempts: $url"
+            fi
+          done < <(echo "$KEEPALIVE_URLS" | tr ',' '\n')
+
+          if [[ "$failed" -ne 0 ]]; then
+            echo "One or more keepalive pings failed."
+            exit 1
+          fi
+
+          echo "All configured keepalive pings succeeded."
