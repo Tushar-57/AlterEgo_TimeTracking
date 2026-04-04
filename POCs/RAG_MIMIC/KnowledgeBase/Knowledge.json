@@ -1,0 +1,244 @@
+{
+    "Programming Languages": {
+      "Python": {
+        "proficiency": "Intermediate",
+        "experience_years": 2,
+        "projects": [
+          "Developed a personal RAG system using OpenAI embeddings and chat completions",
+          "Created voice-enabled assistants with speech recognition and TTS",
+          "Built Streamlit web apps for interactive knowledge base visualization",
+          "Created AI and Gen AI application playground",
+          "Created Alter Ego, based on LLM with self coach.",
+          "taskflowAGI: modular implementation of BabyAGI, designed for autonomous task management",
+          "PromptWeaver: Repo for learning and building a Prompt Generator using Artificial Intelligence. This repository includes hands-on projects, problem-solving exercises, and coding implementations to enhance AI knowledge.",
+          "AI-Learning-and-Playground: A space for exploring, learning, and experimenting with Artificial Intelligence and DeepLearning. Includes projects, problem-solving, and hands-on coding to deepen AI knowledge."
+        ],
+        "key_concepts": [
+          "Object-oriented programming",
+          "Data structures and algorithms",
+          "Libraries: NumPy, Pandas, Scikit-learn, OpenAI"
+        ]
+      },
+      "Java": {
+        "proficiency": "Expert",
+        "experience_years": 5,
+        "experiences": [
+          "Java and Web Application developer at IBM",
+          "Automation Engineer at Ericsson",
+          "SprintBoot Software Development Engineer at RoboMQ"
+        ],
+        "projects": [
+          "Enterprise applications with Spring Boot",
+          "Android app development",
+          "Banking-Application: Banking Application with 2 Components i.e Customer And Account. Made with Java, SpringBoot, Hibernate, JPA.",
+          "Data_Structures: A repository for documenting my learning journey in Data Structures."
+        ],
+        "key_concepts": [
+          "Multithreading",
+          "JVM internals",
+          "Frameworks: Spring, Hibernate"
+        ]
+      },
+      "TypeScript": {
+        "proficiency": "Intermediate",
+        "experience_years": null,
+        "projects": [
+          "AlterEgo_TimeTracking: AI Agent - powered time tracking and productivity app with a personalized mentor persona, featuring smart timers, analytics, calendar integration, and a modern UI."
+        ],
+        "key_concepts": []
+      }
+    },
+    "Work Experience": {
+      "Automation Engineer at Ericsson": {
+        "location": "Noida, India",
+        "duration": "Dec 2022 - Aug 2024",
+        "official_job_description": "",
+        "responsibilities": [
+          "Delivered custom automation solutions using Java, Groovy, and cloud-based tools, ensuring seamless performance and user satisfaction through HyperCare.",
+          "Coordinated with internal SMEs and stakeholders to secure timely approvals, reducing turnaround time by 50% and accelerating business sign-offs.",
+          "Led code reviews within a team of four, maintaining high-quality contributions across a 40-developer environment and reducing HyperCare issues by 25%.",
+          "Took ownership of critical business needs during team absences, ensuring 100% operational continuity, while actively contributing to Agile ceremonies."
+        ],
+        "achievements": [
+          "Employee with best ROI(Return On Investment) in year 2023",
+          "Awarded MVE of the Year in 2023",
+          ""
+        ]
+      },
+      "Application Developer at IBM": {
+        "location": "Gurugram, India",
+        "duration": "Feb 2021 - Sep 2022",
+        "official_job_description": "",
+        "responsibilities": [
+          "Constructed and enhanced robust back-end systems using Java, Servlets, APIs, Spring, ensuring seamless integration and isolation of new features with existing monolithic functionality.",
+          "Delivered 70% same-day resolution for production and test defects, optimizing operational efficiency and maintaining high application availability for global regions.",
+          "Collaborated with cross-functional Agile teams, including offshore testing units, enhancing overall development efficiency and product quality, in-turn reducing defect leakage rate by 20%."
+        ],
+        "achievements": [
+          "Helped support and transition the monolith applition to more robust microservices arch.",
+          "Been awarded $100 appriciation bonus by my manager for exceptional performance",
+          ""
+        ]
+      },
+      "Software Development Engineer at RoboMQ": 
+      {
+        "location": "Jaipur, India",
+        "duration": "Jul 2020 - Feb 2021",
+        "official_job_description": "",
+        "responsibilities": [
+          "Secured ServiceNow Marketplace certification for integration platform, enabling seamless connectivity across ERP, CRM, SaaS, and on-prem applications—developed within a lean team of two engineers.",
+          "Optimized infrastructure operations by 20%, streamlining builds and deployments using Jenkins, Kubernetes, and Shell scripting, improving CI/CD efficiency and feature rollouts."
+        ],
+        "achievements": []
+      },
+      "Software development Engineer Intern at RoboMQ": {
+        "location": "Jaipur, India",
+        "duration": "Jan 2020 - Jun 2020",
+        "official_job_description": "",
+        "responsibilities": [],
+        "achievements": []
+      },
+      "Research Intern at LINUX WORLD INFORMATICS PRIVATE LIMITED": {
+        "location": "Jaipur Area, India",
+        "duration": "May 2019 - Jun 2019",
+        "official_job_description": "",
+        "responsibilities": [
+          "Gained significant confidence in emerging technologies such as DevOps, Machine Learning, Hadoop, AWS Cloud, and Red Hat Linux.",
+          "Cleared certifications for RHCSA and RHCoE.",
+          "Developed a voice-based assistant for technical tasks like setting up Hadoop clusters, starting Docker containers, and general Linux tasks using Ansible, Python-CGI, and HTML/CSS.",
+          "Worked on an Augmented Reality-based restaurant menu using Unity, Vuforia, and Blender."
+        ],
+        "achievements": ["Redhat Certifications like RHCSA and RHCoE"]
+      }
+    },
+    "Certifications": {
+      "Online Certifications": [
+        {
+          "name": "Artificial Intelligence Fundamental",
+          "provider": "IBM Skills Build",
+          "completion_year": 2025
+        },
+        {
+          "name": "Create Generative AI From Scratch",
+          "provider": "LinkedIn Learning",
+          "completion_year": 2025
+        },
+        {
+          "name": "Getting Started with Microsoft Azure",
+          "provider": "LinkedIn Learning",
+          "completion_year": 2025
+        },
+        {
+          "name": "UNIX Essential Training",
+          "provider": "LinkedIn Learning",
+          "completion_year": 2025
+        },
+        {
+          "name": "Cloud Computing: Core Concepts",
+          "provider": "LinkedIn Learning",
+          "completion_year": 2024
+        },
+        {
+          "name": "Red Hat Certified System Administrator (RHCSA)",
+          "provider": "RedHat",
+          "completion_year": 2019,
+          "cert_id": "190-129-95X"
+        },
+        {
+          "name": "Red Hat Certified Specialist in Ansible Automation (RHCoE)",
+          "provider": "RedHat",
+          "completion_year": 2019,
+          "cert_id": "190-129-95X"
+        },
+        {
+          "name": "Artificial Intelligence Fundamentals",
+          "provider": null,
+          "completion_year": null
+        },
+        {
+          "name": "Application Security Engineer - Explorer Award for Students 2017 - 2019",
+          "provider": null,
+          "completion_year": 2019
+        },
+        {
+          "name": "Docker Essentials: A Developer Introduction",
+          "provider": null,
+          "completion_year": null
+        },
+        {
+          "name": "Natural Language Processing & Large Language Models 10-week workshop series",
+          "provider": null,
+          "completion_year": null
+        }
+      ]
+    },
+    "Skills": {
+      "Technical": [
+        "RESTful WebServices",
+        "Scripting",
+        "Firebase",
+        "AI/ML: Neural networks, NLP, Computer Vision",
+        "DevOps: Docker, Kubernetes, CI/CD pipelines",
+        "Databases: SQL (PostgreSQL, MySQL), NoSQL (MongoDB)"
+      ],
+      "Soft_skills": [
+        "Team leadership and collaboration",
+        "Problem-solving under pressure",
+        "Effective communication"
+      ]
+    },
+    "Projects": {
+      "Prompt Weaver": {
+        "description": "Designed & Developed AI Based Prompt Generator for best usage for LLM by leveraging NLP techniques and general available LLM models. Optimized prompt structuring to improve interactions with LLMs, increasing response quality, efficiency, and coverage for AI writers.",
+        "technologies": [],
+        "outcomes": "",
+        "github": "github.com/Tushar-57/PromptWeaver",
+        "duration": "Mar 2025 - Present"
+      },
+      "AI Playground – NLP & Agents": {
+        "description": "Explored classical NLP using Gensim’s Word2Vec and similarity models, visualizing embeddings and comparing semantic representations with modern LLM outputs. Built intelligent agents using CAMEL and local LLMs (via Ollama) for multi-agent simulations, including role-based reasoning, task decomposition, and memory-enhanced conversations. Developed modular pipelines with LangChain to demonstrate retrieval-augmented generation (RAG), agent decision trees, and LLM chaining for task-oriented flows.",
+        "technologies": ["Gensim", "Word2Vec", "CAMEL", "Ollama", "LangChain"],
+        "outcomes": "",
+        "github": "github.com/Tushar-57/AI-Learning-and-Playground",
+        "duration": "Feb 2025 - Present"
+      },
+      "AlterEgo – AI Based Time Management Application": {
+        "description": "Designing and Developing AI Time Management Assistant that dynamically help with productivity with features like AI Planner, leveraging LLMs for reasoning and natural language interaction. Integrated LangChain memory buffers and prompt engineering to enable personalized responses, adaptive planning, and context-aware time management suggestions, with minimum token spent.",
+        "technologies": ["LangChain", "LLMs"],
+        "outcomes": "",
+        "github": "github.com/Tushar-57/(Private_Repo)",
+        "duration": "Apr 2025 - Present"
+      },
+      "Personal RAG System": {
+        "description": "Built a retrieval-augmented generation system for personal knowledge base with voice and web interfaces",
+        "technologies": ["Python", "OpenAI API", "Streamlit", "SpeechRecognition"],
+        "outcomes": "Enhanced personal productivity through AI-assisted queries"
+      },
+      "AI Chatbot": {
+        "description": "Developed a conversational AI for customer support",
+        "technologies": ["Python", "Rasa", "NLP libraries"],
+        "outcomes": "Reduced response time by 50% in simulations"
+      },
+      "taskflowAGI": {
+        "description": "modular implementation of BabyAGI, designed for autonomous task management",
+        "technologies": ["Python"],
+        "outcomes": "",
+        "github": "github.com/Tushar-57/taskflowAGI",
+        "duration": ""
+      },
+      "Data_Structures": {
+        "description": "A repository for documenting my learning journey in Data Structures. 🚀",
+        "technologies": ["Java"],
+        "outcomes": "",
+        "github": "github.com/Tushar-57/Data_Structures",
+        "duration": ""
+      },
+      "Banking-Application": {
+        "description": "Banking Application with 2 Components i.e Customer And Account. Made with Java, SpringBoot, Hibernate, JPA.",
+        "technologies": ["Java", "SpringBoot", "Hibernate", "JPA"],
+        "outcomes": "",
+        "github": "github.com/Tushar-57/Banking-Application",
+        "duration": ""
+      }
+  }
+}

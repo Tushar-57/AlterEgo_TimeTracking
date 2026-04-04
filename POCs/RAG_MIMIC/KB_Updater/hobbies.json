@@ -1,0 +1,29 @@
+[
+    {
+        "activity": "exercise and hike",
+        "duration": "2 hours",
+        "details": {
+            "exercise_duration": "1 hour",
+            "hike_duration": "1 hour"
+        },
+        "location": "home",
+        "sequence": [
+            "exercise",
+            "hike",
+            "return home"
+        ],
+        "id": 1
+    },
+    {
+        "activity": "coding",
+        "duration": "5 hours 15 minutes",
+        "details": {
+            "start_time": "12:00 PM",
+            "progress": "great progress",
+            "use_cases": "interesting use cases for personal use",
+            "challenges": "problems faced"
+        },
+        "feelings": "good",
+        "id": 2
+    }
+]

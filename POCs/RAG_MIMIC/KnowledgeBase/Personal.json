@@ -1,0 +1,254 @@
+{
+    "basic_info": {
+      "name": "Tushar Sharma",
+      "birthday": "02 July 2000",
+      "current_occupation": "Student at University Of Windsor",
+      "occupation_positions_held": ["Software Development Intern", "Software Development Engineer I", "Application Developer", "Automation Engineer"],
+      "current_location": {
+        "city": "Windsor",
+        "state": "ON",
+        "country": "CANADA",
+        "timezone": "EST"
+      },
+      "education": [
+        {
+          "degree_type": "Bachelors Degree",
+          "degree": "Bachelor's in Computer Science Engineering",
+          "institution": "JK Lakshmipat University",
+          "degree_start": 2016,
+          "graduation_year": 2020,
+          "gpa": "7.16 on a scale of 10",
+          "relevant_courses": ["Algorithms", "Machine Learning", "Data Structures"],
+          "key_points":["LinuxWorld Internship", "Relationship 1"]
+        },
+        {
+            "degree_type": "Masters Degree",
+            "degree": "Master's in Computer Science Engineering",
+            "institution": "University Of Windsor",
+            "degree_start": 2024,
+            "graduation_year": 2026,
+            "gpa": "7.75 on a scale of 10",
+            "relevant_courses": ["Algorithms", "Machine Learning", "Data Structures"],
+            "key_points":["NLP Workshop", "turning_point_2"]
+          }
+      ],
+      "contact": {
+        "email": "tushar.sharma@email.com",
+        "phone": "+1-222-222-222",
+        "linkedin": "linkedin.com/in/tusharsharmaa",
+        "github": "github.com/Tushar-57"
+      },
+      "hobbies": [
+        {
+          "name": "Vibe Coding",
+          "frequency": "Daily",
+          "description": "Enjoys exploring and brainstorming on wide range of ideas for impact and then designing and developing the MVP on the go.",
+          "significant_achievements": ["Enhanced a conventional time tracking application with personal AI implication called as 'Alter Ego'", "Created Different AI Agents like for updating static knowledge bases using web"]
+        },
+        {
+          "name": "Thinking",
+          "frequency": "Daily",
+          "description": "Avid fan of the functionality of humans to think and contemplate, we are the best LLM, RAG systems out there. I can go on and on for how great it is to be a human."
+        }
+      ]
+    },
+    "personality_traits": [
+      {
+        "trait": "Introverted but collaborative",
+        "description": "Prefers independent work but thrives in team environments when contributing ideas.",
+        "examples": ["Enjoys pair-programming sessions but recharges with solo coding time."]
+      },
+      {
+        "trait": "Creative thinker",
+        "description": "Generates innovative solutions by thinking outside the box.",
+        "examples": ["Proposed a novel AI feature that improved app efficiency by 30%."]
+      },
+      {
+        "trait": "Empathetic listener",
+        "description": "Actively listens and considers others' feelings and viewpoints.",
+        "examples": ["Mediates team conflicts by understanding all sides."]
+      }
+    ],
+    "communication_style": {
+      "preferred_modes": [
+        {
+          "mode": "Written (email/chat)",
+          "reason": "Allows for clarity, record-keeping, and thoughtful responses."
+        },
+        {
+          "mode": "Verbal (meetings/calls)",
+          "reason": "Useful for real-time clarification and building rapport."
+        }
+      ],
+      "tone": {
+        "default": "Direct yet polite",
+        "adaptations": "More formal in professional settings; casual with friends."
+      },
+      "strengths": [
+        "Clear and concise explanations of complex topics",
+        "Active listening, often paraphrasing to confirm understanding"
+      ],
+      "areas_for_improvement": [
+        {
+          "area": "Over-explaining technical details",
+          "strategy": "Gauge audience expertise and simplify accordingly."
+        }
+      ],
+      "examples": [
+        "In team meetings, uses structured agendas, visual aids like slides or diagrams, and follows up with summary notes."
+      ],
+      "preferences": {
+        "response_time": "Aims to reply within 24 hours for emails",
+        "feedback_style": "Prefers constructive, specific feedback"
+      }
+    },
+    "values_and_beliefs": {
+      "core_values": [
+        {
+          "value": "Integrity",
+          "description": "Commitment to honesty and ethical behavior in all actions.",
+          "application": "Refuses to cut corners on code quality even under tight deadlines."
+        },
+        {
+          "value": "Continuous learning",
+          "description": "Belief in ongoing personal and professional development.",
+          "application": "Dedicates time weekly to online courses and tech blogs."
+        },
+        {
+          "value": "Work-life balance",
+          "description": "Prioritizing health, relationships, and leisure alongside career.",
+          "application": "Sets boundaries like no work emails after 7 PM."
+        }
+      ],
+      "beliefs": [
+        {
+            "belief": "Being a human aka. Homo Sapiens",
+            "description": "Being a human is really fantastic, in daily life we forget it so easily, and it puts me in deep wonder, that even writing this my own brain's functionality. It was already there so what's new, new is the age when we are teaching an AI to learn, it is making us think deeply how we, humans think.",
+            "examples": ["Contemplate on life, winding down, and being grateful for getting a chance to be a human"]
+        },
+        {
+          "belief": "Technology for humanity",
+          "description": "Tech should address real-world issues and improve lives.",
+          "examples": ["Supports open-source projects in education and healthcare."]
+        }
+      ],
+      "influences": {
+        "people": ["Marvel's Iron Man for innovation"],
+        "experiences": ["Volunteering in community tech workshops shaped views on accessibility."]
+      }
+    },
+    "goals_and_ambitions": {
+      "short_term": [
+        {
+          "goal": "Complete Langchain certification",
+          "timeline": "Within 3 months",
+          "steps": ["Resume learning", "Dedicate 5 hours/week", "Apply concepts to a personal project with the help of AI"],
+          "metrics": "Pass certification exam with some really cool examples to post"
+        },
+        {
+          "goal": "Save 20 Grand",
+          "timeline": "Next summer",
+          "steps": ["Budget monthly savings", "Finalize financial planning to reach there", "Revisit and course correct if needed"],
+          "metrics": "Accumulate $20,000"
+        }
+      ],
+      "long_term": [
+        {
+          "goal": "Launch AI-driven sustainability startup",
+          "timeline": "Within 1-2 years",
+          "steps": ["Build prototype", "Network with investors", "Pitch to Y Combinator", "Assemble team", "Secure funding"],
+          "metrics": "Achieve Y-Combinator Pitch."
+        },
+        {
+          "goal": "Build a family with balanced life",
+          "timeline": "Ongoing, family in 5-7 years",
+          "steps": ["Foster strong relationships", "Seek flexible work", "Plan for parenthood"],
+          "metrics": "Maintain healthy work-life integration"
+        }
+      ],
+      "tracking": {
+        "tools": ["Toggl for Daily Schedule", "Goal-tracking via pen and paper in Bullet Journal Format"],
+        "reviews": "Daily, Weekly, Monthly, Yearly"
+      }
+    },
+    "daily_routine": {
+      "weekdays": {
+        "ideal_day":{
+            "wake_up": {
+            "time": "6:00 AM",
+            "activities": ["Meditation (10 min)", "Stretching (5 min)", "Hydration"]
+            },
+            "morning": {
+            "time": "6:30 AM - 8:00 AM",
+            "activities": ["Breakfast: Oatmeal with fruits and nuts", "Review daily goals", "Commute or set up remote workspace"]
+            },
+            "work_hours": {
+            "time": "8:00 AM - 5:00 PM",
+            "activities": ["Morning stand-up meeting", "Focused coding (Pomodoro technique: 25 min work, 5 min break)", "Lunch at 12:00 PM (salad or sandwich)", "Afternoon meetings and collaboration", "Short walks for breaks"]
+            },
+            "evening": {
+            "time": "5:30 PM - 9:00 PM",
+            "activities": ["Exercise: Gym or hiking (1 hour)", "Dinner: Home-cooked balanced meal", "Family time or hobbies (e.g., guitar practice)", "Personal development: Reading or online course"]
+            },
+            "wind_down": {
+            "time": "9:00 PM - 10:30 PM",
+            "activities": ["Journaling reflections", "Light reading", "Bedtime routine: No screens after 10:00 PM"]
+            },
+            "sleep": "7-8 hours"
+        },
+        "normal_day":{
+            "wake_up": {
+            "time": "9:00 AM",
+            "activities": ["Hydration", "Shower & Pray"]
+            },
+            "work_hours": {
+            "time": "10:00 AM - 8:00 PM",
+            "activities": ["Breakfast", "Focused coding (On project, On Self Project)", "Lunch at 2:00 PM (Heavy Meal)", "Couple of 30-45 minute breaks"]
+            },
+            "evening": {
+            "time": "8:00 PM - 10:30 PM",
+            "activities": ["Dinner: Home-cooked balanced meal", "Instagram Scrolling"]
+            },
+            "wind_down": {
+            "time": "10:30 PM - 12:30 PM",
+            "activities": ["Calls to relationsips"]
+            },
+            "sleep": "8-9 hours"
+        }
+      },
+      "weekends": {
+      },
+      "variations": [
+        {
+          "scenario": "Travel",
+          "adjustments": "Flexible wake-up, incorporate local exploration, maintain exercise if possible."
+        },
+        {
+          "scenario": "Deadlines",
+          "adjustments": "Extend work hours, reduce hobbies, ensure extra rest post-deadline."
+        }
+      ],
+      "health_focus": {
+        "nutrition": "Atleast 2000 Calorie intake, and hydration (5 glasses water/day)",
+        "fitness": "None Currently",
+        "mental": "Don't care much"
+      }
+    },
+    "additional_depths": {
+      "experiences": [
+        {
+          "type": "Professional",
+          "details": ["3 years at TechCorp as Junior Engineer, promoted to Mid-level", "Led a team on a AI chat app project"]
+        },
+        {
+          "type": "Personal",
+          "details": ["Backpacked through Asia for 2 months post-graduation", "Volunteered at coding bootcamps for underprivileged youth"]
+        }
+      ],
+      "preferences": {
+        "food": ["Vegetarian-leaning, loves Italian and Asian cuisine"],
+        "entertainment": ["Sci-fi movies, indie music"],
+        "learning": ["Podcasts on AI ethics, online platforms like Udacity"]
+      }
+    }
+  }

@@ -1,0 +1,48 @@
+{
+    "Linux World Internship":{
+
+        "title":"An Internship at Jaipur during Bachelor's degree",
+        "description": "An Internship at Linux World ranging 30-45 days were great in terms of *learning*, *exploring*, *living* alltogether.",
+        "key_event_map": {
+            "Kabir Singh": {
+                "title": "A bollywood movie 'Kabir Singh' during internship",
+                "description": "Watched a movie with 3 other, and absolutely loved it, and after about 5 years, the movie still holds the same place",
+                "metadata":{
+                    "Keywords": ["voldemort", "Relation", "Friendship_Lesson_Roopa"],
+                    "type":"Nostalgic"
+                },
+                "visibility":"Private",
+                "last_updated": "26 July 2025 - 4:55 PM"
+
+            },
+            "Red Hat Certifications": {
+                "title": "Bagged 2 Red hat certifications which seemed impossible to get.",
+                "description": "Secured 2 certifications 1. RHCSA (RedHat Certified System Administrator) and 2. RHCoE (RedHat Certified Ansible Automation - EX 204(exam_code)) Certification Ids: 222-222-222",
+                "metadata":{
+                    "Keywords": ["late night travel", "Red Hat VM", "RHCSA"],
+                    "type": "Achievement"
+                },
+                "visibility":"Public",
+                "last_updated": "26 July 2025 - 4:55 PM"
+            }
+        } 
+    },
+    "NLP Workshop":{
+
+        "title":"An 10 week NLP and Transformers workshop during Master's degree",
+        "description": "An 10 Week Series Internship at Linux World ranging 30-45 days were great in terms of *learning*, *exploring*, *living* alltogether.",
+        "key_event_map": {
+            "Competetions": {
+                "title": "Remained Consistent Top podium player for last 2 competetions out of 3.",
+                "description": "Came 7th at first competetion, and then came 1st and 2nd for last 2 competetions, grabbing the runner up position. This workshop also gave me tools with my curiosity to imply AI application in daily development, and creating something impactful.",
+                "metadata":{
+                    "Keywords": ["Hugging Face", "GenAI" , "Competetions"],
+                    "type":"Achievement"
+                },
+                "visibility":"Public",
+                "last_updated": "26 July 2025 - 4:55 PM"
+            }
+        } 
+    }
+
+}

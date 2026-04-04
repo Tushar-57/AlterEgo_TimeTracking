@@ -1,0 +1,13 @@
+[
+    {
+        "activity": "vibe coding",
+        "start_time": "9:00 AM",
+        "end_time": "5:30 PM",
+        "progress": "good",
+        "details": {
+            "created_use_cases": "unique",
+            "testing_status": "in progress"
+        },
+        "id": 1
+    }
+]
