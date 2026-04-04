@@ -11,7 +11,6 @@ interface PlannerSetupProps {
   onSubmit: () => void;
   setChatHistory: (history: ChatBubbleProps[]) => void;
   errors?: Record<string, string>;
-  tone?: any;
   onBack: () => void;
 }
 
@@ -35,7 +34,6 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
   onSubmit,
   setChatHistory,
   errors = {},
-  tone,
   onBack,
 }) => {
   const [availability, setAvailability] = useState<Availability>(
@@ -80,7 +78,8 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
   ) => {
     const { name, value } = e.target;
     if (field === 'workHours' || field === 'dndHours') {
-      const [_, child] = name.split('.');
+      const parts = name.split('.');
+      const child = parts[1];
       setAvailability({
         ...availability,
         [field]: {

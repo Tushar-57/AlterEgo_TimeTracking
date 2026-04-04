@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Message, PlannerData, UserRole, Answer, Goal, Mentor } from './utils/onboardingUtils';
 import { ChatContainer } from './UI/ChatContainer';
-import ChatBubble from './UI/ChatBubble';
-import TypingIndicator from './UI/TypingIndicator';
 import RoleSelection from './introduction/RoleSelection';
 import StepGoals from './goals/StepGoals';
 import Personalization from './introduction/Personalization';
@@ -11,7 +9,6 @@ import StepPlanner from './planner/StepPlanner';
 import ProgressBar from './UI/ProgressBar';
 import { createMessage } from './utils/onboardingUtils';
 import StepMentor from './Mentor/MentorComponent';
-import { ChildProcess } from 'node:child_process';
 import LoadingScreen from './loading/LoadingScreen';
 import { useNavigate } from 'react-router-dom';
 
@@ -30,12 +27,10 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [currentStep, setCurrentStep] = useState<'intro' | 'role' | 'personalization' | 'goals' | 'planner' | 'mentor' | 'complete'>('intro');
-  const [previousStep, setPreviousStep] = useState<'intro' | 'role' | 'personalization' | 'goals' | 'planner' | 'mentor' | 'complete'>('intro');
+  const [, setPreviousStep] = useState<'intro' | 'role' | 'personalization' | 'goals' | 'planner' | 'mentor' | 'complete'>('intro');
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [selectedGoals, setSelectedGoals] = useState<Goal[]>([]);
   const [selectedAnswers, setSelectedAnswers] = useState<Answer[]>([]);
-  const [selectedMentor, setMentor] = useState<Mentor | null>(null);
-  const [coachAvatar, setCoachAvatar] = useState<string>(''); // Added for avatar
   const [plannerData, setPlannerData] = useState<PlannerData>({
     goals: [],
     availability: {
@@ -54,7 +49,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
   });
   const [isLoading, setIsLoading] = useState(false); // Add loading state
   const navigate = useNavigate(); // Initialize navigate
-  const [chatHistory, setChatHistory] = useState<any[]>([]);
+  const [, setChatHistory] = useState<Message[]>([]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -185,8 +180,6 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
 };
 
   const handleMentorSelect = async (selectedMentor: Mentor) => {
-    setMentor(selectedMentor);
-    setCoachAvatar(selectedMentor.avatar);
     await addMessage(
       <div className="flex flex-col gap-2">
         <span>My AI AlterEgo:</span>
@@ -206,7 +199,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
     // );
 
     // Construct OnboardingData
-    const onboardingData: any = {
+    const onboardingData = {
       role: selectedRole!,
       goals: plannerData.goals,
       answers: selectedAnswers,
@@ -299,7 +292,6 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
       );
       setCurrentStep('planner');
       setPreviousStep('goals');
-      setMentor(null);
     }
   };
 

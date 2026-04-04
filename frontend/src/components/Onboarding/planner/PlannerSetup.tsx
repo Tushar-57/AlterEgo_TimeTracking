@@ -40,7 +40,8 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
   ) => {
     const { name, value } = e.target;
     if (field === 'workHours' || field === 'dndHours') {
-      const [_, child] = name.split('.');
+      const parts = name.split('.');
+      const child = parts[1];
       setAvailability({
         ...availability,
         [field]: {

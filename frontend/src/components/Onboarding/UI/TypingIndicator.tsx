@@ -1,11 +1,7 @@
 import React from 'react';
-import { Tone } from '../types/onboarding';
 // import { getToneStyles } from '../utils/onboardingUtils';
 
-interface TypingIndicatorProps {
-}
-
-const TypingIndicator: React.FC<TypingIndicatorProps> = () => {
+const TypingIndicator: React.FC = () => {
   
   return (
     <div className="mr-auto mb-4 bg-white p-4 rounded-2xl border shadow-sm max-w-[80%]">

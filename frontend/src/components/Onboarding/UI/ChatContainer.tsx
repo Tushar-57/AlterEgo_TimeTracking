@@ -40,7 +40,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
           isAnimated={msg.isRendered}
           coachAvatar={msg.sender === 'assistant' ? coachAvatar : undefined}
         >
-          {msg.additionalContent && process.env.NODE_ENV === 'development' && (
+          {msg.additionalContent && import.meta.env.DEV && (
             <div className="text-sm text-gray-600 mt-1">{msg.additionalContent}</div>
           )}
         </ChatBubble>

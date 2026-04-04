@@ -37,8 +37,7 @@ export const GoalForm: React.FC<{
   setGoalForm: React.Dispatch<React.SetStateAction<GoalFormState>>;
   onSubmit: () => void;
   onCancel: () => void;
-  userRole: UserRole | null;
-}> = ({ goalForm, setGoalForm, onSubmit, onCancel, userRole }) => {
+}> = ({ goalForm, setGoalForm, onSubmit, onCancel }) => {
   const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
   const requiredFields = [
     { name: 'title', value: goalForm.title.trim() },
@@ -58,7 +57,9 @@ export const GoalForm: React.FC<{
   ) => {
     const { name, value, type } = e.target;
     if (name.includes('smartCriteria.')) {
-      const [_, criterion, field] = name.split('.');
+      const parts = name.split('.');
+      const criterion = parts[1];
+      const field = parts[2];
       setGoalForm({
         ...goalForm,
         smartCriteria: {
@@ -601,7 +602,6 @@ const StepGoals: React.FC<StepGoalsProps> = ({ selectedGoals, userRole, onSelect
             setGoalForm={setGoalForm}
             onSubmit={handleFormSubmit}
             onCancel={() => setShowGoalForm(false)}
-            userRole={userRole}
           />
         )}
       </AnimatePresence>

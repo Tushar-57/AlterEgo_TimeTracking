@@ -155,8 +155,9 @@ export const getRandomName = (): string => {
   return RANDOM_NAMES[randomIndex];
 };
 export const formatIntroduction = (data: OnboardingData): string => {
-  let greeting = 'Hello, I am your AI Coach';
-  return `${greeting}`;
+  const roleLabel = data.role ? ` for ${data.role.toLowerCase()}` : '';
+  const greeting = 'Hello, I am your AI Coach';
+  return `${greeting}${roleLabel}`;
 };
 
 export const getToneStyles = (tone: Tone | null | string) => {

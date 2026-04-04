@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, Briefcase, Users, Sparkles } from 'lucide-react';
 import { UserRole } from '../utils/onboardingUtils';
-import { useNavigate } from 'react-router-dom';
 import { BackButton } from '../UI/BackButton';
 
 interface RoleSelectionProps {
@@ -10,9 +9,6 @@ interface RoleSelectionProps {
 }
 
 const RoleSelection: React.FC<RoleSelectionProps> = ({ onSelect }) => {
-  const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState<'intro' | 'role' | 'goals' | 'complete'>('intro');
-  const [previousStep, setPreviousStep] = useState<'intro' | 'role' | 'goals' | 'complete'>('intro');
   const roles = [
     {
       id: 'student',
@@ -47,7 +43,7 @@ const RoleSelection: React.FC<RoleSelectionProps> = ({ onSelect }) => {
   return (
     <div className="w-full max-w-4xl mx-auto p-4">
         <div className="relative">
-        <BackButton onClick={() => setCurrentStep('intro')} />
+      <BackButton onClick={() => window.history.back()} />
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}

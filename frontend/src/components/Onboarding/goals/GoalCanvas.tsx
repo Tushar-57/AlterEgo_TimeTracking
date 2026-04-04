@@ -64,7 +64,7 @@ const GoalCanvas: React.FC<GoalCanvasProps> = ({ goals, onGoalSelect }) => {
                       Key Milestones
                     </h4>
                     <ul className="space-y-2">
-                      {goal.milestones.map((milestone: string | number | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | null | undefined, idx: React.Key | null | undefined) => (
+                      {goal.milestones.map((milestone, idx) => (
                         <li 
                           key={idx}
                           className="flex items-center gap-3 text-gray-600 text-sm"
