@@ -139,9 +139,8 @@ Notes:
 - The workflow runs every 5 minutes, but only sends pings when the current UTC minute matches your configured `KEEPALIVE_INTERVAL_MINUTES` cadence.
 - Keepalive reduces cold starts but does not guarantee permanent uptime on free tier.
 
-## Do You Need render.yaml Now?
+## Blueprint File Status
 
-No. For manual Web Service deployment, Render does not need render.yaml.
+This project is configured for manual Render Web Service deployment only.
 
-- Keep it if you want a Blueprint option later.
-- Delete it if you want to avoid accidental Blueprint-based deploys.
+- `render.yaml` is intentionally removed to prevent accidental Blueprint-based deploys.
