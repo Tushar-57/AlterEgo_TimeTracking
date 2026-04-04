@@ -13,6 +13,12 @@ interface TimerEntryResponse {
   positionLeft?: string;
 }
 
+interface TimerEntryApiResponse {
+  success?: boolean;
+  message?: string;
+  data?: TimerEntryResponse[];
+}
+
 export const calculatePosition = (startTime: string) => {
   const startDate = new Date(startTime);
   const hours = startDate.getHours();
@@ -80,8 +86,18 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
         throw new Error(`HTTP error! status: ${res.status}`);
       }
 
-      const data: TimerEntryResponse[] = await res.json();
-      const transformed: CalendarEvent[] = data.map((entry) => {
+      const payload: TimerEntryResponse[] | TimerEntryApiResponse = await res.json();
+      const entries = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload.data)
+        ? payload.data
+        : [];
+
+      if (!Array.isArray(payload) && payload.success === false) {
+        throw new Error(payload.message || 'Failed to load timer entries');
+      }
+
+      const transformed: CalendarEvent[] = entries.map((entry) => {
         const startDate = new Date(entry.startTime);
         const hours = startDate.getHours();
         const minutes = startDate.getMinutes().toString().padStart(2, "0");

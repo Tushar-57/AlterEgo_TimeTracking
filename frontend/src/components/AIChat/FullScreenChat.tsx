@@ -86,6 +86,7 @@ const FullScreenChat: React.FC = () => {
   const [actionPrompt, setActionPrompt] = useState<ActionPromptState | null>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const hasFetchedCoachData = useRef(false);
+  const isSendingRef = useRef(false);
 
   useEffect(() => {
     const fetchCoachData = async () => {
@@ -193,21 +194,34 @@ const FullScreenChat: React.FC = () => {
       .trim();
   };
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
+  const sendMessage = async (commandOverride?: string) => {
+    const rawCommand = (commandOverride ?? input).trim();
 
-    const normalizedInput = normalizeCommand(input);
+    if (!rawCommand || isSendingRef.current) {
+      return;
+    }
+
+    const normalizedInput = normalizeCommand(rawCommand);
+    if (!normalizedInput) {
+      return;
+    }
+
+    isSendingRef.current = true;
+    const selectedContext = commandOverride ? null : context;
+
     const newMessage: Message = {
       id: Date.now().toString(),
       content: normalizedInput,
       sender: 'user',
       isRendered: true,
       timestamp: new Date(),
-      additionalContent: context ? `${context.type}: ${context.value}` : ''
+      additionalContent: selectedContext ? `${selectedContext.type}: ${selectedContext.value}` : ''
     };
 
     addMessage(newMessage);
-    setInput('');
+    if (!commandOverride) {
+      setInput('');
+    }
     setContext(null);
     setIsTyping(true);
     setShowSuggestions(false);
@@ -232,7 +246,7 @@ const FullScreenChat: React.FC = () => {
         },
         body: JSON.stringify({
           command: normalizedInput,
-          context: context || undefined
+          context: selectedContext || undefined
         }),
       });
 
@@ -278,6 +292,7 @@ const FullScreenChat: React.FC = () => {
       setActionPrompt(null);
     } finally {
       setIsTyping(false);
+      isSendingRef.current = false;
     }
   };
 
@@ -452,8 +467,7 @@ const FullScreenChat: React.FC = () => {
       });
       setActionPrompt(null);
       if (action !== 'confirmTimeEntry' && actionPrompt?.originalCommand) {
-        setInput(actionPrompt.originalCommand);
-        sendMessage();
+        void sendMessage(actionPrompt.originalCommand);
       }
     } catch (error: unknown) {
       const actionErrorMessage = getErrorMessage(error);
@@ -829,14 +843,16 @@ const FullScreenChat: React.FC = () => {
                   </div>
                   {context && (
                     <div className="text-sm text-gray-600">
-                      Attached: ${context.type} - ${context.value}
+                      Attached: {context.type} - {context.value}
                     </div>
                   )}
                   <div className="flex gap-3">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={sendMessage}
+                      onClick={() => {
+                        void sendMessage();
+                      }}
                       className="flex-1 bg-gradient-to-r from-pink-400 to-lavender-400 text-white px-6 py-3 rounded-lg shadow-sm transition-all"
                     >
                       Send
@@ -885,7 +901,7 @@ const FullScreenChat: React.FC = () => {
                             onClick={() => handleToneChange(tone)}
                             className={`p-3 rounded-lg bg-gradient-to-r from-pink-200 to-lavender-200 text-gray-800 font-medium transition-all hover:bg-opacity-80 ${coachData?.tone === tone ? 'ring-2 ring-lavender-300' : ''}`}
                           >
-                            ${tone}
+                            {tone}
                           </motion.button>
                         ))}
                       </motion.div>
@@ -911,7 +927,7 @@ const FullScreenChat: React.FC = () => {
                             }}
                             className={`p-3 rounded-lg bg-gradient-to-r from-pink-200 to-lavender-200 text-gray-800 font-medium transition-all hover:bg-opacity-80 ${coachData?.archetype === archetype ? 'ring-2 ring-lavender-300' : ''}`}
                           >
-                            ${archetype}
+                            {archetype}
                           </motion.button>
                         ))}
                       </motion.div>
@@ -945,7 +961,7 @@ const FullScreenChat: React.FC = () => {
                         onClick={() => handleContextSelect(option.type, option.value)}
                         className="p-3 rounded-lg bg-gradient-to-r from-pink-200 to-lavender-200 text-gray-800 font-medium transition-all hover:bg-opacity-80 text-left"
                       >
-                        ${option.type}: ${option.value}
+                        {option.type}: {option.value}
                       </motion.button>
                     ))}
                   </div>

@@ -19,3 +19,5 @@ POCs/**/.env
 .env
 .env.*
 !.env.unified.example
+.vercel
+.env*.local

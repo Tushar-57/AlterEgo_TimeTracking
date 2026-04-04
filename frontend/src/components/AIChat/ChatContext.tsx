@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
 import { Message } from '../Onboarding/types/onboarding';
 
 interface ChatContextType {
@@ -18,20 +18,25 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
 
-  const toggleChat = () => setIsChatOpen(!isChatOpen);
+  const toggleChat = useCallback(() => {
+    setIsChatOpen((prev) => !prev);
+  }, []);
 
-  const addMessage = (message: Message) => {
+  const addMessage = useCallback((message: Message) => {
     setMessages((prev) => [...prev, message]);
-  };
+  }, []);
 
-  const clearMessages = () => {
+  const clearMessages = useCallback(() => {
     setMessages([]);
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ isChatOpen, toggleChat, messages, addMessage, clearMessages, isTyping, setIsTyping }),
+    [isChatOpen, toggleChat, messages, addMessage, clearMessages, isTyping],
+  );
 
   return (
-    <ChatContext.Provider
-      value={{ isChatOpen, toggleChat, messages, addMessage, clearMessages, isTyping, setIsTyping }}
-    >
+    <ChatContext.Provider value={value}>
       {children}
     </ChatContext.Provider>
   );

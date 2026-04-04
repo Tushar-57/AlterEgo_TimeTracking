@@ -535,16 +535,31 @@ export default function TimeTracker() {
         logout();
         return;
       }
-      const response = await res.json();
-      if (!response.success) {
+
+      const response = await res.json().catch(() => null);
+      const responseErrorMessage = response?.errors?.message || response?.message;
+
+      if (res.status === 409) {
         toast({
-          title: 'Server Error',
-          description: response.message || 'Failed to start timer.',
+          title: 'Timer Already Running',
+          description: responseErrorMessage || 'Please stop the current timer before starting a new one.',
           variant: 'destructive',
           className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
-        throw new Error('Start failed');
+        return;
       }
+
+      if (!res.ok || !response?.success) {
+        const serverMessage = responseErrorMessage || `Failed to start timer (HTTP ${res.status})`;
+        toast({
+          title: 'Server Error',
+          description: serverMessage,
+          variant: 'destructive',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+        });
+        throw new Error(serverMessage);
+      }
+
       setTimerState(prev => ({
         ...prev,
         status: 'running',
@@ -558,10 +573,11 @@ export default function TimeTracker() {
         className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Could not connect to the server.';
       console.error('Start timer error:', error);
       toast({
-        title: 'Network Error',
-        description: 'Could not connect to the server.',
+        title: 'Timer Start Failed',
+        description: errorMessage,
         variant: 'destructive',
         className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
