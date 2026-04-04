@@ -14,15 +14,14 @@ import { UserTagPage } from './components/UserTags';
 import { ToastProvider } from './components/ui/toast';
 import { ToastViewport } from './components/ui/toast';
 import ChatOnboarding from './components/Onboarding/ChatOnboarding';
+import CoachWorkspace from './components/Integration/CoachWorkspace';
 import { ChatProvider } from './components/AIChat/ChatContext';
 import FullScreenChat from './components/AIChat/FullScreenChat';
 import ChatToggleButton from './components/AIChat/ChatToggleButton';
 
 const Reports = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Reports Page</div>;
-const Projects = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Projects Page</div>;
 const Clients = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Clients Page</div>;
 const Invoices = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Invoices Page</div>;
-const Tags = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Tags Page</div>;
 const Settings = () => <div className="min-h-screen bg-gray-50 pl-64 p-8">Settings Page</div>;
 
 const App = () => (
@@ -96,6 +95,7 @@ const ProtectedRoutes = () => {
             <Route path="/tags" element={<UserTagPage />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/planner" element={<PlannerForm />} />
+            <Route path="/coach" element={<CoachWorkspace />} />
             <Route path="/dashboard" element={<Dashboard isAuthenticated={isAuthenticated} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
