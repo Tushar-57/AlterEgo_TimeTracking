@@ -1,55 +1,34 @@
 package com.tushar.demo.timetracker.controller;
 
-import com.tushar.demo.timetracker.assistant.domain.conversation.AI_CommandRequest;
-import com.tushar.demo.timetracker.assistant.infrastructure.service.AI_TimeEntryService;
 import com.tushar.demo.timetracker.dto.request.OnboardingRequestDTO;
-import com.tushar.demo.timetracker.exception.NoActiveTimerException;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
-import com.tushar.demo.timetracker.model.AvailabilityEntity;
-import com.tushar.demo.timetracker.model.GoalEntity;
+import com.tushar.demo.timetracker.integration.AgenticKnowledgeSyncService;
 import com.tushar.demo.timetracker.model.MentorEntity;
 import com.tushar.demo.timetracker.model.OnboardingEntity;
-import com.tushar.demo.timetracker.model.OnboardingEntity;
-import com.tushar.demo.timetracker.model.PlannerEntity;
-import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.OnboardingRepository;
-import com.tushar.demo.timetracker.repository.ProjectRepository;
-import com.tushar.demo.timetracker.repository.TimeEntryRepository;
 import com.tushar.demo.timetracker.repository.UserRepository;
-import dev.langchain4j.model.chat.ChatLanguageModel;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/onboarding")
 public class OnboardingController {
 
-	private final AI_TimeEntryService aiService;
 	private final UserRepository userRepo;
-	private final ChatLanguageModel chatLangModel;
-	private final TimeEntryRepository timeEntryRepo;
-	private final ProjectRepository projectRepository;
 	private final OnboardingRepository onboardingRepository;
+    private final AgenticKnowledgeSyncService agenticKnowledgeSyncService;
 
-	@Autowired
-	public OnboardingController(AI_TimeEntryService aiService, ChatLanguageModel chatModel, UserRepository userRepo,
-			TimeEntryRepository timeEntryRepo, ProjectRepository projectRepository,
-			OnboardingRepository onboardingRepository) {
-		this.aiService = aiService;
+    public OnboardingController(UserRepository userRepo,
+            OnboardingRepository onboardingRepository,
+            AgenticKnowledgeSyncService agenticKnowledgeSyncService) {
 		this.userRepo = userRepo;
-		this.timeEntryRepo = timeEntryRepo;
-		this.chatLangModel = chatModel;
-		this.projectRepository = projectRepository;
 		this.onboardingRepository = onboardingRepository;
+        this.agenticKnowledgeSyncService = agenticKnowledgeSyncService;
 	}
 
 	@PostMapping("/onboardNewUser")
@@ -68,6 +47,7 @@ public class OnboardingController {
             OnboardingEntity savedEntity = onboardingRepository.save(entity);
             user.setOnboardingCompleted(true);
             userRepo.save(user);
+            agenticKnowledgeSyncService.syncOnboarding(request, user);
             return ResponseEntity.ok(savedEntity.toResponseDTO());
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

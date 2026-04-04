@@ -29,6 +29,10 @@ services:
       APP_CORS_ALLOWED_ORIGIN_PATTERNS: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:-http://localhost:5173,http://localhost:3000,http://localhost:8088}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL_NAME: ${OPENAI_MODEL_NAME:-gpt-4o-mini}
+      AGENTIC_SYNC_ENABLED: ${AGENTIC_SYNC_ENABLED:-true}
+      AGENTIC_SYNC_BASE_URL: ${AGENTIC_SYNC_BASE_URL:-http://agentic-backend:8000}
+      AGENTIC_SYNC_CONNECT_TIMEOUT_MS: ${AGENTIC_SYNC_CONNECT_TIMEOUT_MS:-5000}
+      AGENTIC_SYNC_REQUEST_TIMEOUT_MS: ${AGENTIC_SYNC_REQUEST_TIMEOUT_MS:-8000}
     depends_on:
       postgres:
         condition: service_healthy

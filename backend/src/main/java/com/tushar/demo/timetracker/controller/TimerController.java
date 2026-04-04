@@ -1,22 +1,19 @@
 package com.tushar.demo.timetracker.controller;
 
-import com.tushar.demo.timetracker.config.JwtUtils;
 import com.tushar.demo.timetracker.dto.request.ApiResponse;
-import com.tushar.demo.timetracker.dto.request.LoginRequest;
 import com.tushar.demo.timetracker.dto.request.PositionUpdateRequest;
-import com.tushar.demo.timetracker.dto.request.SignupRequest;
 import com.tushar.demo.timetracker.dto.request.StartTimeEntryRequest;
 import com.tushar.demo.timetracker.dto.request.StopTimeEntryRequest;
 import com.tushar.demo.timetracker.dto.request.addTimeEntryRequest;
 import com.tushar.demo.timetracker.exception.ConflictException;
 import com.tushar.demo.timetracker.exception.NoActiveTimerException;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
+import com.tushar.demo.timetracker.integration.AgenticKnowledgeSyncService;
 import com.tushar.demo.timetracker.model.Project;
 import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.ProjectRepository;
 import com.tushar.demo.timetracker.repository.TimeEntryRepository;
-import com.tushar.demo.timetracker.repository.UserRepository;
 import com.tushar.demo.timetracker.service.TimeEntryService;
 import com.tushar.demo.timetracker.service.impl.UserDetailsServiceImpl;
 
@@ -29,14 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-import org.springframework.security.core.userdetails.UserDetails;
 
 @RestController
 @RequestMapping("/api/timers")
@@ -46,15 +38,18 @@ public class TimerController {
     private final UserDetailsServiceImpl userDetailsService;
     private final ProjectRepository projectRepository;
     private final TimeEntryRepository timeEntryRepository;
+    private final AgenticKnowledgeSyncService agenticKnowledgeSyncService;
 
     public TimerController(TimeEntryService timeEntryService, 
                            UserDetailsServiceImpl userDetailsService,
                            ProjectRepository projectRepository,
-                           TimeEntryRepository timeEntryRepository) {
+                           TimeEntryRepository timeEntryRepository,
+                           AgenticKnowledgeSyncService agenticKnowledgeSyncService) {
         this.timeEntryService = timeEntryService;
         this.userDetailsService = userDetailsService;
         this.projectRepository = projectRepository;
         this.timeEntryRepository = timeEntryRepository;
+        this.agenticKnowledgeSyncService = agenticKnowledgeSyncService;
     }
 
     @ExceptionHandler(Exception.class)
@@ -101,6 +96,14 @@ public class TimerController {
             TimeEntry entry = timeEntryService.startTimeEntry(request, user);
             logger.info("Timer started successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(entry, "Timer started successfully"));
+            } catch (ConflictException e) {
+                logger.warn("Timer conflict for user: {}", authName(authentication));
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error("A timer is already running", Map.of("message", e.getMessage(), "code", "TIMER_CONFLICT")));
+            } catch (ResourceNotFoundException e) {
+                logger.warn("Timer start referenced missing resource for user: {}", authName(authentication));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Related resource not found", Map.of("message", e.getMessage(), "code", "RESOURCE_NOT_FOUND")));
         } catch (Exception e) {
             logger.error("Failed to start timer for user: {}", authName(authentication), e);
             return ResponseEntity.internalServerError()
@@ -134,6 +137,7 @@ public class TimerController {
             }
             entry.setBillable(request.billable());
             TimeEntry updatedEntry = timeEntryRepository.save(entry);
+            agenticKnowledgeSyncService.syncTimeEntry(updatedEntry, user, "stop_timer");
             logger.info("Timer stopped successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(updatedEntry, "Timer stopped successfully"));
         } catch (Exception e) {
@@ -235,6 +239,7 @@ public class TimerController {
             }
             Users user = userDetailsService.getCurrentUser(authentication);
             TimeEntry entry = timeEntryService.addTimeEntry(request, user);
+            agenticKnowledgeSyncService.syncTimeEntry(entry, user, "create_time_entry");
             logger.info("Popup - Timer added successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(entry, "Timer started successfully"));
         } catch (Exception e) {
