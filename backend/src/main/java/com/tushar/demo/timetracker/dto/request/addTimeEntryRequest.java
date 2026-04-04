@@ -1,14 +1,12 @@
 package com.tushar.demo.timetracker.dto.request;
 
-import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
-import org.owasp.encoder.Encode;
 
 public record addTimeEntryRequest(
 		@NotBlank(message = "Task description cannot be empty") @Size(max = 255, message = "Task description cannot exceed 255 characters") String description,
@@ -27,6 +25,11 @@ public record addTimeEntryRequest(
 
 		boolean billable, String positionTop, String positionLeft)
 {
+	@AssertTrue(message = "End time must be after start time")
+	public boolean isEndTimeValid() {
+		return endTime != null && startTime != null && endTime.isAfter(startTime);
+	}
+
 	public String getDescription() {
 		return description;
 	}

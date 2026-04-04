@@ -179,6 +179,12 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         logger.info("Adding time entry for user: {}, projectId: {}, description: {}", 
                     user.getEmail(), request.getProjectId(), request.getDescription());
 
+        if (!request.getEndTime().isAfter(request.getStartTime())) {
+            logger.warn("Invalid manual time entry range for user {}: startTime={}, endTime={}",
+                    user.getEmail(), request.getStartTime(), request.getEndTime());
+            throw new IllegalArgumentException("End time must be after start time");
+        }
+
         // Validate project (allow null)
         Project project = null;
         if (request.getProjectId() != null) {

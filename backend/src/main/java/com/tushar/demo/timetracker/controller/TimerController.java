@@ -242,6 +242,10 @@ public class TimerController {
             agenticKnowledgeSyncService.syncTimeEntry(entry, user, "create_time_entry");
             logger.info("Popup - Timer added successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(entry, "Timer started successfully"));
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid time entry request for user {}: {}", authName(authentication), e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Validation failed", Map.of("message", e.getMessage())));
         } catch (Exception e) {
             logger.error("Failed to add time entry for user: {}", authName(authentication), e);
             return ResponseEntity.internalServerError()
