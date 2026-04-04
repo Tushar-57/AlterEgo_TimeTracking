@@ -14,6 +14,7 @@ from ..llm.service import get_llm_service
 from ..llm.base import CompletionRequest, ChatMessage
 from ..services.knowledge_base import get_knowledge_base_service
 from ..models.knowledge import KnowledgeEntryType
+from ..services.interaction_recorder import get_interaction_recorder
 
 logger = logging.getLogger(__name__)
 
@@ -75,12 +76,12 @@ class HealthAgent(BaseAgent):
                 logger.info("Processing as general health query")
                 response = await self._handle_general_health_query(user_input, context)
             
-            # Store interaction in knowledge base
-            await self.knowledge_base.add_interaction_history(
-                agent_type="health",
+            # Intelligently record interaction if valuable
+            recorder = get_interaction_recorder()
+            await recorder.record_if_valuable(
                 user_input=user_input,
                 agent_response=response,
-                context={"reasoning": "health_agent_specialized_response"}
+                agent_type="health"
             )
             
             # Extract and store any new preferences
@@ -281,12 +282,12 @@ class ProductivityAgent(BaseAgent):
             else:
                 response = await self._handle_general_productivity(user_input, contextual_knowledge)
             
-            # Store interaction for learning
-            await self.knowledge_base.add_interaction_history(
-                agent_type="productivity",
+            # Intelligently record interaction if valuable
+            recorder = get_interaction_recorder()
+            await recorder.record_if_valuable(
                 user_input=user_input,
                 agent_response=response,
-                context={"productivity_task": True}
+                agent_type="productivity"
             )
             
             return {"response": response, "status": "success"}
@@ -518,12 +519,12 @@ class FinanceAgent(BaseAgent):
             else:
                 response = await self._handle_general_finance(user_input, contextual_knowledge)
             
-            # Store interaction for learning
-            await self.knowledge_base.add_interaction_history(
-                agent_type="finance",
+            # Intelligently record interaction if valuable
+            recorder = get_interaction_recorder()
+            await recorder.record_if_valuable(
                 user_input=user_input,
                 agent_response=response,
-                context={"finance_task": True}
+                agent_type="finance"
             )
             
             return {"response": response, "status": "success"}
@@ -758,12 +759,12 @@ class SchedulingAgent(BaseAgent):
             else:
                 response = await self._handle_general_scheduling(user_input, contextual_knowledge)
             
-            # Store interaction for learning
-            await self.knowledge_base.add_interaction_history(
-                agent_type="scheduling",
+            # Intelligently record interaction if valuable
+            recorder = get_interaction_recorder()
+            await recorder.record_if_valuable(
                 user_input=user_input,
                 agent_response=response,
-                context={"scheduling_task": True}
+                agent_type="scheduling"
             )
             
             return {"response": response, "status": "success"}
@@ -1001,12 +1002,12 @@ class JournalAgent(BaseAgent):
             else:
                 response = await self._handle_general_journaling(user_input, contextual_knowledge)
             
-            # Store interaction for learning
-            await self.knowledge_base.add_interaction_history(
-                agent_type="journal",
+            # Intelligently record interaction if valuable
+            recorder = get_interaction_recorder()
+            await recorder.record_if_valuable(
                 user_input=user_input,
                 agent_response=response,
-                context={"journaling_task": True}
+                agent_type="journal"
             )
             
             return {"response": response, "status": "success"}
@@ -1271,12 +1272,12 @@ class JournalAgent(BaseAgent):
             else:
                 response = await self._handle_general_productivity(user_input, context)
             
-            # Store interaction and extract preferences
-            await self.knowledge_base.add_interaction_history(
-                agent_type="productivity",
+            # Intelligently record interaction if valuable
+            recorder = get_interaction_recorder()
+            await recorder.record_if_valuable(
                 user_input=user_input,
                 agent_response=response,
-                context={"reasoning": "productivity_agent_specialized_response"}
+                agent_type="productivity"
             )
             
             await self.knowledge_base.extract_and_store_preferences(

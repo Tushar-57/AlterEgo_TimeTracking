@@ -18,20 +18,39 @@ class KnowledgeEntryType(str, Enum):
     INSIGHT = "insight"
     MEMORY = "memory"
 
-KnowledgeEntrySubType = {
-    "PREFERENCE": ["personal preference", "work preference", "other preference"],
-    "INTERACTION": ["personal interaction", "deep personal interaction", "work interaction", "misc interaction", "health interaction"],
-    "PATTERN": ["concious patterns", "subconcious patterns"],
-    "INSIGHT": ["important insight", "misc insight"],
-    "MEMORY": ["core memory", "reaminder memory", "emotional memory"]
-}
+
+# Unified Enum for all subtypes
+class KnowledgeEntrySubType(str, Enum):
+    PERSONAL_PREFERENCE = "personal preference"
+    WORK_PREFERENCE = "work preference"
+    OTHER_PREFERENCE = "other preference"
+    PERSONAL_INTERACTION = "personal interaction"
+    DEEP_PERSONAL_INTERACTION = "deep personal interaction"
+    WORK_INTERACTION = "work interaction"
+    MISC_INTERACTION = "misc interaction"
+    HEALTH_INTERACTION = "health interaction"
+    CONCIOUS_PATTERNS = "concious patterns"
+    SUBCONCIOUS_PATTERNS = "subconcious patterns"
+    IMPORTANT_INSIGHT = "important insight"
+    MISC_INSIGHT = "misc insight"
+    CORE_MEMORY = "core memory"
+    REMAINDER_MEMORY = "reaminder memory"
+    EMOTIONAL_MEMORY = "emotional memory"
 
 class KnowledgeEntry(BaseModel):
+    @classmethod
+    def from_dict(cls, data):
+        # Convert string to Enum if needed
+        if isinstance(data.get("entry_type"), str):
+            data["entry_type"] = KnowledgeEntryType(data["entry_type"])
+        if isinstance(data.get("entry_sub_type"), str):
+            data["entry_sub_type"] = KnowledgeEntrySubType(data["entry_sub_type"])
+        return cls(**data)
     """A single knowledge base entry."""
     entry_id: str = Field(..., description="Unique identifier for the entry")
     user_id: str = Field(default="single_user", description="User identifier")
     entry_type: KnowledgeEntryType = Field(..., description="Type of knowledge entry")
-    entry_sub_type: str = Field(..., description="Sub Type of knowledge entry")
+    entry_sub_type: KnowledgeEntrySubType = Field(..., description="Sub Type of knowledge entry")
     category: str = Field(..., description="Category of the knowledge (e.g., productivity, health)")
     title: str = Field(..., description="Human-readable title for the entry")
     content: str = Field(..., description="The actual content/data")
@@ -81,7 +100,7 @@ class UserPreferences(BaseModel):
     # LLM provider preferences
     llm_provider: Dict[str, Any] = Field(default_factory=lambda: {
         "provider": "openai",
-        "openai_model": "gpt-4o-mini-2024-07-18",
+        "openai_model": "gpt-3.5-turbo",
         "ollama_model": "llama3.2:3b",
         "fallback_enabled": True
     })

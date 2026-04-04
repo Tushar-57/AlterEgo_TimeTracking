@@ -13,6 +13,7 @@ from langsmith.run_helpers import traceable
 
 from .base import BaseAgent, AgentType, AgentCapability
 from .orchestrator import OrchestratorAgent
+from .specialized_agents import HealthAgent, ProductivityAgent
 from .registry import get_agent_registry
 from .communication import get_communication_protocol, start_communication_protocol
 from .prompts import get_agent_prompt
@@ -44,7 +45,8 @@ class AgentFactory:
             agent_type: AgentType,
             agent_id: Optional[str] = None,
             custom_capabilities: Optional[List[AgentCapability]] = None,
-            custom_prompt: Optional[str] = None) -> Optional[BaseAgent]:
+            custom_prompt: Optional[str] = None,
+            skip_llm_init: bool = False) -> Optional[BaseAgent]:
         """
         Create an agent of the specified type.
         Args:
@@ -77,14 +79,42 @@ class AgentFactory:
                 agent = OrchestratorAgent()
                 if agent_id != "orchestrator_main":
                     agent.agent_id = agent_id
+            elif agent_type == AgentType.HEALTH:
+                # Use specialized health agent
+                agent = HealthAgent()
+                if agent_id != "health_specialized":
+                    agent.agent_id = agent_id
+            elif agent_type == AgentType.PRODUCTIVITY:
+                # Use specialized productivity agent
+                agent = ProductivityAgent()
+                if agent_id != "productivity_specialized":
+                    agent.agent_id = agent_id
+            elif agent_type == AgentType.FINANCE:
+                # Use specialized finance agent
+                from .specialized_agents import FinanceAgent
+                agent = FinanceAgent()
+                if agent_id != "finance_specialized":
+                    agent.agent_id = agent_id
+            elif agent_type == AgentType.SCHEDULING:
+                # Use specialized scheduling agent
+                from .specialized_agents import SchedulingAgent
+                agent = SchedulingAgent()
+                if agent_id != "scheduling_specialized":
+                    agent.agent_id = agent_id
+            elif agent_type == AgentType.JOURNAL:
+                # Use specialized journal agent
+                from .specialized_agents import JournalAgent
+                agent = JournalAgent()
+                if agent_id != "journal_specialized":
+                    agent.agent_id = agent_id
             else:
-                # Create a generic agent for other types (skip LLM calls during init)
-                default_capabilities = self._get_default_capabilities(agent_type)
+                # Use generic agent for other types
                 agent = await self._create_generic_agent(
                     agent_type=agent_type,
                     agent_id=agent_id,
-                    custom_capabilities=default_capabilities,
-                    skip_llm_init=True  # Skip LLM calls during initialization
+                    custom_capabilities=custom_capabilities,
+                    custom_prompt=custom_prompt,
+                    skip_llm_init=skip_llm_init
                 )
             if agent:
                 if custom_capabilities:

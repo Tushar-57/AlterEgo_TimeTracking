@@ -5,12 +5,11 @@ Script to populate the knowledge base with sample data for testing.
 import asyncio
 import sys
 import os
+from app.services.knowledge_base import get_knowledge_base_service
+from app.models.knowledge import KnowledgeEntrySubType, KnowledgeEntryType
  
 # Add the parent directory to the path so we can import from app
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from app.services.knowledge_base import get_knowledge_base_service
-from app.models.knowledge import KnowledgeEntryType
 
 
 async def populate_sample_data():
@@ -20,7 +19,48 @@ async def populate_sample_data():
     
     kb_service = get_knowledge_base_service()
     
-    # Sample entries to create
+    # Sample entries to create (use Enum values, not raw strings)
+    from app.models.knowledge import KnowledgeEntryType, KnowledgeEntrySubType
+    sample_entries = [
+        {
+            "entry_type": KnowledgeEntryType.PREFERENCE,
+            "entry_sub_type": KnowledgeEntrySubType.WORK_PREFERENCE,
+            "category": "productivity",
+            "title": "Work Hours",
+            "content": "09:00-17:00",
+            "metadata": {"source": "user"},
+            "tags": ["work", "schedule"]
+        },
+        {
+            "entry_type": KnowledgeEntryType.PREFERENCE,
+            "entry_sub_type": KnowledgeEntrySubType.HEALTH_INTERACTION,
+            "category": "health",
+            "title": "Exercise Goal",
+            "content": "60 minutes minimum daily",
+            "metadata": {"source": "user"},
+            "tags": ["health", "exercise"]
+        },
+        {
+            "entry_type": KnowledgeEntryType.INSIGHT,
+            "entry_sub_type": KnowledgeEntrySubType.IMPORTANT_INSIGHT,
+            "category": "journal",
+            "title": "Reflection",
+            "content": "Gratitude improves mood.",
+            "metadata": {"source": "journal"},
+            "tags": ["reflection", "mood"]
+        }
+    ]
+    # Example: create entries in the knowledge base
+    for entry in sample_entries:
+        await kb_service.create_entry(
+            entry_type=entry["entry_type"],
+            entry_sub_type=entry["entry_sub_type"],
+            category=entry["category"],
+            title=entry["title"],
+            content=entry["content"],
+            metadata=entry["metadata"],
+            tags=entry["tags"]
+        )
     sample_entries = [
         {
             "type": KnowledgeEntryType.PREFERENCE,
@@ -117,11 +157,22 @@ async def populate_sample_data():
         if duplicate:
             print(f"⚠️ Skipped duplicate: {entry_data['title']}")
             continue
+        # Robust Enum conversion
+        entry_type = entry_data["type"]
+        entry_sub_type = entry_data.get("entry_sub_type", None)
+        try:
+            if isinstance(entry_type, str):
+                entry_type = KnowledgeEntryType(entry_type)
+            if entry_sub_type and isinstance(entry_sub_type, str):
+                entry_sub_type = KnowledgeEntrySubType(entry_sub_type)
+        except Exception as enum_err:
+            print(f"❌ Enum conversion error for '{entry_data['title']}': {enum_err}")
+            continue
         try:
             entry = await kb_service.create_entry(
-                entry_type=entry_data["type"],
+                entry_type=entry_type,
                 category=entry_data["category"],
-                entry_sub_type=entry_data["entry_sub_type"],
+                entry_sub_type=entry_sub_type,
                 title=entry_data["title"],
                 content=entry_data["content"],
                 tags=entry_data["tags"]

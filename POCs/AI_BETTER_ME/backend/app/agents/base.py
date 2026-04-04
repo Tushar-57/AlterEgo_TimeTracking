@@ -3,7 +3,6 @@ Base agent framework with LangGraph integration.
 """
 
 import uuid
-import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Set, TypedDict
@@ -15,7 +14,9 @@ from langchain_core.runnables import Runnable
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
-logger = logging.getLogger(__name__)
+from ..utils.logging import get_agent_logger, LogCategory
+
+logger = get_agent_logger(__name__, LogCategory.AGENT)
 
 
 class AgentType(str, Enum):

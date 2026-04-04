@@ -5,9 +5,9 @@ Ollama LLM provider implementation using LangChain.
 import asyncio
 import time
 import aiohttp
+import numpy as np
 from typing import List, AsyncGenerator, Optional, Dict, Any
-from langchain_community.llms import Ollama
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
 from .base import (
@@ -29,33 +29,37 @@ class OllamaProvider(BaseLLMProvider):
         self, 
         endpoint: str = "http://localhost:11434",
         model: str = "llama3.2:3b",
+        embedding_model: str = "llama3",  # Use llama3 for embeddings by default
         max_tokens: int = 4000,
         temperature: float = 0.7
     ):
         super().__init__(LLMProviderType.OLLAMA)
         self.endpoint = endpoint.rstrip('/')
         self.model = model
+        self.embedding_model = embedding_model
         self.max_tokens = max_tokens
         self.temperature = temperature
         
+        # Standard embedding dimension for compatibility with OpenAI
+        self.target_embedding_dimension = 1536
+        
         # LangChain components
-        self._chat_model: Optional[Ollama] = None
+        self._chat_model: Optional[ChatOllama] = None
         self._embeddings_model: Optional[OllamaEmbeddings] = None
     
     async def initialize(self) -> None:
         """Initialize Ollama provider with LangChain."""
         try:
             # Initialize chat model
-            self._chat_model = Ollama(
+            self._chat_model = ChatOllama(
                 base_url=self.endpoint,
                 model=self.model,
                 temperature=self.temperature,
             )
             
-            # Initialize embeddings model (using same model for embeddings)
+            # Initialize embeddings model (using simple approach)
             self._embeddings_model = OllamaEmbeddings(
-                base_url=self.endpoint,
-                model=self.model
+                model=self.embedding_model
             )
             
             # Test connection
@@ -87,14 +91,35 @@ class OllamaProvider(BaseLLMProvider):
         
         return "\n\n".join(formatted_parts)
     
+    def _reduce_embedding_dimension(self, embedding: List[float]) -> List[float]:
+        """
+        Reduce embedding dimension to target size for compatibility.
+        Uses simple truncation for now, but could be enhanced with PCA or other methods.
+        """
+        if len(embedding) <= self.target_embedding_dimension:
+            # Pad with zeros if too small
+            return embedding + [0.0] * (self.target_embedding_dimension - len(embedding))
+        else:
+            # Truncate if too large (simple approach)
+            return embedding[:self.target_embedding_dimension]
+    
     async def chat_completion(self, request: CompletionRequest) -> CompletionResponse:
         """Generate a chat completion using Ollama."""
         if not self._is_initialized or not self._chat_model:
             raise Exception("Provider not initialized")
         
         try:
-            # Format messages for Ollama
-            prompt = self._format_messages_for_ollama(request.messages)
+            # Convert our messages to LangChain messages
+            langchain_messages = []
+            for msg in request.messages:
+                if msg.role == "system":
+                    langchain_messages.append(SystemMessage(content=msg.content))
+                elif msg.role == "user":
+                    langchain_messages.append(HumanMessage(content=msg.content))
+                elif msg.role == "assistant":
+                    langchain_messages.append(AIMessage(content=msg.content))
+                else:
+                    langchain_messages.append(HumanMessage(content=msg.content))
             
             # Update model parameters if provided in request
             model_kwargs = {}
@@ -103,7 +128,7 @@ class OllamaProvider(BaseLLMProvider):
             
             if model_kwargs:
                 # Create a new model instance with updated parameters
-                chat_model = Ollama(
+                chat_model = ChatOllama(
                     base_url=self.endpoint,
                     model=self.model,
                     **model_kwargs
@@ -112,10 +137,10 @@ class OllamaProvider(BaseLLMProvider):
                 chat_model = self._chat_model
             
             # Generate completion
-            response = await chat_model.ainvoke(prompt)
+            response = await chat_model.ainvoke(langchain_messages)
             
             return CompletionResponse(
-                content=response.strip(),
+                content=response.content.strip(),
                 model=self.model
             )
             
@@ -149,9 +174,12 @@ class OllamaProvider(BaseLLMProvider):
             # Generate embedding
             embedding = await self._embeddings_model.aembed_query(request.text)
             
+            # Reduce dimension for compatibility with OpenAI embeddings
+            reduced_embedding = self._reduce_embedding_dimension(embedding)
+            
             return EmbeddingResponse(
-                embedding=embedding,
-                model=self.model
+                embedding=reduced_embedding,
+                model=self.embedding_model
             )
             
         except Exception as e:
@@ -177,8 +205,9 @@ class OllamaProvider(BaseLLMProvider):
             
             # Test a simple completion
             if self._chat_model:
-                test_response = await self._chat_model.ainvoke("Hello")
-                if not test_response:
+                test_message = HumanMessage(content="Hello")
+                test_response = await self._chat_model.ainvoke([test_message])
+                if not test_response or not test_response.content:
                     raise Exception("Empty response from model")
             
             response_time = (time.time() - start_time) * 1000

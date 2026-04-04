@@ -217,19 +217,41 @@ Maintain a friendly, professional demeanor while being adaptable to various type
     
     @classmethod
     def get_intent_classification_prompt(cls, user_input: str) -> str:
-        """Get a prompt for intent classification."""
-        return f"""Analyze the following user input and determine which agent should handle it:
-            User Input: "{user_input}"
+        """Get a prompt for intent classification with detailed examples."""
+        return f"""Analyze the following user input and determine which specialized agent should handle it:
 
-            Available Agents:
-            - PRODUCTIVITY: Task management, goal tracking, productivity optimization
-            - HEALTH: Wellness tracking, habit formation, health routines  
-            - FINANCE: Expense tracking, budget management, financial goals
-            - SCHEDULING: Calendar management, appointment scheduling, time optimization
-            - JOURNAL: Daily reflections, mood tracking, personal growth
-            - GENERAL: General questions, unclassified requests, fallback support
+User Input: "{user_input}"
 
-            Respond with just the agent type (e.g., "PRODUCTIVITY") and a brief reason why."""
+Available Agents with Examples:
+
+**PRODUCTIVITY** - Task management, goal tracking, productivity optimization
+Examples: "organize my tasks", "set goals", "track deadlines", "improve workflow", "manage projects"
+
+**HEALTH** - Wellness tracking, nutrition, fitness, habit formation, meal planning
+Examples: "meal planning", "create workout routine", "track sleep", "healthy recipes", "nutrition advice", "diet plan", "fitness goals", "wellness habits"
+
+**FINANCE** - Expense tracking, budget management, financial planning
+Examples: "track expenses", "create budget", "investment advice", "financial goals", "savings plan", "money management"
+
+**SCHEDULING** - Calendar management, appointment booking, time optimization
+Examples: "schedule meeting", "book appointment", "manage calendar", "time slots", "availability", "reschedule"
+
+**JOURNAL** - Daily reflections, mood tracking, personal growth, insights
+Examples: "daily reflection", "mood tracking", "personal insights", "gratitude journal", "milestone celebration", "growth tracking"
+
+**GENERAL** - General questions, unclassified requests, fallback support
+Examples: "general information", "casual conversation", "unclear requests", "multi-domain queries"
+
+Important Guidelines:
+- "Meal planning", "food planning", "nutrition planning", "recipe planning" should go to HEALTH
+- "Task planning", "project planning", "work planning" should go to PRODUCTIVITY  
+- "Time planning", "schedule planning" should go to SCHEDULING
+- If the request clearly fits a specific domain, choose that agent even if confidence is moderate
+- Only use GENERAL for truly unclear or multi-domain requests
+
+Classify with high confidence (0.8+) if the intent clearly matches a domain.
+Provide confidence between 0.5-0.7 for somewhat unclear cases.
+Use confidence below 0.5 only for truly ambiguous requests."""
     
     @classmethod
     def get_capability_matching_prompt(cls, required_capabilities: list) -> str:
@@ -256,6 +278,82 @@ Please provide a helpful response to the user that:
 2. Offers alternative approaches or solutions
 3. Maintains a positive, helpful tone
 4. Suggests next steps if appropriate"""
+
+    @staticmethod
+    def get_response_enhancement_prompt(agent_type: str, user_input: str, context: str = "") -> str:
+        """Get prompt for enhancing responses based on agent type and context."""
+        
+        agent_personalities = {
+            "orchestrator": "Professional coordinator and helpful guide",
+            "productivity": "Energetic motivator focused on results and efficiency",
+            "health": "Caring wellness coach with supportive guidance",
+            "finance": "Practical financial advisor with attention to detail",
+            "scheduling": "Organized planner focused on time management",
+            "journal": "Reflective companion supporting personal growth",
+            "general": "Knowledgeable assistant adaptable to any topic"
+        }
+        
+        personality = agent_personalities.get(agent_type, agent_personalities["general"])
+        
+        context_section = f"\n\nContext: {context}" if context else ""
+        
+        return f"""You are enhancing a response as a {personality}. 
+
+Your task is to take a basic response and make it more engaging, helpful, and personalized while maintaining accuracy.
+
+Key enhancement guidelines:
+1. **Personality**: Embody the {agent_type} agent's {personality.lower()} characteristics
+2. **Structure**: Use clear formatting, bullet points, or sections when helpful
+3. **Actionability**: Include next steps, suggestions, or follow-up questions
+4. **Engagement**: Make it conversational but professional
+5. **Value**: Add insights, tips, or relevant examples when appropriate
+
+Original user query: "{user_input}"{context_section}
+
+Please enhance the response while keeping the core information intact."""
+
+    @staticmethod
+    def get_context_aware_system_prompt(agent_type: str, conversation_history: list = None, user_preferences: dict = None) -> str:
+        """Get context-aware prompt that considers conversation history and user preferences."""
+        
+        history_context = ""
+        if conversation_history and len(conversation_history) > 0:
+            history_context = f"\n\nRecent conversation context:\n"
+            for msg in conversation_history[-3:]:  # Last 3 messages
+                role = msg.get('role', 'unknown')
+                content = msg.get('content', '')[:100]  # Truncate for brevity
+                history_context += f"- {role}: {content}...\n"
+        
+        preferences_context = ""
+        if user_preferences:
+            preferences_context = f"\n\nUser preferences:\n"
+            for key, value in user_preferences.items():
+                preferences_context += f"- {key}: {value}\n"
+        
+        try:
+            base_prompt = PromptLibrary.get_agent_prompt(AgentType.from_string(agent_type))
+        except:
+            base_prompt = PromptLibrary.get_system_prompt(AgentType.ORCHESTRATOR)
+        
+        return f"""{base_prompt}
+
+**Enhanced Context Awareness:**
+- Consider the user's conversation history and preferences
+- Provide personalized responses based on previous interactions
+- Reference past topics when relevant
+- Maintain conversation continuity{history_context}{preferences_context}
+
+Remember to be helpful, accurate, and maintain your agent's personality while using this context effectively."""
+
+    @staticmethod
+    def get_orchestrator_prompt() -> str:
+        """Get the orchestrator system prompt."""
+        return PromptLibrary.get_system_prompt(AgentType.ORCHESTRATOR)
+
+    @staticmethod
+    def get_error_response_prompt() -> str:
+        """Get error response prompt for graceful error handling."""
+        return "I apologize for the inconvenience."
 
 
 # Convenience function to get prompts

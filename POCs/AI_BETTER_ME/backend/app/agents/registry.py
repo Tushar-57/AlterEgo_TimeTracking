@@ -113,12 +113,25 @@ class AgentRegistry:
         Get all agents of a specific type.
         
         Args:
-            agent_type: Type of agents to retrieve
+            agent_type: The agent type to search for
             
         Returns:
             List of agents of the specified type
         """
-        return self._agents_by_type[agent_type].copy()
+        return self._agents_by_type.get(agent_type, [])
+
+    def get_agent_by_type(self, agent_type: AgentType) -> Optional[BaseAgent]:
+        """
+        Get the first agent of a specific type.
+        
+        Args:
+            agent_type: The agent type to search for
+            
+        Returns:
+            First agent of the specified type, or None if not found
+        """
+        agents = self.get_agents_by_type(agent_type)
+        return agents[0] if agents else None
     
     def get_agents_by_capability(self, capability_name: str) -> List[BaseAgent]:
         """

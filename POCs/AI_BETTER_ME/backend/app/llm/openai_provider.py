@@ -26,7 +26,7 @@ class OpenAIProvider(BaseLLMProvider):
     def __init__(
         self, 
         api_key: str, 
-        model: str = "gpt-4",
+        model: str = "gpt-3.5-turbo",
         base_url: Optional[str] = None,
         max_tokens: int = 4000,
         temperature: float = 0.7
@@ -218,9 +218,8 @@ class OpenAIProvider(BaseLLMProvider):
     def get_available_models(self) -> List[str]:
         """Get available OpenAI models."""
         return [
-            "gpt-4",
-            "gpt-4-turbo",
-            "gpt-4-turbo-preview", 
             "gpt-3.5-turbo",
-            "gpt-3.5-turbo-16k"
+            "gpt-3.5-turbo-16k", 
+            "gpt-4o-mini",
+            "gpt-4o-mini-2024-07-18"
         ]

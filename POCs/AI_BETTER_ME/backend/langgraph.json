@@ -1,0 +1,29 @@
+{
+  "name": "ai-agent-ecosystem",
+  "entrypoint": "main.py",
+  "dependencies": [
+    "langgraph==0.6.7",
+    "pydantic==2.11.7",
+    "fastapi==0.104.1",
+    "colorlog",
+    "langchain==0.3.27",
+    "langchain-openai==0.3.33",
+    "langchain-ollama==0.3.8",
+    "langchain-community==0.3.29",
+    "langchain-core==0.3.76",
+    "python-dotenv==1.0.0",
+    "faiss-cpu==1.7.4",
+    "numpy==1.26.4",
+    "requests==2.32.5",
+    "httpx==0.28.1"
+  ],
+  "graphs": {
+    "main_graph": "./main.py:graph"
+  },
+  "env": {
+    "OPENAI_API_KEY": "",
+    "LANGCHAIN_TRACING_V2": "true",
+    "LANGCHAIN_API_KEY": "{{LANGCHAIN_API_KEY}}",
+    "LANGCHAIN_PROJECT": ""
+  }
+}

@@ -13,6 +13,7 @@ from .communication import get_communication_protocol, MessageType
 from ..llm.service import get_llm_service
 from ..llm.base import CompletionRequest, ChatMessage
 from ..services.knowledge_base import get_knowledge_base_service
+from ..services.interaction_recorder import get_interaction_recorder
 logger = logging.getLogger(__name__)
 
 class OrchestratorAgent(BaseAgent):
@@ -261,17 +262,17 @@ class OrchestratorAgent(BaseAgent):
                         response = await self._handle_directly(user_input, context)
                         reasoning["error"] = "Target agent response was invalid; handled by orchestrator."
                     
-                    # Store interaction in knowledge base if not already done by specialized agent
+                    # Intelligently record interaction if not already done by specialized agent
                     if not hasattr(target_agent, '__class__') or 'specialized' not in target_agent.__class__.__name__.lower():
                         try:
-                            await self.knowledge_base.add_interaction_history(
-                                agent_type=str(target_agent_type.value),
+                            recorder = get_interaction_recorder()
+                            await recorder.record_if_valuable(
                                 user_input=user_input,
                                 agent_response=response,
-                                context={"orchestrator_delegation": True}
+                                agent_type=str(target_agent_type.value)
                             )
                         except Exception as e:
-                            logger.warning(f"Failed to store interaction history: {e}")
+                            logger.warning(f"Failed to record interaction: {e}")
                     
                     logger.debug("Orchestrator.execute RETURNING delegated response to merge into state")
                     return {
@@ -608,12 +609,12 @@ class OrchestratorAgent(BaseAgent):
             # Add some orchestrator context to the response
             enhanced_response = f"{response}\n\nIs there anything else I can help you with today?"
             
-            # Store the interaction
-            await self.knowledge_base.add_interaction_history(
-                agent_type="orchestrator_coordination",
+            # Intelligently record the coordination interaction
+            recorder = get_interaction_recorder()
+            await recorder.record_if_valuable(
                 user_input=original_input,
                 agent_response=enhanced_response,
-                context={"delegated_to": agent_id}
+                agent_type="orchestrator"
             )
             
             return enhanced_response
