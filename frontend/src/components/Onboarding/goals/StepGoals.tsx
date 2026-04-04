@@ -503,7 +503,7 @@ const StepGoals: React.FC<StepGoalsProps> = ({ selectedGoals, userRole, onSelect
             value={goalInput}
             onChange={(e) => setGoalInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Add custom goals with +"
+            placeholder="Add a custom goal and press +"
             className="flex-1 p-4 rounded-l-2xl focus:outline-none focus:ring-2 focus:ring-blue-300"
           />
           <button

@@ -38,7 +38,7 @@ export const BOT_NAMES = ['Alex', 'Jordan', 'Taylor', 'Casey', 'Drew', 'Reese', 
 export const SUGGESTED_GOALS_STUDENT = ['Improve focus', 'Manage time better', 'Increase productivity'] as const;
 export const SUGGESTED_GOALS_WORK = ['Improve focus', 'Manage time better', 'Increase productivity'] as const;
 export const SUGGESTED_GOALS_FREELANCER = ['Improve focus', 'Manage time better', 'Increase productivity'] as const;
-export const SUGGESTED_GOALS_OTHER = ['Manage Time Better', 'Increase Productivity', 'IDK, Figure out !'] as const;
+export const SUGGESTED_GOALS_OTHER = ['Manage Time Better', 'Increase Productivity', 'Build a clear routine'] as const;
 
 const AVATAR_BASE_PATH = 'src/public/avatars';
 export const AVATARS = Array.from({ length: 17 }, (_, i) => ({

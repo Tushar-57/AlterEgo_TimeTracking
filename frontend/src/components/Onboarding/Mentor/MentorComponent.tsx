@@ -211,7 +211,7 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
               type="text"
               value={customTone}
               onChange={(e) => setCustomTone(e.target.value)}
-              placeholder="Or enter a celebrity name for custom tone (e.g., Morgan Freeman)"
+              placeholder="Optional: Enter a public figure to guide tone (for example, Morgan Freeman)"
               className="w-full p-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-50 text-gray-900 transition-all duration-200"
             />
             <button
@@ -302,7 +302,7 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter coach name"
+                placeholder="Enter your coach name"
                 className="flex-1 p-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-50 text-gray-900 transition-all duration-200"
               />
               <button

@@ -399,7 +399,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
         <div className="mx-auto max-w-2xl px-4">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <textarea
-              placeholder={currentStep === 'complete' ? 'Type your message...' : 'Complete onboarding to start chatting...'}
+              placeholder={currentStep === 'complete' ? 'Write your first message...' : 'Finish onboarding to unlock chat.'}
               disabled={currentStep !== 'complete'}
               className="w-full p-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50 text-gray-900 text-base transition-all duration-200 resize-none h-20 disabled:opacity-50 disabled:cursor-not-allowed"
             />
