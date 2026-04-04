@@ -98,6 +98,10 @@ public class AgenticKnowledgeSyncService {
             context.put("project_name", entry.getProject() != null ? entry.getProject().getName() : null);
             context.put("tag_ids", entry.getTagIds() != null ? entry.getTagIds() : List.of());
             context.put("billable", entry.isBillable());
+            context.put("position_top", entry.getPositionTop());
+            context.put("position_left", entry.getPositionLeft());
+            context.put("weekday", entry.getStartTime() != null ? entry.getStartTime().getDayOfWeek().toString() : null);
+            context.put("hour_of_day", entry.getStartTime() != null ? entry.getStartTime().getHour() : null);
             context.put("user_id", user != null ? user.getId() : null);
             context.put("user_email", user != null ? user.getEmail() : null);
 

@@ -1,6 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Menu } from 'lucide-react';
+import { BarChart2, Clock, LayoutDashboard, ListChecks, Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import TimeTracker from './components/TimeTracker/TimeTracker';
 import Analytics from './components/Analytics';
@@ -60,7 +60,16 @@ const ProtectedOnboarding = () => {
 const ProtectedRoutes = () => {
   const { isAuthenticated, user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const mobileTabs = [
+    { label: 'Timer', to: '/', icon: Clock },
+    { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+    { label: 'Tasks', to: '/tasks', icon: ListChecks },
+    { label: 'Analytics', to: '/analytics', icon: BarChart2 },
+    { label: 'Coach', to: '/coach', icon: Clock },
+  ];
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -108,7 +117,7 @@ const ProtectedRoutes = () => {
         </div>
 
         <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
-        <main className="min-w-0 flex-1 ml-0 pt-16 md:ml-64 md:pt-0">
+        <main className="min-w-0 flex-1 ml-0 pb-20 pt-16 md:ml-64 md:pb-0 md:pt-0">
           <Routes>
             <Route index element={<TimeTracker />} />
             <Route path="/" element={<TimeTracker />} />
@@ -126,6 +135,29 @@ const ProtectedRoutes = () => {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
+
+        <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-gray-200 bg-white/95 px-1 py-1 backdrop-blur md:hidden">
+          {mobileTabs.map((tab) => {
+            const isActive = tab.to === '/' ? location.pathname === '/' : location.pathname.startsWith(tab.to);
+            return (
+              <button
+                key={tab.to}
+                type="button"
+                onClick={() => {
+                  navigate(tab.to);
+                  setMobileNavOpen(false);
+                }}
+                className={`flex flex-col items-center justify-center rounded-lg py-2 text-[11px] font-medium transition ${
+                  isActive ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <tab.icon className="mb-1 h-4 w-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+
         <FullScreenChat />
         <ChatToggleButton />
       </div>

@@ -486,6 +486,13 @@ interface Tag {
   name: string;
 }
 
+const toLocalDateTimeString = (date: Date) => {
+  const pad = (value: number) => value.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
 export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPopupProps) {
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -642,60 +649,57 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
         return;
       }
 
-      // Construct start and end times as ISO strings
+      // Construct start and end times in local datetime format expected by backend
       const startDate = new Date(defaultStartTime || Date.now());
-  const [startHours, startMinutes] = startTime.split(":").map(Number);
-  startDate.setHours(startHours, startMinutes, 0, 0);
-  const endDate = new Date(startDate);
-  const [endHours, endMinutes] = endTime.split(":").map(Number);
-  endDate.setHours(endHours, endMinutes, 0, 0);
+      const [startHours, startMinutes] = startTime.split(':').map(Number);
+      startDate.setHours(startHours, startMinutes, 0, 0);
+      const endDate = new Date(startDate);
+      const [endHours, endMinutes] = endTime.split(':').map(Number);
+      endDate.setHours(endHours, endMinutes, 0, 0);
 
-  const duration = (endDate.getTime() - startDate.getTime()) / 1000;
-  const { top, left } = calculatePosition(startDate.toISOString(), duration);
+      const startTimeLocal = toLocalDateTimeString(startDate);
+      const endTimeLocal = toLocalDateTimeString(endDate);
+      const { top, left } = calculatePosition(startTimeLocal);
 
-  const payload = {
-    description,
-    startTime: startDate.toISOString(),
-    endTime: endDate.toISOString(),
-    projectId: projectId ? parseInt(projectId) : null,
-    tagIds: tagId ? [parseInt(tagId)] : [],
-    billable,
-  };
+      const payload = {
+        description,
+        startTime: startTimeLocal,
+        endTime: endTimeLocal,
+        projectId: projectId ? parseInt(projectId) : null,
+        tagIds: tagId ? [parseInt(tagId)] : [],
+        billable,
+      };
 
-  const response = await fetch("/api/timers/addTimer", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  });
+      const response = await fetch('/api/timers/addTimer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-  const data = await response.json();
-  console.log("Time entry response:", data);
-  if (!data.success) {
-    throw new Error(data.message || "Failed to save time entry");
-  }
-
-  // Update position
-  const positionResponse = await fetch(`/api/timers/${data.data.id}/position`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      positionTop: top,
-      positionLeft: left,
-    }),
-  });
-
-  if (!positionResponse.ok) {
-    console.warn("Failed to update position:", await positionResponse.text());
-  }
-
+      const data = await response.json();
+      console.log('Time entry response:', data);
       if (!data.success) {
         throw new Error(data.message || 'Failed to save time entry');
+      }
+
+      // Update position
+      const positionResponse = await fetch(`/api/timers/${data.data.id}/position`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          positionTop: top,
+          positionLeft: left,
+        }),
+      });
+
+      if (!positionResponse.ok) {
+        console.warn('Failed to update position:', await positionResponse.text());
       }
 
       toast({

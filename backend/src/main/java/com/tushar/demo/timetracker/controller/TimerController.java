@@ -217,6 +217,7 @@ public class TimerController {
             }
             Users user = userDetailsService.getCurrentUser(authentication);
             TimeEntry entry = timeEntryService.updateTimerPosition(id, user, position.positionTop(), position.positionLeft());
+            agenticKnowledgeSyncService.syncTimeEntry(entry, user, "move_time_entry");
             logger.info("Timer position updated successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(entry, "Timer position updated successfully"));
         } catch (Exception e) {

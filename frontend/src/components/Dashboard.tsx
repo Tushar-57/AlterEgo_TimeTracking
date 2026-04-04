@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useToast } from "./Calendar_updated/components/hooks/use-toast";
 import { CalendarSection } from "./Calendar_updated/screens/Fantastical/sections/CalendarSection/CalendarSection";
-import { CalendarEvent, DraggableEvent } from "./Calendar_updated/components/DraggableEvent";
+import { CalendarEvent } from "./Calendar_updated/components/DraggableEvent";
 
 interface TimerEntryResponse {
   id: number;
   startTime: string;
   duration: number;
   description?: string;
-  projectId: number | null;
+  projectId?: number | null;
+  project?: { id: number } | null;
+  tagIds?: number[];
+  billable?: boolean;
   positionTop?: string;
   positionLeft?: string;
 }
@@ -18,6 +21,18 @@ interface TimerEntryApiResponse {
   message?: string;
   data?: TimerEntryResponse[];
 }
+
+interface CalendarRange {
+  start: Date;
+  end: Date;
+}
+
+const formatLocalDateTime = (date: Date) => {
+  const pad = (value: number) => value.toString().padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
 
 export const calculatePosition = (startTime: string) => {
   const startDate = new Date(startTime);
@@ -44,7 +59,6 @@ export const getColorForProject = (projectId: number | null): string => {
 };
 
 export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
-  const [currentDate] = useState(new Date());
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const { toast } = useToast();
@@ -56,7 +70,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const fetchTimeEntriesDirect = async (start: Date, end: Date) => {
+  const fetchTimeEntriesDirect = useCallback(async (start: Date, end: Date) => {
     try {
       const token = localStorage.getItem("jwtToken");
       if (!token) {
@@ -68,12 +82,10 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
         return [];
       }
 
-      const formatDate = (date: Date) => {
-        return date.toISOString().replace(/\.\d{3}Z$/, "");
-      };
-
       const res = await fetch(
-        `/api/timers?start=${formatDate(start)}&end=${formatDate(end)}`,
+        `/api/timers?start=${encodeURIComponent(formatLocalDateTime(start))}&end=${encodeURIComponent(
+          formatLocalDateTime(end)
+        )}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -109,6 +121,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
         const startDate = new Date(entry.startTime);
         const hours = startDate.getHours();
         const minutes = startDate.getMinutes().toString().padStart(2, "0");
+        const projectId = entry.projectId ?? entry.project?.id ?? null;
         const position = entry.positionTop && entry.positionLeft
           ? { top: entry.positionTop, left: entry.positionLeft }
           : calculatePosition(entry.startTime);
@@ -117,11 +130,16 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
           time: `${hours % 12 || 12}:${minutes}`,
           period: hours >= 12 ? "PM" : "AM",
           title: entry.description || "Untitled",
-          color: getColorForProject(entry.projectId),
+          startTime: entry.startTime,
+          color: getColorForProject(projectId),
           position,
           width: "143px",
           height: `${Math.max(30, (entry.duration / 3600) * 60)}px`,
           hasVideo: false,
+          durationSeconds: entry.duration,
+          projectId,
+          tagIds: entry.tagIds ?? [],
+          billable: entry.billable ?? false,
         };
       });
       console.log("Transformed events:", transformed);
@@ -136,22 +154,32 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
       });
       return [];
     }
-  };
+  }, [toast]);
 
-  const fetchData = async () => {
-    if (isAuthenticated) {
-      const start = new Date(currentDate);
-      start.setDate(1);
-      const end = new Date(start);
-      end.setMonth(start.getMonth() + 1);
-      end.setDate(0);
-      await fetchTimeEntriesDirect(start, end);
+  const fetchData = useCallback(async (range?: CalendarRange) => {
+    if (!isAuthenticated) {
+      return;
     }
-  };
+
+    if (range) {
+      await fetchTimeEntriesDirect(range.start, range.end);
+      return;
+    }
+
+    const start = new Date();
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setMonth(start.getMonth() + 1, 0);
+    end.setHours(23, 59, 59, 999);
+
+    await fetchTimeEntriesDirect(start, end);
+  }, [fetchTimeEntriesDirect, isAuthenticated]);
 
   useEffect(() => {
-    fetchData();
-  }, [currentDate, isAuthenticated]);
+    void fetchData();
+  }, [fetchData]);
 
   const mobileEvents = [...calendarEvents].sort((a, b) => {
     const topA = Number.parseFloat(a.position.top);
@@ -159,55 +187,124 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
     return topA - topB;
   });
 
-  const handleEventDrag = async (
-    eventId: number,
-    newPosition: { top: string; left: string }
-  ) => {
-    try {
-      const token = localStorage.getItem("jwtToken");
-      if (!token) {
+  const handleUpdateEventPosition = useCallback(
+    async (eventId: number, newPosition: { top: string; left: string }) => {
+      try {
+        const token = localStorage.getItem("jwtToken");
+        if (!token) {
+          toast({
+            title: "Authentication Error",
+            description: "Please log in to update event position.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const res = await fetch(`/api/timers/${eventId}/position`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            positionTop: newPosition.top,
+            positionLeft: newPosition.left,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to update event position");
+        }
+
+        setCalendarEvents((prev) =>
+          prev.map((event) =>
+            event.id === eventId ? { ...event, position: newPosition } : event
+          )
+        );
+      } catch (error) {
+        console.error("Error updating event position:", error);
         toast({
-          title: "Authentication Error",
-          description: "Please log in to update event position.",
+          title: "Error",
+          description: "Failed to update event position.",
           variant: "destructive",
         });
+      }
+    },
+    [toast]
+  );
+
+  const handleDuplicateEvent = useCallback(
+    async (eventId: number) => {
+      const source = calendarEvents.find((event) => event.id === eventId);
+      if (!source) {
         return;
       }
 
-      const res = await fetch(`/api/timers/${eventId}/position`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          positionTop: newPosition.top,
-          positionLeft: newPosition.left,
-        }),
-      });
+      try {
+        const token = localStorage.getItem("jwtToken");
+        if (!token) {
+          toast({
+            title: "Authentication Error",
+            description: "Please log in to duplicate entries.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-      if (!res.ok) {
-        throw new Error("Failed to update event position");
+        const sourceStart = new Date(source.startTime);
+        const durationSeconds = source.durationSeconds ?? Math.max(900, Math.round((Number.parseFloat(source.height) / 60) * 3600));
+        const duplicateStart = new Date(sourceStart.getTime() + 15 * 60 * 1000);
+        const duplicateEnd = new Date(duplicateStart.getTime() + durationSeconds * 1000);
+        const duplicatedTop = `${Math.max(0, Number.parseFloat(source.position.top || "0") + 18)}px`;
+
+        const response = await fetch("/api/timers/addTimer", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            description: source.title,
+            startTime: formatLocalDateTime(duplicateStart),
+            endTime: formatLocalDateTime(duplicateEnd),
+            category: null,
+            tagIds: source.tagIds ?? [],
+            projectId: source.projectId ?? null,
+            billable: source.billable ?? false,
+            positionTop: duplicatedTop,
+            positionLeft: source.position.left,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Failed to duplicate time entry");
+        }
+
+        toast({
+          title: "Entry duplicated",
+          description: "A copy was created. Drag it to a new slot in weekly view.",
+        });
+
+        const rangeStart = new Date(duplicateStart);
+        rangeStart.setDate(duplicateStart.getDate() - duplicateStart.getDay());
+        rangeStart.setHours(0, 0, 0, 0);
+        const rangeEnd = new Date(rangeStart);
+        rangeEnd.setDate(rangeStart.getDate() + 6);
+        rangeEnd.setHours(23, 59, 59, 999);
+
+        await fetchData({ start: rangeStart, end: rangeEnd });
+      } catch (error) {
+        console.error("Error duplicating time entry:", error);
+        toast({
+          title: "Duplicate failed",
+          description: "Unable to duplicate this entry right now.",
+          variant: "destructive",
+        });
       }
-
-      setCalendarEvents((prev) =>
-        prev.map((event) =>
-          event.id === eventId ? { ...event, position: newPosition } : event
-        )
-      );
-      toast({
-        title: "Position Updated",
-        description: "Event position updated successfully.",
-      });
-    } catch (error) {
-      console.error("Error updating event position:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update event position.",
-        variant: "destructive",
-      });
-    }
-  };
+    },
+    [calendarEvents, fetchData, toast]
+  );
 
   if (isMobile) {
     return (
@@ -244,33 +341,9 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
           <CalendarSection
             events={calendarEvents}
             refreshEvents={fetchData}
+            onUpdateEventPosition={handleUpdateEventPosition}
+            onDuplicateEvent={handleDuplicateEvent}
           />
-          <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-            {calendarEvents.map((event) => (
-              <div
-                key={event.id}
-                className="pointer-events-auto"
-                style={{
-                  position: "absolute",
-                  top: event.position.top,
-                  left: `calc(${event.position.left} + 48px)`, // Adjust for sidebar
-                  width: event.width,
-                  height: event.height,
-                }}
-              >
-                <DraggableEvent
-                  event={event}
-                  getColorClasses={(color: string) => ({
-                    bg: `bg-${color}-100`,
-                    accent: `bg-${color}-500`,
-                    text: `text-${color}-900`,
-                    icon: `bg-${color}-200 text-${color}-900`,
-                  })}
-                  onDragStop={handleEventDrag}
-                />
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>

@@ -20,6 +20,13 @@ import { Project, Tag, TimeEntry, UserPreferences, TimerStatus, TimerMode, Pomod
 import { formatTime, getRandomColor } from './utility';
 import 'react-circular-progressbar/dist/styles.css';
 
+const toLocalDateTimeString = (date: Date) => {
+  const pad = (value: number) => value.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
 export default function TimeTracker() {
   const { isAuthenticated, user, logout } = useAuth();
   const { toast } = useToast();
@@ -308,58 +315,83 @@ export default function TimeTracker() {
   useEffect(() => {
     if (timerState.status === 'running') {
       intervalRef.current = window.setInterval(() => {
-        if (timerMode === 'stopwatch' || (timerMode === 'pomodoro' && !pomodoroState.isBreak)) {
-          setTimerState(prev => ({
-            ...prev,
-            stopwatchTime: timerMode === 'stopwatch' ? prev.stopwatchTime + 1 : prev.stopwatchTime,
-            pomodoroTime: timerMode === 'pomodoro' ? prev.pomodoroTime - 1 : prev.pomodoroTime,
-          }));
-          if (preferences.soundEnabled && timerState.stopwatchTime > 0 && timerState.stopwatchTime % 60 === 0) {
-            tickSound.current?.play().catch(e => console.error('Error playing sound:', e));
-          }
-          if (timerMode === 'pomodoro') {
-            if (timerState.pomodoroTime <= 0) {
-              handlePomodoroSessionComplete();
-            }
-          }
-        } else if (timerMode === 'countdown' || (timerMode === 'pomodoro' && pomodoroState.isBreak)) {
+        if (timerMode === 'stopwatch') {
           setTimerState(prev => {
-            const newTime = prev[timerMode === 'countdown' ? 'countdownTime' : 'pomodoroTime'] - 1;
-            if (newTime <= 0) {
+            const nextStopwatch = prev.stopwatchTime + 1;
+            if (preferences.soundEnabled && nextStopwatch > 0 && nextStopwatch % 60 === 0) {
+              tickSound.current?.play().catch(e => console.error('Error playing sound:', e));
+            }
+            return {
+              ...prev,
+              stopwatchTime: nextStopwatch,
+            };
+          });
+          return;
+        }
+
+        if (timerMode === 'countdown') {
+          setTimerState(prev => {
+            const nextCountdown = prev.countdownTime - 1;
+
+            if (nextCountdown <= 0) {
               clearInterval(intervalRef.current);
               if (preferences.soundEnabled) {
                 timerCompleteSound.current?.play().catch(e => console.error('Error playing sound:', e));
               }
               if (preferences.notificationsEnabled) {
-                showNotification(
-                  timerMode === 'pomodoro' && pomodoroState.isBreak
-                    ? 'Break complete! Ready to work?'
-                    : 'Timer complete!'
-                );
-              }
-              if (timerMode === 'pomodoro') {
-                setTimeout(() => handlePomodoroBreakComplete(), 1000);
-                return { ...prev, pomodoroTime: 0, status: 'paused' };
+                showNotification('Timer complete!');
               }
               return { ...prev, countdownTime: 0, status: 'stopped' };
             }
-            if (preferences.soundEnabled) {
-              if (newTime <= 5) {
-                tickSound.current?.play().catch(e => console.error('Error playing sound:', e));
-              } else if (newTime % 60 === 0) {
-                tickSound.current?.play().catch(e => console.error('Error playing sound:', e));
-              }
+
+            if (preferences.soundEnabled && (nextCountdown <= 5 || nextCountdown % 60 === 0)) {
+              tickSound.current?.play().catch(e => console.error('Error playing sound:', e));
             }
+
             return {
               ...prev,
-              [timerMode === 'countdown' ? 'countdownTime' : 'pomodoroTime']: newTime,
+              countdownTime: nextCountdown,
             };
           });
+          return;
         }
+
+        setTimerState(prev => {
+          const nextPomodoro = prev.pomodoroTime - 1;
+
+          if (nextPomodoro <= 0) {
+            clearInterval(intervalRef.current);
+            if (preferences.soundEnabled) {
+              timerCompleteSound.current?.play().catch(e => console.error('Error playing sound:', e));
+            }
+            if (preferences.notificationsEnabled) {
+              showNotification(
+                pomodoroState.isBreak ? 'Break complete! Ready to work?' : 'Work session complete!'
+              );
+            }
+
+            if (pomodoroState.isBreak) {
+              setTimeout(() => handlePomodoroBreakComplete(), 1000);
+            } else {
+              setTimeout(() => handlePomodoroSessionComplete(), 1000);
+            }
+
+            return { ...prev, pomodoroTime: 0, status: 'paused' };
+          }
+
+          if (preferences.soundEnabled && (nextPomodoro <= 5 || nextPomodoro % 60 === 0)) {
+            tickSound.current?.play().catch(e => console.error('Error playing sound:', e));
+          }
+
+          return {
+            ...prev,
+            pomodoroTime: nextPomodoro,
+          };
+        });
       }, 1000);
     }
     return () => window.clearInterval(intervalRef.current);
-  }, [timerState.status, timerMode, pomodoroState.isBreak, preferences, toast]);
+  }, [timerState.status, timerMode, pomodoroState.isBreak, preferences]);
 
   const showNotification = (message: string) => {
     if (!('Notification' in window)) {
@@ -509,7 +541,7 @@ export default function TimeTracker() {
       const projectId = currentTask.projectId === 'noproject' ? null : parseInt(currentTask.projectId);
       const tagIds = currentTask.tags.map(tag => tag.id);
       console.log('Starting timer with tagIds:', tagIds);
-      const startTime = new Date().toISOString();
+      const startTime = toLocalDateTimeString(new Date());
       const res = await fetch('/api/timers/start', {
         method: 'POST',
         headers: {
@@ -600,24 +632,6 @@ export default function TimeTracker() {
       return;
     }
 
-    if (timerState.stopwatchTime < 60) {
-      toast({
-        title: 'Minimum Time Required',
-        description: 'Please track at least 1 minute to save your session',
-        variant: 'destructive',
-        action: (
-          <Button
-            variant="secondary"
-            onClick={() => setTimerState(prev => ({ ...prev, status: 'running' }))}
-            className="bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/80"
-          >
-            Continue Tracking
-          </Button>
-        ),
-        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
-      });
-      return;
-    }
     try {
       const token = localStorage.getItem('jwtToken');
       if (!token) {
@@ -633,7 +647,7 @@ export default function TimeTracker() {
       const projectId = currentTask.projectId === 'noproject' ? null : parseInt(currentTask.projectId);
       const tagIds = currentTask.tags.map(tag => tag.id);
       console.log('Stopping timer with tagIds:', tagIds);
-      const endTime = new Date().toISOString();
+      const endTime = toLocalDateTimeString(new Date());
       const res = await fetch(`/api/timers/${timerState.activeTimerId}/stop`, {
         method: 'POST',
         headers: {

@@ -23,9 +23,11 @@ public class TimeEntry {
     private String description;
 
     @NotNull(message = "Start time is required")
+    @Column(name = "start_time", nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
 
+    @Column(name = "end_time", nullable = true)
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endTime;
 

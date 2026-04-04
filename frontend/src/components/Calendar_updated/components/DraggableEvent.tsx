@@ -86,6 +86,10 @@ export interface CalendarEvent {
   height: string;
   hasVideo?: boolean;
   startTime:string;
+  durationSeconds?: number;
+  projectId?: number | null;
+  tagIds?: number[];
+  billable?: boolean;
 }
 
 export type ColorClasses = {

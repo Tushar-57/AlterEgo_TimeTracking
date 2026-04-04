@@ -15,9 +15,20 @@ export const formatTime = (seconds: number): string => {
     return colors[Math.floor(Math.random() * colors.length)];
   };
   
-  export const getProjectNameById = (id: number | undefined, projects: Project[]) => {
-    if (!id) return 'No Project';
-    const project = projects.find(p => p.id === id);
+  export const getProjectNameById = (
+    id: string | number | null | undefined,
+    projects: Project[]
+  ) => {
+    if (!id || id === 'noproject') {
+      return 'No Project';
+    }
+
+    const numericId = typeof id === 'string' ? Number.parseInt(id, 10) : id;
+    if (!Number.isFinite(numericId)) {
+      return 'No Project';
+    }
+
+    const project = projects.find((p) => p.id === numericId);
     return project ? project.name : 'No Project';
   };
   // const getProjectNameById = (id: string | undefined, projects: Project[]) => {
