@@ -129,6 +129,11 @@ import { motion } from 'framer-motion';
 import { Settings, HelpCircle, Clock } from 'lucide-react';
 import { UserPreferences } from './types';
 
+type TimerHeaderUser = {
+  name?: string;
+  email: string;
+};
+
 export const TimerHeader = ({
   preferences,
   setPreferences,
@@ -138,7 +143,7 @@ export const TimerHeader = ({
 }: {
   preferences: UserPreferences;
   setPreferences: (fn: (prev: UserPreferences) => UserPreferences) => void;
-  user: any;
+  user: TimerHeaderUser | null;
   setShowSettingsDialog: (show: boolean) => void;
   setShowKeyboardShortcutsDialog: (show: boolean) => void;
 }) => (

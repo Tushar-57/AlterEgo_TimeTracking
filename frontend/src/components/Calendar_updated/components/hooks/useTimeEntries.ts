@@ -1,7 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from './use-toast';
 import { calculatePosition, getColorForProject } from '../../../Dashboard';
 import { CalendarEvent } from '../../screens/Fantastical/Fantastical';
+
+interface TimeEntryItem {
+  id: number;
+  startTime: string;
+  duration: number;
+  taskDescription: string;
+  projectId: number | null;
+}
 
 
 export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
@@ -9,7 +17,7 @@ export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const fetchTimeEntries = async (start: Date, end: Date) => {
+  const fetchTimeEntries = useCallback(async (start: Date, end: Date) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('jwtToken');
@@ -22,7 +30,7 @@ export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
         return;
       }
 
-      const res = await fetch(`http://localhost:8080/api/time-entries?start=${start.toISOString()}&end=${end.toISOString()}`, {
+      const res = await fetch(`/api/time-entries?start=${start.toISOString()}&end=${end.toISOString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -41,8 +49,8 @@ export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
         throw new Error(`Failed to fetch time entries: ${res.statusText}`);
       }
 
-      const data = await res.json();
-      const transformed = data.map((entry: any) => {
+      const data: TimeEntryItem[] = await res.json();
+      const transformed = data.map((entry) => {
         const startDate = new Date(entry.startTime);
         const hours = startDate.getHours();
         return {
@@ -51,7 +59,7 @@ export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
           period: hours >= 12 ? 'PM' : 'AM',
           title: entry.taskDescription,
           color: getColorForProject(entry.projectId),
-          position: calculatePosition(entry.startTime, entry.duration),
+          position: calculatePosition(entry.startTime),
           width: "143px",
           height: `${Math.max(30, (entry.duration / 3600) * 60)}px`,
           hasVideo: false
@@ -69,7 +77,7 @@ export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -80,7 +88,7 @@ export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
       end.setDate(0);
       fetchTimeEntries(start, end);
     }
-  }, [currentDate, isAuthenticated]);
+  }, [currentDate, isAuthenticated, fetchTimeEntries]);
 
   return { calendarEvents, loading, fetchTimeEntries };
 };

@@ -331,7 +331,7 @@
 // }
 
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "../../../../components/ui/toggle-group";
@@ -489,6 +489,12 @@ export const CalendarSection = ({ events, refreshEvents }: CalendarSectionProps)
     await refreshEvents();
     setIsPopupOpen(false);
     setSelectedTime(undefined);
+  };
+
+  const handleViewChange = (value: string) => {
+    if (value === "day" || value === "week" || value === "month" || value === "year") {
+      setView(value);
+    }
   };
 
   const weekDays = getWeekDays(currentDate);
@@ -752,7 +758,7 @@ export const CalendarSection = ({ events, refreshEvents }: CalendarSectionProps)
             </motion.div>
           </div>
 
-          <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as any)}>
+          <ToggleGroup type="single" value={view} onValueChange={handleViewChange}>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <ToggleGroupItem
                 value="day"

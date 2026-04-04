@@ -35,7 +35,7 @@ export const useTimerStore = create<TimerState>()(
       setMode: (mode) => set({ mode }),
       setStatus: (status) => set({ status }),
       setTime: (time) => set({ time }),
-      setTargetTime: (time) => set({ targetTime }),
+      setTargetTime: (time) => set({ targetTime: time }),
       addSession: (session) => set((state) => ({
         sessions: [...state.sessions, session]
       })),

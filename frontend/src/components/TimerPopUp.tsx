@@ -1,6 +1,6 @@
 // timerPopUp.tsx
-import { X, Play, Pause, RotateCcw, Volume2, Hourglass, Timer as TimerIcon, Edit2, MessageCircle, Mic, Plus } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { X, Play, Pause, RotateCcw, Edit2, MessageCircle, Mic, Plus } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import type { Project } from '../store/projectStore'; 
 
@@ -73,28 +73,20 @@ interface TimerPopupProps {
 export const TimerPopup = ({
   isSubmitting,
   submitError,
+  status,
   time,
-  soundEnabled,
-  aiMode,
-  timerMode,
-  presetTimes,
   formatTime,
   toggleTimer,
   resetTimer,
-  handlePresetClick,
-  setSoundEnabled,
-  setAiMode,
   onClose,
   onSave,
   taskName,
-  setTaskName
 }: TimerPopupProps) => {
   const [taskDescription, setTaskDescription] = useState(taskName);
   const [category, setCategory] = useState('work');
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [startTime] = useState(new Date());
-  const [endTime, setEndTime] = useState<Date | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   // const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -112,7 +104,7 @@ export const TimerPopup = ({
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
       setIsLoadingProjects(true);
       try {
         const token = localStorage.getItem('jwtToken');
@@ -121,7 +113,7 @@ export const TimerPopup = ({
           return;
         }
     
-        const res = await fetch('http://localhost:8080/api/projects', {
+        const res = await fetch('/api/projects', {
           headers: { Authorization: `Bearer ${token}` }
         });
     
@@ -144,10 +136,13 @@ export const TimerPopup = ({
       } finally {
         setIsLoadingProjects(false);
       }
-    };
+    }, []);
+
+  useEffect(() => {
+    void fetchProjects();
+  }, [fetchProjects]);
 
   const handleComplete = () => {
-    console.log('Token:', localStorage.getItem('jwtToken'));
     let sTime = startTime;
     let eTime = new Date();
     if (manualMode) {

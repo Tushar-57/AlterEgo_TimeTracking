@@ -159,7 +159,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Clock, Calendar, Briefcase, DollarSign, ArrowRight, Download, Tag } from 'lucide-react';
 import { TimeEntry } from './types';
-import { Badge } from '../Calendar_updated/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Button } from '../Calendar_updated/components/ui/button';
 

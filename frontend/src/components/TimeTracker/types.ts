@@ -62,7 +62,7 @@ export interface PomodoroState {
 
 export interface CurrentTask {
   description: string;
-  projectId: string|any;
+  projectId: string | number | null;
   tags: Tag[];
   billable: boolean;
   newTag: string;

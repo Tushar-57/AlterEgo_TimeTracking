@@ -520,7 +520,6 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('jwtToken');
-        console.log('JWT Token:', token); // Debug token
         if (!token) {
           toast({
             title: 'Authentication Error',
@@ -533,7 +532,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
         }
 
         // Fetch projects
-        const projectsRes = await fetch('http://localhost:8080/api/projects/userProjects', {
+        const projectsRes = await fetch('/api/projects/userProjects', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (projectsRes.status === 401) {
@@ -543,7 +542,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
         setProjects(Array.isArray(projectsData) ? projectsData : []);
 
         // Fetch tags
-        const tagsRes = await fetch('http://localhost:8080/api/tags', {
+        const tagsRes = await fetch('/api/tags', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (tagsRes.status === 401) {
@@ -663,7 +662,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
     billable,
   };
 
-  const response = await fetch("http://localhost:8080/api/timers/addTimer", {
+  const response = await fetch("/api/timers/addTimer", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -679,7 +678,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
   }
 
   // Update position
-  const positionResponse = await fetch(`http://localhost:8080/api/timers/${data.data.id}/position`, {
+  const positionResponse = await fetch(`/api/timers/${data.data.id}/position`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

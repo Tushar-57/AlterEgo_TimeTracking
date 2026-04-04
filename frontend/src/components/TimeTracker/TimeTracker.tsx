@@ -201,7 +201,7 @@ export default function TimeTracker() {
       setLoading(true);
       setFetchError(null);
       try {
-        const projectsData = await fetchWithToken<Project[]>('http://localhost:8080/api/projects/userProjects');
+        const projectsData = await fetchWithToken<Project[]>('/api/projects/userProjects');
         setProjects(projectsData);
 
         const entriesResponse = await fetchWithToken<{
@@ -209,14 +209,14 @@ export default function TimeTracker() {
           message: string;
           data: TimeEntry[];
           errors: Record<string, string> | null;
-        }>('http://localhost:8080/api/timers?limit=5');
+        }>('/api/timers?limit=5');
         if (!entriesResponse.success) {
           throw new Error(entriesResponse.message || 'Failed to fetch time entries');
         }
         setTimeEntries(entriesResponse.data.filter((entry: TimeEntry) => entry.endTime !== null));
         console.log('Fetched time entries:', entriesResponse.data);
 
-        const tagsData = await fetchWithToken<Tag[]>('http://localhost:8080/api/tags');
+        const tagsData = await fetchWithToken<Tag[]>('/api/tags');
         setTags(tagsData);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -241,7 +241,7 @@ export default function TimeTracker() {
         const token = localStorage.getItem('jwtToken');
         if (!token) return;
 
-        const resp = await fetch('http://localhost:8080/api/timers/active', {
+        const resp = await fetch('/api/timers/active', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -318,7 +318,6 @@ export default function TimeTracker() {
             tickSound.current?.play().catch(e => console.error('Error playing sound:', e));
           }
           if (timerMode === 'pomodoro') {
-            const workSeconds = preferences.pomodoroSettings.workDuration * 60;
             if (timerState.pomodoroTime <= 0) {
               handlePomodoroSessionComplete();
             }
@@ -511,7 +510,7 @@ export default function TimeTracker() {
       const tagIds = currentTask.tags.map(tag => tag.id);
       console.log('Starting timer with tagIds:', tagIds);
       const startTime = new Date().toISOString();
-      const res = await fetch('http://localhost:8080/api/timers/start', {
+      const res = await fetch('/api/timers/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -619,7 +618,7 @@ export default function TimeTracker() {
       const tagIds = currentTask.tags.map(tag => tag.id);
       console.log('Stopping timer with tagIds:', tagIds);
       const endTime = new Date().toISOString();
-      const res = await fetch(`http://localhost:8080/api/timers/${timerState.activeTimerId}/stop`, {
+      const res = await fetch(`/api/timers/${timerState.activeTimerId}/stop`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -654,7 +653,7 @@ export default function TimeTracker() {
         });
         throw new Error('Stop failed');
       }
-      const entryRes = await fetch('http://localhost:8080/api/timers?limit=5', {
+      const entryRes = await fetch('/api/timers?limit=5', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (entryRes.ok) {
@@ -759,7 +758,7 @@ export default function TimeTracker() {
         logout();
         return;
       }
-      const res = await fetch('http://localhost:8080/api/tags', {
+      const res = await fetch('/api/tags', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

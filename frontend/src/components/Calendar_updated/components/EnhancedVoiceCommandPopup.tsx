@@ -20,7 +20,6 @@ interface ConversationItem {
 export default function EnhancedVoiceCommandPopup() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [response, setResponse] = useState("");
   const [conversationHistory, setConversationHistory] = useState<ConversationItem[]>([]);
   const [audioLevel, setAudioLevel] = useState(0);
   const [selectedFont, setSelectedFont] = useState("font-sans");
@@ -87,7 +86,6 @@ export default function EnhancedVoiceCommandPopup() {
       // Simulate response after brief delay
       setTimeout(() => {
         const mockResponse = "You have a design review at 10:00 AM, a team lunch at noon, and a project planning session at 3:00 PM.";
-        setResponse(mockResponse);
         setConversationHistory(prev => [...prev, 
           { type: 'user', text: mockQuery },
           { type: 'assistant', text: mockResponse }
@@ -120,11 +118,8 @@ export default function EnhancedVoiceCommandPopup() {
     const centerX = width / 2;
     const centerY = height / 2;
     
-    let rotation = 0;
-    
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
-      rotation += 0.005;
       
       // Apply audio level to animation
       const intensityFactor = 1 + (audioLevel * 5);

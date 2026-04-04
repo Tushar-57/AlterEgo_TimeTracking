@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../../components/ui/button';
-import { Checkbox, Checkbox as RadixCheckbox } from '@radix-ui/react-checkbox';
+import { Checkbox } from '@radix-ui/react-checkbox';
 
 interface ContextMenuProps {
   x: number;
