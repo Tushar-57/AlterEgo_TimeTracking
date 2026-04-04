@@ -1,0 +1,7 @@
+target
+.git
+.vscode
+.settings
+.classpath
+.project
+.DS_Store
