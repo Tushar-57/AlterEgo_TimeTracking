@@ -8,10 +8,12 @@ import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
 import com.tushar.demo.timetracker.model.Project;
 import com.tushar.demo.timetracker.model.Tags;
 import com.tushar.demo.timetracker.model.TimeEntry;
+import com.tushar.demo.timetracker.model.TimeEntryDetail;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.ProjectRepository;
 import com.tushar.demo.timetracker.repository.TagsRepository;
 import com.tushar.demo.timetracker.repository.TimeEntryRepository;
+import com.tushar.demo.timetracker.repository.TimeEntryDetailRepository;
 import com.tushar.demo.timetracker.service.TimeEntryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,13 +32,16 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     private final TimeEntryRepository timeEntryRepository;
     private final ProjectRepository projectRepository;
     private final TagsRepository tagRepository;
+    private final TimeEntryDetailRepository timeEntryDetailRepository;
 
     public TimeEntryServiceImpl(TimeEntryRepository timeEntryRepository, 
                                 ProjectRepository projectRepository, 
-                                TagsRepository tagRepository) {
+                                TagsRepository tagRepository,
+                                TimeEntryDetailRepository timeEntryDetailRepository) {
         this.timeEntryRepository = timeEntryRepository;
         this.projectRepository = projectRepository;
         this.tagRepository = tagRepository;
+        this.timeEntryDetailRepository = timeEntryDetailRepository;
     }
 
     @Override
@@ -78,7 +83,8 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         timeEntry.setProject(project);
         timeEntry.setTagIds(tagIds);
         timeEntry.setDescription(request.getDescription());
-        timeEntry.setStartTime(LocalDateTime.now());
+        timeEntry.setStartTime(request.getStartTime());
+        timeEntry.setBillable(request.isBillable());
         timeEntry.setIsActive(true);
         timeEntry.setEndTime(null);
 
@@ -214,12 +220,52 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         timeEntry.setDescription(request.getDescription());
         timeEntry.setStartTime(request.getStartTime());
         timeEntry.setEndTime(request.getEndTime());
+        timeEntry.setBillable(request.isBillable());
         timeEntry.setPositionTop(request.getPositionTop());
         timeEntry.setPositionLeft(request.getPositionLeft());
         timeEntry.setIsActive(false);
 
         TimeEntry savedEntry = timeEntryRepository.save(timeEntry);
+        upsertEntryDetail(savedEntry, request);
         logger.info("Successfully added time entry with ID: {} for user: {}", savedEntry.getId(), user.getEmail());
         return savedEntry;
+    }
+
+    private void upsertEntryDetail(TimeEntry entry, addTimeEntryRequest request) {
+        if (entry == null || entry.getId() == null || !hasDetailPayload(request)) {
+            return;
+        }
+
+        TimeEntryDetail detail = timeEntryDetailRepository
+                .findByTimeEntryId(entry.getId())
+                .orElseGet(TimeEntryDetail::new);
+
+        detail.setTimeEntry(entry);
+        detail.setLinkedGoal(normalizeText(request.getLinkedGoal()));
+        detail.setFocusScore(request.getFocusScore());
+        detail.setEnergyScore(request.getEnergyScore());
+        detail.setBlockers(normalizeText(request.getBlockers()));
+        detail.setContextNotes(normalizeText(request.getContextNotes()));
+        detail.setAiDetail(normalizeText(request.getAiDetail()));
+
+        timeEntryDetailRepository.save(detail);
+    }
+
+    private boolean hasDetailPayload(addTimeEntryRequest request) {
+        return request != null
+                && (request.getFocusScore() != null
+                || request.getEnergyScore() != null
+                || normalizeText(request.getLinkedGoal()) != null
+                || normalizeText(request.getBlockers()) != null
+                || normalizeText(request.getContextNotes()) != null
+                || normalizeText(request.getAiDetail()) != null);
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

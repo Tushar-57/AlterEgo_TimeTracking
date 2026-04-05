@@ -107,7 +107,7 @@ export const TimerPopup = ({
   const fetchProjects = useCallback(async () => {
       setIsLoadingProjects(true);
       try {
-        const token = localStorage.getItem('jwtToken');
+        const token = sessionStorage.getItem('auth_session');
         if (!token) {
           window.location.href = '/login';
           return;
@@ -118,7 +118,7 @@ export const TimerPopup = ({
         });
     
         if (res.status === 401) {
-          localStorage.removeItem('jwtToken');
+          sessionStorage.removeItem('auth_session');
           window.location.href = '/login';
           return;
         }
@@ -130,7 +130,7 @@ export const TimerPopup = ({
       } catch (error) {
         console.error('Error fetching projects:', error);
         if (error instanceof Error && error.message.includes('401')) {
-          localStorage.removeItem('jwtToken');
+          sessionStorage.removeItem('auth_session');
           window.location.href = '/login';
         }
       } finally {

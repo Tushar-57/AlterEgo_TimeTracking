@@ -20,7 +20,7 @@ export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
   const fetchTimeEntries = useCallback(async (start: Date, end: Date) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: "Authentication Error",
@@ -40,7 +40,7 @@ export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        localStorage.removeItem('jwtToken');
+        sessionStorage.removeItem('auth_session');
         window.location.href = '/login';
         return;
       }

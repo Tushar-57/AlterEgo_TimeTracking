@@ -217,7 +217,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+          'Authorization': `Bearer ${sessionStorage.getItem('auth_session')}`,
         },
         body: JSON.stringify(onboardingData),
       });

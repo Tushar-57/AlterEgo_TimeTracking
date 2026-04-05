@@ -139,7 +139,7 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('auth_session')}`
         },
         body: JSON.stringify({
           name: projectConfirmation.projectName,
@@ -162,7 +162,7 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('auth_session')}`
         },
         body: JSON.stringify({ 
           command: text,

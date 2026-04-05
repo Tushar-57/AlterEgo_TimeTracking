@@ -72,7 +72,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
 
   const fetchTimeEntriesDirect = useCallback(async (start: Date, end: Date) => {
     try {
-      const token = localStorage.getItem("jwtToken");
+      const token = sessionStorage.getItem("auth_session");
       if (!token) {
         toast({
           title: "Authentication Error",
@@ -97,7 +97,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        localStorage.removeItem("jwtToken");
+        sessionStorage.removeItem("auth_session");
         window.location.href = "/login";
         return [];
       }
@@ -190,7 +190,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
   const handleUpdateEventPosition = useCallback(
     async (eventId: number, newPosition: { top: string; left: string }) => {
       try {
-        const token = localStorage.getItem("jwtToken");
+        const token = sessionStorage.getItem("auth_session");
         if (!token) {
           toast({
             title: "Authentication Error",
@@ -241,7 +241,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
       }
 
       try {
-        const token = localStorage.getItem("jwtToken");
+        const token = sessionStorage.getItem("auth_session");
         if (!token) {
           toast({
             title: "Authentication Error",

@@ -184,6 +184,25 @@ const exportTimeEntries = (timeEntries: TimeEntry[]) => {
   URL.revokeObjectURL(url);
 };
 
+const formatEntryTimeRange = (entry: TimeEntry) => {
+  const start = new Date(entry.startTime);
+  const end = entry.endTime ? new Date(entry.endTime) : null;
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+  if (Number.isNaN(start.getTime())) {
+    return 'Time unavailable';
+  }
+
+  if (!end || Number.isNaN(end.getTime())) {
+    return `From ${formatter.format(start)}`;
+  }
+
+  return `From ${formatter.format(start)} to ${formatter.format(end)}`;
+};
+
 export const TimeEntriesList = ({
   timeEntries,
   loading,
@@ -263,6 +282,10 @@ export const TimeEntriesList = ({
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 mr-1" />
                         {new Date(entry.startTime).toLocaleDateString()}
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        {formatEntryTimeRange(entry)}
                       </div>
                       {entry.project && (
                         <div className="flex items-center">

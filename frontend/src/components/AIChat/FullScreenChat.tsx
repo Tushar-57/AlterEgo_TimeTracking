@@ -92,7 +92,7 @@ const FullScreenChat: React.FC = () => {
     const fetchCoachData = async () => {
       if (hasFetchedCoachData.current) return;
       try {
-        const token = localStorage.getItem('jwtToken');
+        const token = sessionStorage.getItem('auth_session');
         if (!token) {
           toast({
             title: 'Session Expired',
@@ -227,7 +227,7 @@ const FullScreenChat: React.FC = () => {
     setShowSuggestions(false);
 
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Session Expired',
@@ -330,7 +330,7 @@ const FullScreenChat: React.FC = () => {
 
   const handleAction = async (action: string, details: ActionDetails, confirmWithoutChanges: boolean = false) => {
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Session Expired',
@@ -511,7 +511,7 @@ const FullScreenChat: React.FC = () => {
   const handleToneChange = async (tone: CoachingStyle) => {
     setCoachData((prev) => prev ? { ...prev, tone } : prev);
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Session Expired',
@@ -550,7 +550,7 @@ const FullScreenChat: React.FC = () => {
   const handleMentorChange = async (name: string, archetype: MentorArchetype, avatar: string) => {
     setCoachData((prev) => prev ? { ...prev, name, archetype, avatar } : prev);
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Session Expired',

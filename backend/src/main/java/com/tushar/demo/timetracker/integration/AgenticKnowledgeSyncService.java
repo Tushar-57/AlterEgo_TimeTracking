@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tushar.demo.timetracker.dto.request.OnboardingRequestDTO;
 import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
+import com.tushar.demo.timetracker.repository.TimeEntryDetailRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,12 +31,15 @@ public class AgenticKnowledgeSyncService {
     private final boolean enabled;
     private final String baseUrl;
     private final Duration requestTimeout;
+    private final TimeEntryDetailRepository timeEntryDetailRepository;
 
     public AgenticKnowledgeSyncService(
+            TimeEntryDetailRepository timeEntryDetailRepository,
             @Value("${agentic.sync.enabled:false}") boolean enabled,
             @Value("${agentic.sync.base-url:}") String baseUrl,
             @Value("${agentic.sync.connect-timeout-ms:5000}") long connectTimeoutMs,
             @Value("${agentic.sync.request-timeout-ms:8000}") long requestTimeoutMs) {
+        this.timeEntryDetailRepository = timeEntryDetailRepository;
         this.enabled = enabled;
         this.baseUrl = normalizeBaseUrl(baseUrl);
         this.requestTimeout = Duration.ofMillis(requestTimeoutMs);
@@ -104,6 +108,15 @@ public class AgenticKnowledgeSyncService {
             context.put("hour_of_day", entry.getStartTime() != null ? entry.getStartTime().getHour() : null);
             context.put("user_id", user != null ? user.getId() : null);
             context.put("user_email", user != null ? user.getEmail() : null);
+
+            timeEntryDetailRepository.findByTimeEntryId(entry.getId()).ifPresent(detail -> {
+                context.put("linked_goal", safeText(detail.getLinkedGoal(), null));
+                context.put("focus_score", detail.getFocusScore());
+                context.put("energy_score", detail.getEnergyScore());
+                context.put("blockers", safeText(detail.getBlockers(), null));
+                context.put("context_notes", safeText(detail.getContextNotes(), null));
+                context.put("ai_detail", safeText(detail.getAiDetail(), null));
+            });
 
             String responseText = "Recorded " + durationMinutes + " minutes for \"" + description + "\""
                     + (entry.getProject() != null ? " under project \"" + safeText(entry.getProject().getName(), "") + "\"." : ".");

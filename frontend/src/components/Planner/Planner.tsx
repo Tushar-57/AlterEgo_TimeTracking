@@ -79,7 +79,7 @@ export const PlannerForm: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = sessionStorage.getItem('auth_session');
       const response = await fetch('/api/plans', {
         method: 'POST',
         headers: {

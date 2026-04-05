@@ -35,7 +35,7 @@ export const UserTagPage = () => {
     try {
       const response = await fetch('/api/tags', {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('jwtToken')}`,
+          Authorization: `Bearer ${sessionStorage.getItem('auth_session')}`,
         },
       });
 
@@ -97,7 +97,7 @@ export const UserTagPage = () => {
         method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('jwtToken')}`,
+          Authorization: `Bearer ${sessionStorage.getItem('auth_session')}`,
         },
         body: JSON.stringify({
           name: trimmedName,
@@ -127,7 +127,7 @@ export const UserTagPage = () => {
     try {
       const response = await fetch(`/api/tags/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` },
+        headers: { Authorization: `Bearer ${sessionStorage.getItem('auth_session')}` },
       });
 
       if (!response.ok) {

@@ -41,15 +41,44 @@ export default function TimeTracker() {
     startTime?: string;
     currentMode: TimerMode;
   }>(() => {
-    const saved = localStorage.getItem('timerState');
-    return saved ? JSON.parse(saved) : {
+    const fallbackState = {
       stopwatchTime: 0,
       countdownTime: 1500,
       pomodoroTime: 1500,
-      status: 'stopped',
+      status: 'stopped' as TimerStatus,
       activeTimerId: null,
-      currentMode: 'stopwatch',
+      currentMode: 'stopwatch' as TimerMode,
     };
+
+    const saved = localStorage.getItem('timerState');
+    if (!saved) {
+      return fallbackState;
+    }
+
+    try {
+      const parsed = JSON.parse(saved);
+      const parsedStatus = parsed?.status;
+      const parsedMode = parsed?.currentMode;
+
+      return {
+        ...fallbackState,
+        ...parsed,
+        stopwatchTime: Math.max(0, Number(parsed?.stopwatchTime) || 0),
+        countdownTime: Math.max(0, Number(parsed?.countdownTime) || fallbackState.countdownTime),
+        pomodoroTime: Math.max(0, Number(parsed?.pomodoroTime) || fallbackState.pomodoroTime),
+        status:
+          parsedStatus === 'running' || parsedStatus === 'paused' || parsedStatus === 'stopped'
+            ? parsedStatus
+            : 'stopped',
+        currentMode:
+          parsedMode === 'stopwatch' || parsedMode === 'countdown' || parsedMode === 'pomodoro'
+            ? parsedMode
+            : 'stopwatch',
+        activeTimerId: Number.isFinite(parsed?.activeTimerId) ? parsed.activeTimerId : null,
+      };
+    } catch {
+      return fallbackState;
+    }
   });
 
   // Mode-related states
@@ -245,7 +274,7 @@ export default function TimeTracker() {
   useEffect(() => {
     const checkActiveTimer = async () => {
       try {
-        const token = localStorage.getItem('jwtToken');
+        const token = sessionStorage.getItem('auth_session');
         if (!token) return;
 
         const resp = await fetch('/api/timers/active', {
@@ -258,7 +287,7 @@ export default function TimeTracker() {
         }
 
         if (resp.status === 401) {
-          localStorage.removeItem('jwtToken');
+          sessionStorage.removeItem('auth_session');
           logout();
           toast({
             title: 'Session Expired',
@@ -275,7 +304,7 @@ export default function TimeTracker() {
         if (response.success && response.data) {
           const startTime = new Date(response.data.startTime).getTime();
           const currentTime = Date.now();
-          const elapsed = Math.floor((currentTime - startTime) / 1000);
+          const elapsed = Math.max(0, Math.floor((currentTime - startTime) / 1000));
 
           setTimerState(prev => ({
             ...prev,
@@ -527,7 +556,7 @@ export default function TimeTracker() {
     }
     setDescriptionError(false);
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Authentication Error',
@@ -633,7 +662,7 @@ export default function TimeTracker() {
     }
 
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Authentication Error',
@@ -777,7 +806,7 @@ export default function TimeTracker() {
   const handleAddTag = async () => {
     if (!currentTask.newTag.trim()) return;
     try {
-      const token = localStorage.getItem('jwtToken');
+      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Authentication Error',
@@ -903,7 +932,10 @@ export default function TimeTracker() {
   }, [currentQuote, preferences.darkMode]);
 
   const renderTimer = () => {
-    const currentTime = timerState[timerMode === 'stopwatch' ? 'stopwatchTime' : timerMode === 'countdown' ? 'countdownTime' : 'pomodoroTime'];
+    const currentTime = Math.max(
+      0,
+      timerState[timerMode === 'stopwatch' ? 'stopwatchTime' : timerMode === 'countdown' ? 'countdownTime' : 'pomodoroTime']
+    );
     const formattedTime = formatTime(currentTime);
     const totalTime = timerMode === 'countdown' ? countdownPreset :
       timerMode === 'pomodoro' ? (

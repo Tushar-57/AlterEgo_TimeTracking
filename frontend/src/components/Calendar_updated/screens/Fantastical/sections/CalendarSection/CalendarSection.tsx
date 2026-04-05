@@ -670,10 +670,24 @@ export const CalendarSection = ({
     const startDate = new Date(event.startTime);
     const fallbackTop = startDate.getHours() * HOUR_ROW_HEIGHT + (startDate.getMinutes() / 60) * HOUR_ROW_HEIGHT;
     const fallbackLeft = startDate.getDay() * weekColumnWidth;
+    const parsedTop = parsePixelValue(event.position?.top, fallbackTop);
+    const parsedLeft = parsePixelValue(event.position?.left, fallbackLeft);
+    const eventHeight = getEventHeightPx(event);
+    const maxTop = Math.max(0, 24 * HOUR_ROW_HEIGHT - eventHeight);
+    const maxLeft = Math.max(0, weekColumnWidth * 6);
+
+    const outOfBoundsTop = parsedTop < -HOUR_ROW_HEIGHT || parsedTop > 24 * HOUR_ROW_HEIGHT + HOUR_ROW_HEIGHT;
+    const outOfBoundsLeft =
+      weekGridWidth > 0 && (parsedLeft < -weekColumnWidth || parsedLeft > weekGridWidth + weekColumnWidth);
+
+    const normalizedTop = outOfBoundsTop ? fallbackTop : parsedTop;
+    const normalizedLeft = outOfBoundsLeft ? fallbackLeft : parsedLeft;
+
+    const slotHeight = HOUR_ROW_HEIGHT / 4;
 
     return {
-      top: parsePixelValue(event.position?.top, fallbackTop),
-      left: parsePixelValue(event.position?.left, fallbackLeft),
+      top: Math.min(maxTop, Math.max(0, Math.round(normalizedTop / slotHeight) * slotHeight)),
+      left: Math.min(maxLeft, Math.max(0, Math.round(normalizedLeft / weekColumnWidth) * weekColumnWidth)),
     };
   };
 

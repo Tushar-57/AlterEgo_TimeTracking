@@ -1,6 +1,11 @@
 import { ArrowUpRight, Eye, ExternalLink } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+const ALLOWED_EXTERNAL_COACH_HOSTS = ((import.meta.env.VITE_ALLOWED_COACH_HOSTS as string | undefined) || '')
+  .split(',')
+  .map((host) => host.trim().toLowerCase())
+  .filter((host) => host.length > 0);
+
 const normalizePath = (path: string): string => {
   const normalized = path.replace(/\/+$/, '');
   return normalized.length > 0 ? normalized : '/';
@@ -10,12 +15,28 @@ const resolveCoachSrc = (): string => {
   const explicitCoachUrl = (import.meta.env.VITE_AGENTIC_COACH_URL as string | undefined)?.trim();
   const agenticApiOrigin = (import.meta.env.VITE_AGENTIC_API_ORIGIN as string | undefined)?.trim();
 
+  const toTrustedUrl = (rawUrl: string): string | null => {
+    try {
+      const parsed = new URL(rawUrl, window.location.origin);
+      const sameOrigin = parsed.origin === window.location.origin;
+      const allowlistedExternalHost = ALLOWED_EXTERNAL_COACH_HOSTS.includes(parsed.hostname.toLowerCase());
+
+      if (sameOrigin || allowlistedExternalHost) {
+        return parsed.toString();
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   if (explicitCoachUrl) {
-    return explicitCoachUrl;
+    return toTrustedUrl(explicitCoachUrl) || '/coach/';
   }
 
   if (agenticApiOrigin) {
-    return `${agenticApiOrigin.replace(/\/+$/, '')}/coach/`;
+    return toTrustedUrl(`${agenticApiOrigin.replace(/\/+$/, '')}/coach/`) || '/coach/';
   }
 
   return '/coach/';

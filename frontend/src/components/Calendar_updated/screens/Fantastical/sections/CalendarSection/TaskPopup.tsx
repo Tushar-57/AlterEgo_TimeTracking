@@ -64,7 +64,7 @@
 //   useEffect(() => {
 //     const fetchData = async () => {
 //       try {
-//         const token = localStorage.getItem('jwtToken');
+//         const token = sessionStorage.getItem('auth_session');
 //         console.log('JWT Token:', token); // Debug token
 //         if (!token) {
 //           toast({
@@ -164,7 +164,7 @@
 
 //     try {
 //       setLoading(true);
-//       const token = localStorage.getItem('jwtToken');
+//       const token = sessionStorage.getItem('auth_session');
 //       if (!token) {
 //         toast({
 //           title: 'Authentication Error',
@@ -214,7 +214,7 @@
 //           description: 'Your session has expired. Please log in again.',
 //           variant: 'destructive',
 //         });
-//         // localStorage.removeItem('jwtToken');
+//         // sessionStorage.removeItem('auth_session');
 //         // window.location.href = '/login';
 //         return;
 //       }
@@ -486,6 +486,10 @@ interface Tag {
   name: string;
 }
 
+interface OnboardingGoal {
+  title?: string;
+}
+
 const toLocalDateTimeString = (date: Date) => {
   const pad = (value: number) => value.toString().padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
@@ -500,9 +504,16 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
   const [projectId, setProjectId] = useState<string | null>(null);
   const [tagId, setTagId] = useState<string | null>(null);
   const [billable, setBillable] = useState(false);
+  const [linkedGoal, setLinkedGoal] = useState<string | null>(null);
+  const [focusScore, setFocusScore] = useState<string>('5');
+  const [energyScore, setEnergyScore] = useState<string>('5');
+  const [contextNotes, setContextNotes] = useState('');
+  const [blockers, setBlockers] = useState('');
+  const [aiDetail, setAiDetail] = useState('');
   const [duration, setDuration] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [goalOptions, setGoalOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const popupRef = useRef<HTMLDivElement>(null);
@@ -526,7 +537,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('jwtToken');
+        const token = sessionStorage.getItem('auth_session');
         if (!token) {
           toast({
             title: 'Authentication Error',
@@ -538,25 +549,34 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
           return;
         }
 
-        // Fetch projects
-        const projectsRes = await fetch('/api/projects/userProjects', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (projectsRes.status === 401) {
-          throw new Error('Unauthorized');
-        }
-        const projectsData = await projectsRes.json();
-        setProjects(Array.isArray(projectsData) ? projectsData : []);
+        const [projectsRes, tagsRes, onboardingRes] = await Promise.all([
+          fetch('/api/projects/userProjects', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch('/api/tags', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch('/api/onboarding/getOnboardingData', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
-        // Fetch tags
-        const tagsRes = await fetch('/api/tags', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (tagsRes.status === 401) {
+        if (projectsRes.status === 401 || tagsRes.status === 401 || onboardingRes.status === 401) {
           throw new Error('Unauthorized');
         }
+
+        const projectsData = await projectsRes.json();
         const tagsData = await tagsRes.json();
+        const onboardingData = await onboardingRes.json();
+
+        setProjects(Array.isArray(projectsData) ? projectsData : []);
         setTags(Array.isArray(tagsData) ? tagsData : []);
+
+        const goals = Array.isArray(onboardingData?.goals) ? onboardingData.goals as OnboardingGoal[] : [];
+        const goalTitles = goals
+          .map((goal) => goal?.title?.trim())
+          .filter((title): title is string => Boolean(title));
+        setGoalOptions(goalTitles);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast({
@@ -637,7 +657,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('jwtToken');
+      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Authentication Error',
@@ -668,6 +688,14 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
         projectId: projectId ? parseInt(projectId) : null,
         tagIds: tagId ? [parseInt(tagId)] : [],
         billable,
+        positionTop: top,
+        positionLeft: left,
+        linkedGoal: linkedGoal || null,
+        focusScore: focusScore ? Number(focusScore) : null,
+        energyScore: energyScore ? Number(energyScore) : null,
+        blockers: blockers.trim() || null,
+        contextNotes: contextNotes.trim() || null,
+        aiDetail: aiDetail.trim() || null,
       };
 
       const response = await fetch('/api/timers/addTimer', {
@@ -683,23 +711,6 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
       console.log('Time entry response:', data);
       if (!data.success) {
         throw new Error(data.message || 'Failed to save time entry');
-      }
-
-      // Update position
-      const positionResponse = await fetch(`/api/timers/${data.data.id}/position`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          positionTop: top,
-          positionLeft: left,
-        }),
-      });
-
-      if (!positionResponse.ok) {
-        console.warn('Failed to update position:', await positionResponse.text());
       }
 
       toast({
@@ -852,6 +863,89 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
             <div className="col-span-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <Clock className="h-4 w-4 text-indigo-500" />
               <span>Duration: {duration || 'Not set'}</span>
+            </div>
+
+            <div className="col-span-2 rounded-lg border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+              <h4 className="text-sm font-semibold text-indigo-700 dark:text-indigo-200">AI Context Details</h4>
+              <p className="mt-1 text-xs text-indigo-600/80 dark:text-indigo-300/80">
+                These fields are stored as detailed context for smarter Agentic insights and embeddings.
+              </p>
+
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Linked Goal</label>
+                  <Select
+                    value={linkedGoal || ''}
+                    onValueChange={(value) => setLinkedGoal(value === 'none' ? null : value)}
+                  >
+                    <SelectTrigger className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg">
+                      <SelectValue placeholder="Select a goal" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 radix-select-content">
+                      <SelectItem value="none">No linked goal</SelectItem>
+                      {goalOptions.map((goal) => (
+                        <SelectItem key={goal} value={goal}>
+                          {goal}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Focus (1-10)</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={focusScore}
+                    onChange={(event) => setFocusScore(event.target.value)}
+                    className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Energy (1-10)</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={energyScore}
+                    onChange={(event) => setEnergyScore(event.target.value)}
+                    className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Blockers</label>
+                  <Input
+                    value={blockers}
+                    onChange={(event) => setBlockers(event.target.value)}
+                    placeholder="Context switch, dependency, distraction..."
+                    className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Context Notes</label>
+                  <textarea
+                    value={contextNotes}
+                    onChange={(event) => setContextNotes(event.target.value)}
+                    placeholder="What made this session productive or difficult?"
+                    className="mt-1 min-h-[80px] w-full rounded-lg border border-gray-200 bg-white p-2 text-sm text-gray-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Detailed AI Notes</label>
+                  <textarea
+                    value={aiDetail}
+                    onChange={(event) => setAiDetail(event.target.value)}
+                    placeholder="Add rich details that should be included in AI memory and embeddings"
+                    className="mt-1 min-h-[100px] w-full rounded-lg border border-gray-200 bg-white p-2 text-sm text-gray-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
