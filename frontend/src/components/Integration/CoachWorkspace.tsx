@@ -83,6 +83,17 @@ const withEmbedMode = (url: string): string => {
   }
 };
 
+const primeCoachKnowledge = async (): Promise<void> => {
+  try {
+    await fetch('/api/onboarding/getOnboardingData', {
+      method: 'GET',
+      credentials: 'include',
+    });
+  } catch {
+    // Best-effort pre-sync only; Coach launch should continue regardless.
+  }
+};
+
 const CoachWorkspace = () => {
   const [showEmbeddedPreview, setShowEmbeddedPreview] = useState(false);
 
@@ -111,10 +122,12 @@ const CoachWorkspace = () => {
     return withEmbedMode(coachSrc);
   }, [coachSrc]);
 
-  const openCoach = (newTab: boolean) => {
+  const openCoach = async (newTab: boolean) => {
     if (!coachSrc) {
       return;
     }
+
+    await primeCoachKnowledge();
 
     if (newTab) {
       window.open(coachSrc, '_blank', 'noopener,noreferrer');

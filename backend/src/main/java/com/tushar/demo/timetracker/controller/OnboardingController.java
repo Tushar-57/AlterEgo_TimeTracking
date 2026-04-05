@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -183,6 +184,7 @@ public class OnboardingController {
                     payload.put("planner", plannerPayload);
                 }
 
+                syncOnboardingSnapshot(onboarding, user);
                 return ResponseEntity.ok(payload);
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -281,6 +283,140 @@ public class OnboardingController {
         } catch (Exception ignored) {
             return List.of();
         }
+    }
+
+    private void syncOnboardingSnapshot(OnboardingEntity onboarding, Users user) {
+        try {
+            OnboardingRequestDTO syncRequest = new OnboardingRequestDTO();
+            syncRequest.setRole(onboarding.getRole());
+            syncRequest.setPreferredTone(onboarding.getPreferredTone());
+            syncRequest.setCoachAvatar(onboarding.getCoachAvatar());
+
+            if (onboarding.getMentor() != null) {
+                OnboardingRequestDTO.Mentor mentor = new OnboardingRequestDTO.Mentor();
+                mentor.setArchetype(onboarding.getMentor().getArchetype());
+                mentor.setStyle(onboarding.getMentor().getStyle());
+                mentor.setName(onboarding.getMentor().getName());
+                mentor.setAvatar(onboarding.getMentor().getAvatar());
+                syncRequest.setMentor(mentor);
+            }
+
+            List<OnboardingRequestDTO.Goal> goals = mapGoalsForSync(onboarding);
+            syncRequest.setGoals(goals);
+            syncRequest.setAnswers(mapAnswersForSync(onboarding.getPriorities()));
+
+            if (onboarding.getPlanner() != null && onboarding.getPlanner().getAvailability() != null) {
+                OnboardingRequestDTO.WorkHours workHours = new OnboardingRequestDTO.WorkHours();
+                workHours.setStart(onboarding.getPlanner().getAvailability().getWorkHoursStart());
+                workHours.setEnd(onboarding.getPlanner().getAvailability().getWorkHoursEnd());
+
+                OnboardingRequestDTO.DndHours dndHours = new OnboardingRequestDTO.DndHours();
+                dndHours.setStart(onboarding.getPlanner().getAvailability().getDndHoursStart());
+                dndHours.setEnd(onboarding.getPlanner().getAvailability().getDndHoursEnd());
+
+                OnboardingRequestDTO.CheckIn checkIn = new OnboardingRequestDTO.CheckIn();
+                checkIn.setPreferredTime(onboarding.getPlanner().getAvailability().getCheckInPreferredTime());
+                checkIn.setFrequency(onboarding.getPlanner().getAvailability().getCheckInFrequency());
+
+                OnboardingRequestDTO.Availability availability = new OnboardingRequestDTO.Availability();
+                availability.setWorkHours(workHours);
+                availability.setDndHours(dndHours);
+                availability.setCheckIn(checkIn);
+                availability.setTimezone(onboarding.getPlanner().getAvailability().getTimezone());
+
+                OnboardingRequestDTO.Notifications notifications = new OnboardingRequestDTO.Notifications();
+                notifications.setRemindersEnabled(onboarding.getPlanner().isRemindersEnabled());
+
+                OnboardingRequestDTO.Integrations integrations = new OnboardingRequestDTO.Integrations();
+                integrations.setCalendarSync(onboarding.getPlanner().isCalendarSync());
+                integrations.setTaskManagementSync(onboarding.getPlanner().isTaskManagementSync());
+
+                OnboardingRequestDTO.Planner planner = new OnboardingRequestDTO.Planner();
+                planner.setGoals(goals);
+                planner.setAvailability(availability);
+                planner.setNotifications(notifications);
+                planner.setIntegrations(integrations);
+
+                syncRequest.setSchedule(availability);
+                syncRequest.setPlanner(planner);
+            }
+
+            if (syncRequest.getRole() != null && syncRequest.getMentor() != null && syncRequest.getPlanner() != null) {
+                agenticKnowledgeSyncService.syncOnboarding(syncRequest, user);
+            }
+        } catch (Exception ignored) {
+            // Do not block onboarding reads if best-effort sync fails.
+        }
+    }
+
+    private List<OnboardingRequestDTO.Goal> mapGoalsForSync(OnboardingEntity onboarding) {
+        if (onboarding.getGoals() == null || onboarding.getGoals().isEmpty()) {
+            return List.of();
+        }
+
+        List<OnboardingRequestDTO.Goal> mappedGoals = new ArrayList<>();
+        onboarding.getGoals().forEach(goalEntity -> {
+            OnboardingRequestDTO.Goal goal = new OnboardingRequestDTO.Goal();
+            goal.setId(goalEntity.getId());
+            goal.setTitle(goalEntity.getTitle());
+            goal.setDescription(goalEntity.getDescription());
+            goal.setCategory(goalEntity.getCategory());
+            goal.setPriority(goalEntity.getPriority());
+            goal.setMilestones(goalEntity.getMilestones() == null ? List.of() : goalEntity.getMilestones());
+            goal.setEndDate(goalEntity.getEndDate());
+            goal.setEstimatedEffortHours(goalEntity.getEstimatedEffortHours());
+            goal.setWhyItMatters(goalEntity.getWhyItMatters());
+
+            SmartCriteriaEntity smartCriteriaEntity = goalEntity.getSmartCriteria();
+            if (smartCriteriaEntity != null) {
+                OnboardingRequestDTO.SmartCriteria smartCriteria = new OnboardingRequestDTO.SmartCriteria();
+                smartCriteria.setSpecific(toSmartCriteriaField(smartCriteriaEntity.isSpecificChecked(), smartCriteriaEntity.getSpecificNote()));
+                smartCriteria.setMeasurable(toSmartCriteriaField(smartCriteriaEntity.isMeasurableChecked(), smartCriteriaEntity.getMeasurableNote()));
+                smartCriteria.setAchievable(toSmartCriteriaField(smartCriteriaEntity.isAchievableChecked(), smartCriteriaEntity.getAchievableNote()));
+                smartCriteria.setRelevant(toSmartCriteriaField(smartCriteriaEntity.isRelevantChecked(), smartCriteriaEntity.getRelevantNote()));
+                smartCriteria.setTimeBound(toSmartCriteriaField(smartCriteriaEntity.isTimeBoundChecked(), smartCriteriaEntity.getTimeBoundNote()));
+                goal.setSmartCriteria(smartCriteria);
+            }
+
+            mappedGoals.add(goal);
+        });
+
+        return mappedGoals;
+    }
+
+    private OnboardingRequestDTO.SmartCriteriaField toSmartCriteriaField(boolean checked, String note) {
+        OnboardingRequestDTO.SmartCriteriaField field = new OnboardingRequestDTO.SmartCriteriaField();
+        field.setChecked(checked);
+        field.setNote(note != null ? note : "");
+        return field;
+    }
+
+    private List<OnboardingRequestDTO.AnswerDTO> mapAnswersForSync(String prioritiesJson) {
+        List<Map<String, Object>> parsedAnswers = parseAnswersFromPriorities(prioritiesJson);
+        if (parsedAnswers.isEmpty()) {
+            return List.of();
+        }
+
+        List<OnboardingRequestDTO.AnswerDTO> answers = new ArrayList<>();
+        for (Map<String, Object> parsedAnswer : parsedAnswers) {
+            String answerValue = asString(parsedAnswer.get("answer"));
+            String descriptionValue = asString(parsedAnswer.get("description"));
+            if (answerValue.isBlank() && descriptionValue.isBlank()) {
+                continue;
+            }
+
+            OnboardingRequestDTO.AnswerDTO answer = new OnboardingRequestDTO.AnswerDTO();
+            answer.setId(asString(parsedAnswer.get("id")));
+            answer.setAnswer(answerValue);
+            answer.setDescription(descriptionValue);
+            answers.add(answer);
+        }
+
+        return answers;
+    }
+
+    private String asString(Object value) {
+        return value == null ? "" : String.valueOf(value);
     }
 	
 }
