@@ -9,21 +9,17 @@ import SignupClassic from './components/SignupFunctionality';
 import ProjectPage from './components/Project/ProjectPage';
 import TaskManager from './components/TaskManager';
 import { AuthProvider, useAuth, LoadingSpinner } from './context/AuthContext';
-import { PlannerForm } from './components/Planner/Planner';
 import { Dashboard } from './components/Dashboard';
 import { UserTagPage } from './components/UserTags';
 import { ToastProvider } from './components/ui/toast';
 import { ToastViewport } from './components/ui/toast';
 import ChatOnboarding from './components/Onboarding/ChatOnboarding';
 import CoachWorkspace from './components/Integration/CoachWorkspace';
+import ProfilePage from './components/Profile/ProfilePage';
+import ConnectedPlaceholderPage from './components/Workspace/ConnectedPlaceholderPage';
 import { ChatProvider } from './components/AIChat/ChatContext';
 import FullScreenChat from './components/AIChat/FullScreenChat';
 import ChatToggleButton from './components/AIChat/ChatToggleButton';
-
-const Reports = () => <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">Reports Page</div>;
-const Clients = () => <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">Clients Page</div>;
-const Invoices = () => <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">Invoices Page</div>;
-const Settings = () => <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">Settings Page</div>;
 
 const App = () => (
   <Router>
@@ -42,7 +38,9 @@ const App = () => (
 );
 
 const ProtectedOnboarding = () => {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated, user, loading, setOnboardingCompleted } = useAuth();
+  const location = useLocation();
+  const onboardingRedoRequested = new URLSearchParams(location.search).get('redo') === 'true';
 
   if (loading) return <LoadingSpinner />;
 
@@ -50,11 +48,11 @@ const ProtectedOnboarding = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.onboardingCompleted) {
+  if (user?.onboardingCompleted && !onboardingRedoRequested) {
     return <Navigate to="/" replace />;
   }
 
-  return <ChatOnboarding onComplete={() => console.log('Onboarding complete!')} />;
+  return <ChatOnboarding onComplete={() => setOnboardingCompleted(true)} />;
 };
 
 const ProtectedRoutes = () => {
@@ -123,13 +121,157 @@ const ProtectedRoutes = () => {
             <Route path="/" element={<TimeTracker />} />
             <Route path="/tasks" element={<TaskManager />} />
             <Route path="/analytics" element={<Analytics />} />
-            <Route path="/reports" element={<Reports />} />
+            <Route
+              path="/reports"
+              element={
+                <ConnectedPlaceholderPage
+                  title="Reports Workspace"
+                  subtitle="Build richer weekly and monthly reporting habits by connecting your analytics and scheduled work in one place."
+                  badge="Reporting"
+                  quickLinks={[
+                    {
+                      label: 'Analytics Dashboard',
+                      to: '/analytics',
+                      description: 'Review trends and performance snapshots.',
+                    },
+                    {
+                      label: 'Calendar Dashboard',
+                      to: '/dashboard',
+                      description: 'Inspect scheduled entries across the week.',
+                    },
+                    {
+                      label: 'Timer',
+                      to: '/',
+                      description: 'Capture time blocks that feed reports.',
+                    },
+                    {
+                      label: 'Project Space',
+                      to: '/projects',
+                      description: 'Group report cuts by project/client.',
+                    },
+                  ]}
+                  highlights={[
+                    'Use this section to curate weekly review stories before exporting to clients or your team.',
+                    'Cross-check project workload balance against actual tracked time.',
+                    'Keep recurring reporting habits in sync with your planner and onboarding cadence.',
+                  ]}
+                />
+              }
+            />
             <Route path="/projects" element={<ProjectPage />} />
-            <Route path="/clients" element={<Clients />} />
-            <Route path="/invoices" element={<Invoices />} />
+            <Route
+              path="/clients"
+              element={
+                <ConnectedPlaceholderPage
+                  title="Clients Workspace"
+                  subtitle="Maintain your client roster and map each account to the projects and tags you are actively tracking."
+                  badge="Client Ops"
+                  quickLinks={[
+                    {
+                      label: 'Projects',
+                      to: '/projects',
+                      description: 'Assign and organize client-facing projects.',
+                    },
+                    {
+                      label: 'Tags',
+                      to: '/tags',
+                      description: 'Standardize labels used across client time entries.',
+                    },
+                    {
+                      label: 'Task Manager',
+                      to: '/tasks',
+                      description: 'Track delivery tasks against each client workflow.',
+                    },
+                    {
+                      label: 'Invoices',
+                      to: '/invoices',
+                      description: 'Prepare next billing view from organized time logs.',
+                    },
+                  ]}
+                  highlights={[
+                    'Track account context before switching to billing and reporting.',
+                    'Define clear naming conventions so projects, tags, and invoices stay aligned.',
+                    'Use client links to quickly jump between planning and execution views.',
+                  ]}
+                />
+              }
+            />
+            <Route
+              path="/invoices"
+              element={
+                <ConnectedPlaceholderPage
+                  title="Invoices Workspace"
+                  subtitle="Prepare invoice-ready context by combining billable entries, project color coding, and client grouping."
+                  badge="Billing"
+                  quickLinks={[
+                    {
+                      label: 'Projects',
+                      to: '/projects',
+                      description: 'Verify billable work grouped by project.',
+                    },
+                    {
+                      label: 'Clients',
+                      to: '/clients',
+                      description: 'Review client context before issuing invoices.',
+                    },
+                    {
+                      label: 'Reports',
+                      to: '/reports',
+                      description: 'Cross-check summaries before billing.',
+                    },
+                    {
+                      label: 'Timer Entries',
+                      to: '/',
+                      description: 'Capture missing billable sessions quickly.',
+                    },
+                  ]}
+                  highlights={[
+                    'Use this area to align billing prep with tracked output and client expectations.',
+                    'Reconcile outlier entries before creating invoice narratives.',
+                    'Maintain a clear path from execution logs to invoice decisions.',
+                  ]}
+                />
+              }
+            />
             <Route path="/tags" element={<UserTagPage />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/planner" element={<PlannerForm />} />
+            <Route
+              path="/settings"
+              element={
+                <ConnectedPlaceholderPage
+                  title="Settings Hub"
+                  subtitle="Tune your account experience, onboarding profile, and assistant behavior from one coordinated place."
+                  badge="Configuration"
+                  quickLinks={[
+                    {
+                      label: 'Profile',
+                      to: '/profile',
+                      description: 'Update onboarding details or redo onboarding.',
+                    },
+                    {
+                      label: 'AI Coach',
+                      to: '/coach',
+                      description: 'Continue context-aware planning with your mentor.',
+                    },
+                    {
+                      label: 'Tags',
+                      to: '/tags',
+                      description: 'Refine the taxonomy used across your entries.',
+                    },
+                    {
+                      label: 'Projects',
+                      to: '/projects',
+                      description: 'Adjust your project map and client grouping.',
+                    },
+                  ]}
+                  highlights={[
+                    'Settings are intentionally linked so profile updates flow into planner and coach behavior.',
+                    'Use profile actions to keep onboarding context current as your routine evolves.',
+                    'Treat settings as a control center instead of isolated one-off pages.',
+                  ]}
+                />
+              }
+            />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/coach" element={<CoachWorkspace />} />
             <Route path="/dashboard" element={<Dashboard isAuthenticated={isAuthenticated} />} />
             <Route path="*" element={<Navigate to="/" replace />} />

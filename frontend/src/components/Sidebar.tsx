@@ -13,8 +13,8 @@ import {
   UserPlus,
   LucideCalendarCheck2,
   WatchIcon,
-  CalendarRangeIcon,
   LayoutDashboard,
+  UserRound,
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -105,7 +105,6 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
         <div className="mb-6">
           <div className="text-xs font-medium text-gray-400 mb-3 px-4">PLANNER</div>
           <NavItem icon={LucideCalendarCheck2} label="Tasks" to="/tasks" onNavigate={onMobileClose} />
-          <NavItem icon={CalendarRangeIcon} label="AI Planner" to="/planner" onNavigate={onMobileClose} />
           <NavItem icon={Clock} label="AI Coach" to="/coach" onNavigate={onMobileClose} />
           <br/>
         </div>
@@ -125,6 +124,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
         </div>
 
         <div className="mt-auto space-y-1 border-t border-gray-100 pt-4">
+          <NavItem icon={UserRound} label="Profile" to="/profile" onNavigate={onMobileClose} />
           <NavItem icon={Settings} label="Settings" to="/settings" onNavigate={onMobileClose} />
           <div
             onClick={() => {
