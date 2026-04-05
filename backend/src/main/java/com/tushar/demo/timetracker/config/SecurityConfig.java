@@ -2,6 +2,8 @@ package com.tushar.demo.timetracker.config;
 
 import java.util.Arrays;
 import java.util.List;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -27,13 +29,24 @@ public class SecurityConfig {
 
     private final JwtAuthEntryPoint authEntryPoint;
     private final JwtAuthFilter jwtAuthFilter;
+    private final AuthRateLimitFilter authRateLimitFilter;
 
     @Value("${app.cors.allowed-origin-patterns:http://localhost:5173,http://localhost:3000,http://localhost:8088}")
     private String allowedOriginPatternsProperty;
+
+    @Value("${app.security.csp.policy:default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'}")
+    private String contentSecurityPolicy;
+
+    @Value("${app.security.frame.same-origin:false}")
+    private boolean allowSameOriginFrames;
     
-    public SecurityConfig(JwtAuthEntryPoint authEntryPoint, JwtAuthFilter jwtAuthFilter) {
+    public SecurityConfig(
+            JwtAuthEntryPoint authEntryPoint,
+            JwtAuthFilter jwtAuthFilter,
+            AuthRateLimitFilter authRateLimitFilter) {
         this.authEntryPoint = authEntryPoint;
         this.jwtAuthFilter = jwtAuthFilter;
+        this.authRateLimitFilter = authRateLimitFilter;
     }
     
     @Bean
@@ -49,14 +62,44 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/auth/**", "/h2-console/**", "/health", "/api/health").permitAll()
+                .requestMatchers(
+                    "/api/auth/signup",
+                    "/api/auth/login",
+                    "/api/auth/validate",
+                    "/api/auth/email-verification/request",
+                    "/api/auth/email-verification/confirm",
+                    "/api/auth/password-reset/request",
+                    "/api/auth/password-reset/confirm",
+                    "/h2-console/**",
+                    "/health",
+                    "/api/health"
+                ).permitAll()
+                .requestMatchers("/api/auth/logout", "/api/auth/logout-all").authenticated()
                 .requestMatchers("/api/onboarding/**").authenticated()
                 .anyRequest().authenticated()
             )
-            .headers(headers -> headers
-                .frameOptions(frame -> frame.disable())
-            )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .headers(headers -> {
+                if (allowSameOriginFrames) {
+                    headers.frameOptions(frame -> frame.sameOrigin());
+                } else {
+                    headers.frameOptions(frame -> frame.deny());
+                }
+                headers.contentTypeOptions(contentTypeOptions -> {});
+                headers.referrerPolicy(referrer ->
+                    referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                );
+                headers.contentSecurityPolicy(csp -> csp.policyDirectives(contentSecurityPolicy));
+                headers.addHeaderWriter(
+                    new StaticHeadersWriter("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+                );
+                headers.httpStrictTransportSecurity(hsts ->
+                    hsts.includeSubDomains(true)
+                        .preload(true)
+                        .maxAgeInSeconds(31536000)
+                );
+            })
+            .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(jwtAuthFilter, AuthRateLimitFilter.class);
 
         return http.build();
     }
@@ -66,8 +109,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(parseAllowedOriginPatterns());
-//        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        config.setAllowedMethods(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
         config.addExposedHeader("Authorization"); // Add this line

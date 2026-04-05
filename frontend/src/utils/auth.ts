@@ -1,69 +1,6 @@
-// // utils/auth.ts
-// export const API_URL = 'http://localhost:8080/api';
-
-// export const login = async (credentials: any) => {
-//   try {
-//     const response = await fetch(`${API_URL}/auth/login`, {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify(credentials),
-//     });
-
-//     if (!response.ok) {
-//       const errorMessage = await response.text();
-//       throw new Error(errorMessage || 'Login failed');
-//     }
-
-//     const data = await response.json();
-
-//     return data;
-//   } catch (error) {
-//     console.error('Login Error:', error);
-//     throw error; // Re-throw the error for the calling function to handle
-//   }
-// };
-
-// export const signup = async (credentials: any) => {
-//   try {
-//     const response = await fetch(`${API_URL}/auth/signup`, {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify(credentials),
-//     });
-
-//     if (!response.ok) {
-//       const errorMessage = await response.text();
-//       throw new Error(errorMessage || 'Signup failed');
-//     }
-
-//     const data = await response.json();
-//     return data;
-//   } catch (error) {
-//     console.error('Signup Error:', error);
-//     throw error; // Re-throw the error for the calling function to handle
-//   }
-// };
-
-// export const logout = () => {
-//   localStorage.removeItem('jwtToken');
-// };
-
-// export const isAuthenticated = () => {
-//   return !!localStorage.getItem('jwtToken');
-// };
-
-// export const fetchWithToken = async (url: string, options: RequestInit = {}) => {
-//   const token = localStorage.getItem('jwtToken');
-//   const headers = new Headers(options.headers || {});
-//   if (token) headers.set('Authorization', `Bearer ${token}`);
-//   return fetch(url, { ...options, headers });
-// };
-// utils/auth.ts
 export const API_URL = '/api';
+export const AUTH_SESSION_KEY = 'auth_session';
+export const AUTH_SESSION_MARKER = 'cookie-session';
 
 type AuthCredentials = {
   email: string;
@@ -99,6 +36,18 @@ const readAuthError = async (response: Response): Promise<string> => {
   return '';
 };
 
+export const markSessionActive = (): void => {
+  sessionStorage.setItem(AUTH_SESSION_KEY, AUTH_SESSION_MARKER);
+};
+
+export const clearSession = (): void => {
+  sessionStorage.removeItem(AUTH_SESSION_KEY);
+};
+
+export const hasActiveSession = (): boolean => {
+  return sessionStorage.getItem(AUTH_SESSION_KEY) === AUTH_SESSION_MARKER;
+};
+
 export const login = async (credentials: AuthCredentials) => {
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
@@ -106,6 +55,7 @@ export const login = async (credentials: AuthCredentials) => {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify(credentials),
     });
 
@@ -128,6 +78,7 @@ export const signup = async (credentials: AuthCredentials) => {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify(credentials),
     });
 
@@ -144,51 +95,25 @@ export const signup = async (credentials: AuthCredentials) => {
 };
 
 export const logout = () => {
-  localStorage.removeItem('jwtToken');
+  clearSession();
 };
 
 export const isAuthenticated = () => {
-  return !!localStorage.getItem('jwtToken');
+  return hasActiveSession();
 };
 
-// export const fetchWithToken = async (url: string, options: RequestInit = {}) => {
-//   const token = localStorage.getItem('jwtToken')?.trim();
-//   const headers = new Headers(options.headers || {});
-//   headers.set('Content-Type', 'application/json');
-//   if (token) headers.set('Authorization', `Bearer ${token}`);
-
-//   const response = await fetch(url, { ...options, headers });
-  
-
-//   if (!response.ok) {
-//     const contentType = response.headers.get('content-type');
-//     let errorData = {};
-//     if (contentType?.includes('application/json')) {
-//       errorData = await response.json().catch(() => ({}));
-//     }
-//     throw new Error( `Request failed with status ${response.status}`);
-//   }
-
-//   const contentType = response.headers.get('content-type');
-//   if (contentType?.includes('application/json')) {
-//     return response.json();
-//   }
-//   return response; // Return raw response for non-JSON content
-// };
 export const fetchWithToken = async <T>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const token = localStorage.getItem('jwtToken')?.trim();
   const headers = new Headers(options.headers || {});
 
   if (options.method && options.method !== 'GET') {
     headers.set('Content-Type', 'application/json');
   }
 
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
+  // Cookie-based auth is used; drop stale bearer headers if any caller passes them.
+  headers.delete('Authorization');
 
   try {
     const response = await fetch(url, {
@@ -205,12 +130,12 @@ export const fetchWithToken = async <T>(
       const fallbackText = !contentType?.includes('application/json')
         ? await response.text().catch(() => null)
         : null;
-      
+
       throw new Error(
         errorData?.message ||
-        errorData?.error ||
-        fallbackText ||
-        `Request to ${url} failed with status ${response.status} ${response.statusText}`
+          errorData?.error ||
+          fallbackText ||
+          `Request to ${url} failed with status ${response.status} ${response.statusText}`
       );
     }
 

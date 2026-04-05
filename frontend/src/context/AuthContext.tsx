@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchWithToken } from '../utils/auth';
+import { clearSession, fetchWithToken, markSessionActive } from '../utils/auth';
 
 interface User {
   name?: string;
@@ -12,7 +12,7 @@ interface AuthContextType {
   error: { status: number; message: string } | null;
   clearError: () => void;
   isAuthenticated: boolean;
-  login: (token: string, userData?: User) => void;
+  login: (userData?: User) => void;
   logout: () => void;
   loading: boolean;
   user: User | null;
@@ -44,8 +44,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user: null,
   });
 
-  const login = (token: string, userData?: User) => {
-    localStorage.setItem('jwtToken', token.trim());
+  const login = (userData?: User) => {
+    markSessionActive();
     setState({
       isAuthenticated: true,
       loading: false,
@@ -55,7 +55,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('jwtToken');
+    clearSession();
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    }).catch((error) => {
+      console.warn('Logout request failed:', error);
+    });
+
     setState({
       isAuthenticated: false,
       loading: false,
@@ -76,21 +83,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const validateAuth = async (): Promise<boolean> => {
-      console.log('AuthContext: Starting token validation');
-      const token = localStorage.getItem('jwtToken')?.trim();
-      if (!token) {
-        console.log('AuthContext: No token found');
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          isAuthenticated: false,
-          user: null,
-        }));
-        return false;
-      }
-
       try {
-        console.log('AuthContext: Sending /api/auth/validate request');
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         const data = await fetchWithToken<{ valid: boolean; user: User }>('/api/auth/validate', {
@@ -99,9 +92,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
         clearTimeout(timeoutId);
 
-        console.log('AuthContext: Validate response received');
         if (data.valid === true) {
-          console.log('AuthContext: Token valid, setting authenticated');
+          markSessionActive();
           setState({
             isAuthenticated: true,
             loading: false,
@@ -114,7 +106,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
           return true;
         } else {
-          console.warn('AuthContext: Token validation response invalid:', data);
           setState(prev => ({
             ...prev,
             loading: false,
@@ -122,13 +113,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             user: null,
             error: { status: 401, message: 'Invalid token' },
           }));
-          localStorage.removeItem('jwtToken');
-          navigate('/login', { replace: true });
+          clearSession();
           return false;
         }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Session expired. Please log in again.';
-        console.error('AuthContext: Token validation error:', message);
+        console.warn('Auth validation failed:', message);
         setState(prev => ({
           ...prev,
           loading: false,
@@ -136,15 +126,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           user: null,
           error: { status: message.includes('401') ? 401 : 500, message: 'Session expired. Please log in again.' },
         }));
-        localStorage.removeItem('jwtToken');
-        navigate('/login', { replace: true });
+        clearSession();
         return false;
       }
     };
 
-    validateAuth().then(result => {
-      console.log('AuthContext: Validation complete, result:', result);
-    });
+    validateAuth();
   }, [navigate]);
 
   const value = { ...state, login, logout, clearError, setOnboardingCompleted };

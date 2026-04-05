@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Clock3, RefreshCcw, Save, Sparkles, Target, UserRound } from 'lucide-react';
+import { AlertTriangle, Clock3, LogOut, RefreshCcw, Save, Sparkles, Target, UserRound } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../Calendar_updated/components/hooks/use-toast';
 
@@ -253,7 +253,7 @@ const toFormState = (snapshot: OnboardingSnapshot): FormState => ({
 });
 
 const ProfilePage = () => {
-  const { user, setOnboardingCompleted } = useAuth();
+  const { user, setOnboardingCompleted, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -262,9 +262,10 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [redoing, setRedoing] = useState(false);
+  const [endingAllSessions, setEndingAllSessions] = useState(false);
 
   const loadProfile = useCallback(async () => {
-    const token = localStorage.getItem('jwtToken');
+    const token = sessionStorage.getItem('auth_session');
     if (!token) {
       toast({
         title: 'Authentication required',
@@ -321,7 +322,7 @@ const ProfilePage = () => {
       return;
     }
 
-    const token = localStorage.getItem('jwtToken');
+    const token = sessionStorage.getItem('auth_session');
     if (!token) {
       navigate('/login', { replace: true });
       return;
@@ -405,7 +406,7 @@ const ProfilePage = () => {
       return;
     }
 
-    const token = localStorage.getItem('jwtToken');
+    const token = sessionStorage.getItem('auth_session');
     if (!token) {
       navigate('/login', { replace: true });
       return;
@@ -438,6 +439,38 @@ const ProfilePage = () => {
       });
     } finally {
       setRedoing(false);
+    }
+  };
+
+  const handleLogoutAllDevices = async () => {
+    if (!window.confirm('This will sign you out from all devices. Continue?')) {
+      return;
+    }
+
+    setEndingAllSessions(true);
+    try {
+      const response = await fetch('/api/auth/logout-all', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Unable to revoke all sessions right now.');
+      }
+
+      toast({
+        title: 'All sessions ended',
+        description: 'You have been logged out on all devices.',
+      });
+      logout();
+    } catch (error) {
+      toast({
+        title: 'Could not end all sessions',
+        description: error instanceof Error ? error.message : 'Please try again shortly.',
+        variant: 'destructive',
+      });
+    } finally {
+      setEndingAllSessions(false);
     }
   };
 
@@ -509,15 +542,26 @@ const ProfilePage = () => {
               <h2 className="text-xl font-semibold text-slate-900">Update Onboarding Details</h2>
               <p className="text-sm text-slate-600">Adjust role, tone, routine windows, and planner sync preferences.</p>
             </div>
-            <button
-              type="button"
-              onClick={handleRedoOnboarding}
-              disabled={redoing}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <RefreshCcw className="h-4 w-4" />
-              {redoing ? 'Preparing...' : 'Redo Onboarding'}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleLogoutAllDevices}
+                disabled={endingAllSessions}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <LogOut className="h-4 w-4" />
+                {endingAllSessions ? 'Ending Sessions...' : 'Logout All Devices'}
+              </button>
+              <button
+                type="button"
+                onClick={handleRedoOnboarding}
+                disabled={redoing}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCcw className="h-4 w-4" />
+                {redoing ? 'Preparing...' : 'Redo Onboarding'}
+              </button>
+            </div>
           </div>
 
           <form className="space-y-6" onSubmit={handleSave}>

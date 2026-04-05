@@ -2,13 +2,13 @@ package com.tushar.demo.timetracker.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-public record LoginRequest(
-    @NotBlank @Email 
-    @Size(max = 254)
+public record EmailVerificationConfirmRequest(
+    @NotBlank @Email @Size(max = 254)
     String email,
-    @NotBlank
-    @Size(max = 128)
-    String password
+
+    @NotBlank @Pattern(regexp = "^[0-9]{6}$")
+    String code
 ) {}

@@ -1,8 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import skeletonImg from '../images/Skeleton1.jpg';
 import { signup as authSignup } from '../utils/auth';
 import { useToast } from './Calendar_updated/components/hooks/use-toast';
+
+const MAX_FAILED_ATTEMPTS = 5;
+const COOLDOWN_MS = 30_000;
+
+const passwordMeetsPolicy = (value: string): boolean => {
+  return value.length >= 12
+    && /[A-Z]/.test(value)
+    && /[a-z]/.test(value)
+    && /[0-9]/.test(value)
+    && /[^A-Za-z0-9]/.test(value);
+};
+
+const nameLooksValid = (value: string): boolean => {
+  return /^[\p{L}][\p{L} .'-]{1,79}$/u.test(value.trim());
+};
 
 export default function SignupClassic() {
   const [email, setEmail] = useState('');
@@ -13,22 +28,47 @@ export default function SignupClassic() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const inCooldown = cooldownUntil !== null && Date.now() < cooldownUntil;
+
+  useEffect(() => {
+    if (cooldownUntil === null) {
+      return;
+    }
+
+    const remainingMs = cooldownUntil - Date.now();
+    if (remainingMs <= 0) {
+      setCooldownUntil(null);
+      setFailedAttempts(0);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setCooldownUntil(null);
+      setFailedAttempts(0);
+    }, remainingMs);
+
+    return () => window.clearTimeout(timer);
+  }, [cooldownUntil]);
+
   const isFormValid =
-    name.trim() !== '' &&
+    nameLooksValid(name) &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
-    password.length >= 6 &&
+    passwordMeetsPolicy(password) &&
     password === confirmPassword &&
     agreedToTerms;
 
   const validate = () => {
     const errors: string[] = [];
-    if (!name.trim()) errors.push('Full name is required');
+    if (!nameLooksValid(name)) errors.push('Full name is required and may only contain letters, spaces, apostrophes, periods, and hyphens');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Invalid email format');
-    if (password.length < 6) errors.push('Password must be at least 6 characters');
-    if (!/[0-9]/.test(password)) errors.push('Password must contain at least one number');
+    if (!passwordMeetsPolicy(password)) {
+      errors.push('Password must be at least 12 characters and include uppercase, lowercase, number, and special character');
+    }
     if (password !== confirmPassword) errors.push('Passwords do not match');
     if (!agreedToTerms) errors.push('You must agree to the terms and privacy policy');
     setError(errors.join('. ') || null);
@@ -38,6 +78,12 @@ export default function SignupClassic() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
+
+    if (inCooldown) {
+      setError('Too many attempts. Please wait 30 seconds before retrying.');
+      return;
+    }
+
     setError(null);
 
     if (!validate()) {
@@ -48,18 +94,26 @@ export default function SignupClassic() {
     try {
       await authSignup({ name, email, password });
       setSuccess(true);
+      setFailedAttempts(0);
+      setCooldownUntil(null);
       toast({
         title: 'Success',
-        description: 'Account created successfully! Please log in.',
+        description: 'Account created. Verify your email using the OTP we sent (check spam/junk too).',
       });
-      setTimeout(() => navigate('/login', { replace: true }), 1000); // Redirect after 1s to show toast
+      const normalizedEmail = email.trim().toLowerCase();
+      setTimeout(
+        () => navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`, { replace: true }),
+        900,
+      );
     } catch (err: unknown) {
       console.error('Signup error:', err);
-      const errMessage = err instanceof Error ? err.message : '';
-      const message =
-        errMessage === 'This email is already registered'
-          ? 'This email is already registered'
-          : 'Registration failed - please try again later';
+      const nextAttempts = failedAttempts + 1;
+      setFailedAttempts(nextAttempts);
+      if (nextAttempts >= MAX_FAILED_ATTEMPTS) {
+        setCooldownUntil(Date.now() + COOLDOWN_MS);
+      }
+
+      const message = 'Unable to complete signup. Please verify your details and try again.';
       setError(message);
       toast({
         title: 'Error',
@@ -140,6 +194,7 @@ export default function SignupClassic() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
                   className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
                   placeholder="John Doe"
                 />
@@ -151,6 +206,9 @@ export default function SignupClassic() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
                   placeholder="your.email@example.com"
                 />
@@ -165,23 +223,26 @@ export default function SignupClassic() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
                   className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
                   placeholder="••••••••"
                 />
                 <div className="mt-2 flex gap-1">
                   {[
-                    password.length >= 8,
+                    password.length >= 12,
                     /[A-Z]/.test(password),
+                    /[a-z]/.test(password),
                     /[0-9]/.test(password),
+                    /[^A-Za-z0-9]/.test(password),
                   ].map((valid, idx) => (
                     <div
                       key={idx}
-                      className={`h-1 w-1/3 rounded-full ${valid ? 'bg-green-500' : 'bg-gray-200'}`}
+                      className={`h-1 w-1/5 rounded-full ${valid ? 'bg-green-500' : 'bg-gray-200'}`}
                     />
                   ))}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  Requirements: 8+ characters, 1 uppercase, 1 number
+                  Requirements: 12+ characters, uppercase, lowercase, number, and special character
                 </div>
               </div>
 
@@ -191,6 +252,7 @@ export default function SignupClassic() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
                   className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
                   placeholder="••••••••"
                 />
@@ -220,7 +282,7 @@ export default function SignupClassic() {
 
               <button
                 type="submit"
-                disabled={loading || !isFormValid}
+                disabled={loading || !isFormValid || inCooldown}
                 className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#4A154B] hover:bg-[#3D1D38] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4A154B] disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {loading ? 'Creating Account...' : 'Create Account'}
@@ -228,7 +290,7 @@ export default function SignupClassic() {
 
               {success && (
                 <div className="mt-4 p-3 bg-green-100 text-green-800 rounded">
-                  Signup successful! Redirecting to login...
+                  Signup successful! Redirecting to email verification...
                 </div>
               )}
               {error && (

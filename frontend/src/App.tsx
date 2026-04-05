@@ -6,6 +6,8 @@ import TimeTracker from './components/TimeTracker/TimeTracker';
 import Analytics from './components/Analytics';
 import LoginClassic from './components/LoginFunctionality';
 import SignupClassic from './components/SignupFunctionality';
+import EmailVerificationPage from './components/EmailVerificationPage';
+import ForgotPasswordPage from './components/ForgotPasswordPage';
 import ProjectPage from './components/Project/ProjectPage';
 import TaskManager from './components/TaskManager';
 import { AuthProvider, useAuth, LoadingSpinner } from './context/AuthContext';
@@ -28,6 +30,8 @@ const App = () => (
         <Routes>
           <Route path="/login" element={<LoginClassic />} />
           <Route path="/signup" element={<SignupClassic />} />
+          <Route path="/verify-email" element={<EmailVerificationPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/onboarding" element={<ProtectedOnboarding />} />
           <Route path="/*" element={<ProtectedRoutes />} />
         </Routes>

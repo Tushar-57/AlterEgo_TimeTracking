@@ -1,17 +1,85 @@
-import { useState } from 'react';
-import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import skeletonImage from '../images/Skeleton1.jpg';
 import { useToast } from './Calendar_updated/components/hooks/use-toast';
 
+type LoginErrorResponse = {
+  error?: string;
+  message?: string;
+};
+
+type LoginSuccessResponse = {
+  user: {
+    email: string;
+    name?: string;
+    onboardingCompleted: boolean;
+  };
+};
+
+const MAX_FAILED_ATTEMPTS = 5;
+const COOLDOWN_MS = 30_000;
+
+const getSafeNextPath = (nextPathRaw: string | null): string | null => {
+  if (!nextPathRaw) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(nextPathRaw, window.location.origin);
+    const blockedTargets = new Set(['/login', '/signup', '/verify-email', '/forgot-password']);
+
+    if (parsed.origin !== window.location.origin) {
+      return null;
+    }
+
+    if (!parsed.pathname.startsWith('/')) {
+      return null;
+    }
+
+    if (blockedTargets.has(parsed.pathname)) {
+      return '/';
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+};
+
 export default function LoginClassic() {
-  const [email, setEmail] = useState('@gmail.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, login } = useAuth();
   const { toast } = useToast();
+
+  const isInCooldown = cooldownUntil !== null && Date.now() < cooldownUntil;
+
+  useEffect(() => {
+    if (cooldownUntil === null) {
+      return;
+    }
+
+    const remainingMs = cooldownUntil - Date.now();
+    if (remainingMs <= 0) {
+      setCooldownUntil(null);
+      setFailedAttempts(0);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setCooldownUntil(null);
+      setFailedAttempts(0);
+    }, remainingMs);
+
+    return () => window.clearTimeout(timer);
+  }, [cooldownUntil]);
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -19,6 +87,11 @@ export default function LoginClassic() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isInCooldown) {
+      setError('Too many failed attempts. Please wait 30 seconds and try again.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -38,32 +111,55 @@ export default function LoginClassic() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
+      const payload = (await response.json().catch(() => ({}))) as LoginErrorResponse & LoginSuccessResponse;
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        if (response.status === 403 && payload.error === 'EMAIL_NOT_VERIFIED') {
+          const normalizedEmail = email.trim().toLowerCase();
+          const verificationMessage = payload.message || 'Please verify your email before signing in.';
+          toast({
+            title: 'Email verification required',
+            description: verificationMessage,
+          });
+          navigate(`/verify-email?email=${encodeURIComponent(normalizedEmail)}`, { replace: true });
+          return;
+        }
+
+        throw new Error(payload.message || 'Invalid email or password');
       }
 
-      const data = await response.json();
-      const token = data.token;
+      const data = payload as LoginSuccessResponse;
 
-      localStorage.setItem('jwtToken', token.trim());
-
-      login(token, {
+      login({
         email: data.user.email,
         name: data.user.name,
         onboardingCompleted: data.user.onboardingCompleted, // Pass onboardingCompleted
       });
 
+      setFailedAttempts(0);
+      setCooldownUntil(null);
+
       toast({ title: 'Success', description: 'Logged in successfully!' });
 
-      // Redirect based on onboarding status
-      navigate(data.user.onboardingCompleted ? '/' : '/onboarding', { replace: true });
+      const requestedPath = new URLSearchParams(location.search).get('next');
+      const safeNextPath = getSafeNextPath(requestedPath);
+      const defaultPath = data.user.onboardingCompleted ? '/' : '/onboarding';
+
+      navigate(safeNextPath || defaultPath, { replace: true });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to log in.';
+      const message = 'Invalid email or password';
       console.error('Login error:', error);
+
+      const nextAttemptCount = failedAttempts + 1;
+      setFailedAttempts(nextAttemptCount);
+      if (nextAttemptCount >= MAX_FAILED_ATTEMPTS) {
+        setCooldownUntil(Date.now() + COOLDOWN_MS);
+      }
+
       toast({
         title: 'Error',
         description: message,
@@ -138,6 +234,9 @@ export default function LoginClassic() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
                   placeholder="FutureYou@gmail.com"
                 />
@@ -149,6 +248,7 @@ export default function LoginClassic() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
                   className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
                   placeholder="••••••••"
                 />
@@ -158,35 +258,34 @@ export default function LoginClassic() {
                 <div className="flex items-center">
                   <input
                     type="checkbox"
+                    autoComplete="off"
                     className="h-4 w-4 text-[#4A154B] focus:ring-[#4A154B] border-gray-300 rounded"
                   />
                   <label className="ml-2 block text-sm text-gray-700">Remember Me</label>
                 </div>
-                <a href="#" className="text-sm font-medium text-[#4A154B] hover:text-[#3D1D38]">
+                <Link to="/forgot-password" className="text-sm font-medium text-[#4A154B] hover:text-[#3D1D38]">
                   Forgot Password?
-                </a>
+                </Link>
               </div>
 
               {error && (
                 <div className="mb-4 p-3 bg-red-100 text-red-800 rounded text-sm">
-                  {error === 'Invalid credentials' ? (
-                    <div className="space-y-2">
-                      <p>Invalid email or password</p>
-                      <div className="text-xs">
-                        <Link to="/forgot-password" className="text-red-800 hover:text-red-900">
-                          Forgot your password?
-                        </Link>
-                      </div>
+                  <div className="space-y-2">
+                    <p>{error}</p>
+                    <div className="text-xs">
+                      <Link to="/forgot-password" className="text-red-800 hover:text-red-900">
+                        Forgot your password?
+                      </Link>
                     </div>
-                  ) : error}
+                  </div>
                 </div>
               )}
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isInCooldown}
                 className={`w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-medium text-white bg-[#4A154B] ${
-                  loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#3D1D38]'
+                  loading || isInCooldown ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#3D1D38]'
                 }`}
               >
                 {loading ? 'Logging in...' : 'Login'}

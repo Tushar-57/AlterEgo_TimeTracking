@@ -1,6 +1,5 @@
 package com.tushar.demo.timetracker.service.impl;
 
-import com.tushar.demo.timetracker.exception.TokenExpiredException;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.UserRepository;
 
@@ -14,8 +13,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import java.util.Collections;
-
-import javax.security.auth.login.CredentialExpiredException;
 
 
 @Service
@@ -35,11 +32,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                     logger.warn("User not found with email: {}", email);
                     return new UsernameNotFoundException("Invalid credentials");
                 });
-
-            if (user.isTokenInvalidated()) {
-                logger.info("Token invalidated for user: {}", email);
-                throw new TokenExpiredException("Session expired - please login again");
-            }
 
             return User.builder()
                 .username(user.getEmail())

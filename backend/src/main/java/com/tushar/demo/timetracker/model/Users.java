@@ -1,7 +1,6 @@
 package com.tushar.demo.timetracker.model;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -22,6 +21,30 @@ public class Users {
     @Column(name = "email_verified")
     private boolean emailVerified;
     private boolean tokenInvalidated = false;
+
+    @Column(name = "token_version", nullable = false)
+    private long tokenVersion = 0L;
+
+    @Column(name = "password_reset_code_hash")
+    private String passwordResetCodeHash;
+
+    @Column(name = "password_reset_code_expires_at")
+    private Instant passwordResetCodeExpiresAt;
+
+    @Column(name = "password_reset_attempts")
+    private int passwordResetAttempts = 0;
+
+    @Column(name = "email_verification_code_hash")
+    private String emailVerificationCodeHash;
+
+    @Column(name = "email_verification_code_expires_at")
+    private Instant emailVerificationCodeExpiresAt;
+
+    @Column(name = "email_verification_attempts")
+    private int emailVerificationAttempts = 0;
+
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
     
     @Column(name = "onboarding_completed")
     private boolean onboardingCompleted = false;
@@ -49,6 +72,70 @@ public class Users {
     }
     public void setTokenInvalidated(boolean tokenInvalidated) {
         this.tokenInvalidated = tokenInvalidated;
+    }
+
+    public long getTokenVersion() {
+        return tokenVersion;
+    }
+
+    public void setTokenVersion(long tokenVersion) {
+        this.tokenVersion = tokenVersion;
+    }
+
+    public String getPasswordResetCodeHash() {
+        return passwordResetCodeHash;
+    }
+
+    public void setPasswordResetCodeHash(String passwordResetCodeHash) {
+        this.passwordResetCodeHash = passwordResetCodeHash;
+    }
+
+    public Instant getPasswordResetCodeExpiresAt() {
+        return passwordResetCodeExpiresAt;
+    }
+
+    public void setPasswordResetCodeExpiresAt(Instant passwordResetCodeExpiresAt) {
+        this.passwordResetCodeExpiresAt = passwordResetCodeExpiresAt;
+    }
+
+    public int getPasswordResetAttempts() {
+        return passwordResetAttempts;
+    }
+
+    public void setPasswordResetAttempts(int passwordResetAttempts) {
+        this.passwordResetAttempts = passwordResetAttempts;
+    }
+
+    public String getEmailVerificationCodeHash() {
+        return emailVerificationCodeHash;
+    }
+
+    public void setEmailVerificationCodeHash(String emailVerificationCodeHash) {
+        this.emailVerificationCodeHash = emailVerificationCodeHash;
+    }
+
+    public Instant getEmailVerificationCodeExpiresAt() {
+        return emailVerificationCodeExpiresAt;
+    }
+
+    public void setEmailVerificationCodeExpiresAt(Instant emailVerificationCodeExpiresAt) {
+        this.emailVerificationCodeExpiresAt = emailVerificationCodeExpiresAt;
+    }
+
+    public int getEmailVerificationAttempts() {
+        return emailVerificationAttempts;
+    }
+
+    public void setEmailVerificationAttempts(int emailVerificationAttempts) {
+        this.emailVerificationAttempts = emailVerificationAttempts;
+    }
+
+    public Instant getEmailVerifiedAt() {
+        return emailVerifiedAt;
+    }
+
+    public void setEmailVerifiedAt(Instant emailVerifiedAt) {
+        this.emailVerifiedAt = emailVerifiedAt;
     }
 
     public String getPassword() {

@@ -88,6 +88,38 @@ function rewriteUrl(url: string): string {
   return normalizedUrl;
 }
 
+function isTimeTrackerApiUrl(url: string): boolean {
+  if (typeof window === 'undefined') {
+    return url.startsWith('/api');
+  }
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+    return parsed.pathname.startsWith('/api');
+  } catch {
+    return url.startsWith('/api');
+  }
+}
+
+function buildRequestInit(
+  rewrittenUrl: string,
+  init?: RequestInit,
+  fallbackHeaders?: HeadersInit,
+): RequestInit {
+  const requiresCookieAuth = isTimeTrackerApiUrl(rewrittenUrl);
+  const headers = new Headers(init?.headers ?? fallbackHeaders ?? undefined);
+
+  if (requiresCookieAuth) {
+    headers.delete('Authorization');
+  }
+
+  return {
+    ...init,
+    headers,
+    credentials: requiresCookieAuth ? 'include' : init?.credentials,
+  };
+}
+
 export function installApiRouting(): void {
   if (fetchRewriteInstalled || typeof window === 'undefined') {
     return;
@@ -98,21 +130,25 @@ export function installApiRouting(): void {
 
   window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
     if (typeof input === 'string') {
-      return nativeFetch(rewriteUrl(input), init);
+      const rewritten = rewriteUrl(input);
+      return nativeFetch(rewritten, buildRequestInit(rewritten, init));
     }
 
     if (input instanceof URL) {
-      return nativeFetch(rewriteUrl(input.toString()), init);
+      const rewritten = rewriteUrl(input.toString());
+      return nativeFetch(rewritten, buildRequestInit(rewritten, init));
     }
 
     if (input instanceof Request) {
       const rewritten = rewriteUrl(input.url);
+      const nextInit = buildRequestInit(rewritten, init, input.headers);
+
       if (rewritten === input.url) {
-        return nativeFetch(input, init);
+        return nativeFetch(input, nextInit);
       }
 
       const rewrittenRequest = new Request(rewritten, input);
-      return nativeFetch(rewrittenRequest, init);
+      return nativeFetch(rewrittenRequest, nextInit);
     }
 
     return nativeFetch(input, init);
