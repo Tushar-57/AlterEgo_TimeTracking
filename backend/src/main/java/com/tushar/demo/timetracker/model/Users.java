@@ -22,8 +22,8 @@ public class Users {
     private boolean emailVerified;
     private boolean tokenInvalidated = false;
 
-    @Column(name = "token_version", nullable = false)
-    private long tokenVersion = 0L;
+    @Column(name = "token_version", columnDefinition = "bigint default 0")
+    private Long tokenVersion = 0L;
 
     @Column(name = "password_reset_code_hash")
     private String passwordResetCodeHash;
@@ -75,7 +75,7 @@ public class Users {
     }
 
     public long getTokenVersion() {
-        return tokenVersion;
+        return tokenVersion == null ? 0L : tokenVersion;
     }
 
     public void setTokenVersion(long tokenVersion) {
