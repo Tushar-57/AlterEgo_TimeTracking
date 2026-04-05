@@ -76,7 +76,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
       />
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-screen w-64 border-r border-teal-200/60 bg-white/95 p-6 shadow-xl backdrop-blur-xl transition-transform duration-300 dark:border-slate-700 dark:bg-slate-900/95 md:z-20 md:translate-x-0 md:shadow-none ${
+        className={`fixed left-0 top-0 z-50 h-[100dvh] w-64 border-r border-teal-200/60 bg-white/95 p-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+1rem)] shadow-xl backdrop-blur-xl transition-transform duration-300 dark:border-slate-700 dark:bg-slate-900/95 md:z-20 md:translate-x-0 md:shadow-none md:pt-6 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

@@ -254,6 +254,40 @@ public class TimerController {
         }
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<TimeEntry>> updateTimeEntry(
+            @PathVariable Long id,
+            @Valid @RequestBody addTimeEntryRequest request,
+            Authentication authentication) {
+        logger.info("Updating time entry {} for user: {}", id, authName(authentication));
+        try {
+            if (!isAuthenticatedUser(authentication)) {
+                logger.warn("Unauthorized attempt to update timer");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
+            }
+
+            Users user = userDetailsService.getCurrentUser(authentication);
+            TimeEntry updatedEntry = timeEntryService.updateTimeEntry(id, request, user);
+            agenticKnowledgeSyncService.syncTimeEntry(updatedEntry, user, "update_time_entry");
+
+            logger.info("Time entry {} updated successfully for user: {}", id, user.getName());
+            return ResponseEntity.ok(ApiResponse.success(updatedEntry, "Time entry updated successfully"));
+        } catch (ResourceNotFoundException e) {
+            logger.warn("Time entry update target missing for user {}: {}", authName(authentication), e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Resource not found", Map.of("message", e.getMessage(), "code", "RESOURCE_NOT_FOUND")));
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid update payload for user {}: {}", authName(authentication), e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Validation failed", Map.of("message", e.getMessage(), "code", "VALIDATION_FAILED")));
+        } catch (Exception e) {
+            logger.error("Failed to update time entry {} for user: {}", id, authName(authentication), e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Update failed", Map.of("message", e.getMessage())));
+        }
+    }
+
     private boolean isAuthenticatedUser(Authentication authentication) {
         return authentication != null
                 && authentication.isAuthenticated()

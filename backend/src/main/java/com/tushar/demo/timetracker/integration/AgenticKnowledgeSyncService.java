@@ -92,6 +92,7 @@ public class AgenticKnowledgeSyncService {
             Map<String, Object> context = new LinkedHashMap<>();
             context.put("source", "alterego_timetracker");
             context.put("source_action", sourceAction);
+            context.put("category", "time_entry");
             context.put("time_entry_id", entry.getId());
             context.put("description", description);
             context.put("start_time", entry.getStartTime() != null ? entry.getStartTime().toString() : null);
@@ -122,7 +123,7 @@ public class AgenticKnowledgeSyncService {
                     + (entry.getProject() != null ? " under project \"" + safeText(entry.getProject().getName(), "") + "\"." : ".");
 
             Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("agent_type", "productivity");
+            payload.put("agent_type", "time_entry");
             payload.put("user_input", "Log time entry: " + description);
             payload.put("agent_response", responseText);
             payload.put("context", context);

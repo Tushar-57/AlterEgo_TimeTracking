@@ -1,5 +1,5 @@
 import { ArrowUpRight, Eye, ExternalLink } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 const BUILTIN_COACH_URL_CANDIDATES = [
   'https://agenticlyf.vercel.app/coach/',
@@ -102,6 +102,23 @@ const primeCoachKnowledge = async (): Promise<void> => {
 
 const CoachWorkspace = () => {
   const [showEmbeddedPreview, setShowEmbeddedPreview] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Reset both window and scrollable parent containers to avoid opening mid-scroll.
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+    const node = containerRef.current;
+    if (!node) {
+      return;
+    }
+
+    let parent: HTMLElement | null = node.parentElement;
+    while (parent) {
+      parent.scrollTop = 0;
+      parent = parent.parentElement;
+    }
+  }, []);
 
   const coachSrc = useMemo(() => {
     const resolved = resolveCoachSrc();
@@ -150,7 +167,7 @@ const CoachWorkspace = () => {
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gradient-to-b from-slate-50 via-white to-blue-50/40 p-4 sm:p-6">
+    <div ref={containerRef} className="flex min-h-screen w-full flex-col bg-gradient-to-b from-slate-50 via-white to-blue-50/40 p-4 sm:p-6">
       <div className="mx-auto w-full max-w-5xl rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
         <div className="mb-6 flex flex-col gap-2">
           <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">AI Coach Workspace</h1>

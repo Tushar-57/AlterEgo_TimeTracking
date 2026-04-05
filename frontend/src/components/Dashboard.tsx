@@ -48,14 +48,13 @@ export const calculatePosition = (startTime: string) => {
 };
 
 export const getColorForProject = (projectId: number | null): string => {
-  const colors: { [key: number]: string } = {
-    1: "lightblue",
-    2: "violet",
-    3: "amber",
-    4: "rose",
-    5: "emerald",
-  };
-  return projectId ? colors[projectId] || "lightblue" : "lightblue";
+  const palette = ["lightblue", "violet", "amber", "rose", "emerald"];
+  if (projectId === null || projectId === undefined) {
+    return "lightblue";
+  }
+
+  const index = Math.abs(projectId) % palette.length;
+  return palette[index];
 };
 
 export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
@@ -239,9 +238,10 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
 
         const sourceStart = new Date(source.startTime);
         const durationSeconds = source.durationSeconds ?? Math.max(900, Math.round((Number.parseFloat(source.height) / 60) * 3600));
-        const duplicateStart = new Date(sourceStart.getTime() + 15 * 60 * 1000);
+        const duplicateStart = new Date(sourceStart);
+        duplicateStart.setDate(duplicateStart.getDate() + 1);
         const duplicateEnd = new Date(duplicateStart.getTime() + durationSeconds * 1000);
-        const duplicatedTop = `${Math.max(0, Number.parseFloat(source.position.top || "0") + 18)}px`;
+        const { top: duplicatedTop, left: duplicatedLeft } = calculatePosition(formatLocalDateTime(duplicateStart));
 
         const response = await fetch("/api/timers/addTimer", {
           method: "POST",
@@ -258,7 +258,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
             projectId: source.projectId ?? null,
             billable: source.billable ?? false,
             positionTop: duplicatedTop,
-            positionLeft: source.position.left,
+            positionLeft: duplicatedLeft,
           }),
         });
 
@@ -269,7 +269,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
 
         toast({
           title: "Entry duplicated",
-          description: "A copy was created. Drag it to a new slot in weekly view.",
+          description: "A copy was created one day ahead in your timeline.",
         });
 
         const rangeStart = new Date(duplicateStart);

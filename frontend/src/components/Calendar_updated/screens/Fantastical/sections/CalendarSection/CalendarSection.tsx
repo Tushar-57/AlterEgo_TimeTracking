@@ -395,6 +395,12 @@ interface CalendarSectionProps {
   onDuplicateEvent?: (eventId: number) => Promise<void> | void;
 }
 
+interface CalendarContextMenuState {
+  x: number;
+  y: number;
+  selectedTime: Date;
+}
+
 export const CalendarSection = ({
   events,
   refreshEvents,
@@ -409,7 +415,8 @@ export const CalendarSection = ({
   const [mobileSelectedDate, setMobileSelectedDate] = useState(new Date());
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<Date | undefined>(undefined);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [contextMenu, setContextMenu] = useState<CalendarContextMenuState | null>(null);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [now, setNow] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
@@ -569,6 +576,25 @@ export const CalendarSection = ({
     }
   };
 
+  const openCreatePopupAt = (targetDate: Date) => {
+    setSelectedEvent(null);
+    setSelectedTime(new Date(targetDate));
+    setIsPopupOpen(true);
+  };
+
+  const openEditPopup = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setSelectedTime(new Date(event.startTime));
+    setIsPopupOpen(true);
+    setContextMenu(null);
+  };
+
+  const closePopup = () => {
+    setIsPopupOpen(false);
+    setSelectedTime(undefined);
+    setSelectedEvent(null);
+  };
+
   const handleTimeSlotClick = (hour: number, dayIndex?: number, event?: React.MouseEvent) => {
     const selectedDate = new Date(currentDate);
     if (view === "week" && dayIndex !== undefined) {
@@ -576,25 +602,27 @@ export const CalendarSection = ({
     }
     selectedDate.setHours(hour, 0, 0, 0);
 
-    if (event && view === "week") {
-      event.preventDefault();
+    if (event) {
       const defaultAction = localStorage.getItem("defaultCalendarAction") || "addTimeEntry";
-      if (event.type === "click" && defaultAction === "addTimeEntry") {
-        setSelectedTime(selectedDate);
-        setIsPopupOpen(true);
-      } else if (event.type === "contextmenu") {
-        setContextMenu({ x: event.clientX, y: event.clientY });
+      const isContextMenuEvent = event.type === "contextmenu";
+
+      if (isContextMenuEvent) {
+        event.preventDefault();
+        setContextMenu({ x: event.clientX, y: event.clientY, selectedTime: selectedDate });
+        return;
       }
-    } else {
-      setSelectedTime(selectedDate);
-      setIsPopupOpen(true);
+
+      if (view === "week" && defaultAction !== "addTimeEntry") {
+        return;
+      }
     }
+
+    openCreatePopupAt(selectedDate);
   };
 
   const handleSave = async () => {
     await refreshEvents(getVisibleRange(currentDate, view));
-    setIsPopupOpen(false);
-    setSelectedTime(undefined);
+    closePopup();
   };
 
   const handleViewChange = (value: string) => {
@@ -794,8 +822,7 @@ export const CalendarSection = ({
   const openTaskForDate = (baseDate: Date) => {
     const entryDate = new Date(baseDate);
     entryDate.setHours(now.getHours(), 0, 0, 0);
-    setSelectedTime(entryDate);
-    setIsPopupOpen(true);
+    openCreatePopupAt(entryDate);
   };
 
   const renderMobileCalendar = () => {
@@ -879,7 +906,13 @@ export const CalendarSection = ({
                   key={event.id}
                   type="button"
                   className="w-full rounded-xl border border-[#D8BFD8]/40 bg-[#FBFAFF] p-3 text-left transition hover:bg-[#F3EEFF] dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-                  onClick={() => openTaskForDate(new Date(event.startTime))}
+                  onClick={() => openEditPopup(event)}
+                  onContextMenu={(mouseEvent) => {
+                    mouseEvent.preventDefault();
+                    if (onDuplicateEvent) {
+                      void onDuplicateEvent(event.id);
+                    }
+                  }}
                 >
                   <div className="text-xs font-semibold text-[#7C7AA6] dark:text-[#B0C4DE]">
                     {formatEventTimeLabel(event)}
@@ -959,9 +992,12 @@ export const CalendarSection = ({
                       type="button"
                       key={event.id}
                       className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-left transition hover:bg-indigo-50"
-                      onClick={() => {
-                        setSelectedTime(new Date(event.startTime));
-                        setIsPopupOpen(true);
+                      onClick={() => openEditPopup(event)}
+                      onContextMenu={(mouseEvent) => {
+                        mouseEvent.preventDefault();
+                        if (onDuplicateEvent) {
+                          void onDuplicateEvent(event.id);
+                        }
                       }}
                     >
                       <div className="text-xs font-medium text-indigo-600">
@@ -1018,7 +1054,8 @@ export const CalendarSection = ({
                   top: `${timeIndex * HOUR_ROW_HEIGHT}px`,
                   height: `${HOUR_ROW_HEIGHT}px`,
                 }}
-                onClick={() => handleTimeSlotClick(timeIndex)}
+                onClick={(event) => handleTimeSlotClick(timeIndex, undefined, event)}
+                onContextMenu={(event) => handleTimeSlotClick(timeIndex, undefined, event)}
               >
                 Add entry
               </button>
@@ -1029,19 +1066,27 @@ export const CalendarSection = ({
               const leftPercent = item.lane * laneWidth;
 
               return (
-                <div
+                <button
                   key={item.event.id}
-                  className={`pointer-events-none absolute z-10 rounded-md border px-2 py-1 text-xs shadow-sm ${getEventColorClasses(item.event.color)}`}
+                  type="button"
+                  className={`absolute z-10 rounded-md border px-2 py-1 text-left text-xs shadow-sm ${getEventColorClasses(item.event.color)}`}
                   style={{
                     top: `${item.top + 2}px`,
                     left: `calc(${leftPercent}% + 6px)`,
                     width: `calc(${laneWidth}% - 12px)`,
                     height: `${Math.max(20, item.height - 4)}px`,
                   }}
+                  onClick={() => openEditPopup(item.event)}
+                  onContextMenu={(mouseEvent) => {
+                    mouseEvent.preventDefault();
+                    if (onDuplicateEvent) {
+                      void onDuplicateEvent(item.event.id);
+                    }
+                  }}
                 >
                   <div className="truncate font-semibold">{item.event.title}</div>
                   <div className="truncate text-[10px] opacity-80">{formatEventTimeLabel(item.event)}</div>
-                </div>
+                </button>
               );
             })}
 
@@ -1142,6 +1187,14 @@ export const CalendarSection = ({
                       width: `${Math.max(88, weekColumnWidth - 8)}px`,
                       height: `${eventHeight}px`,
                     }}
+                    onClick={() => openEditPopup(event)}
+                    onContextMenu={(mouseEvent) => {
+                      mouseEvent.preventDefault();
+                      mouseEvent.stopPropagation();
+                      if (onDuplicateEvent) {
+                        void onDuplicateEvent(event.id);
+                      }
+                    }}
                     title="Drag to move in weekly view"
                   >
                     <button
@@ -1189,7 +1242,7 @@ export const CalendarSection = ({
             y={contextMenu.y}
             onClose={() => setContextMenu(null)}
             onAddTimeEntry={() => {
-              setIsPopupOpen(true);
+              openCreatePopupAt(contextMenu.selectedTime);
               setContextMenu(null);
             }}
           />
@@ -1226,13 +1279,21 @@ export const CalendarSection = ({
             </span>
             <div className="mt-2 space-y-1 overflow-hidden">
               {day.events.slice(0, 3).map((event) => (
-                <div
+                <button
                   key={event.id}
-                  className={`truncate rounded-md border px-1.5 py-1 text-[11px] ${getEventColorClasses(event.color)}`}
+                  type="button"
+                  className={`w-full truncate rounded-md border px-1.5 py-1 text-left text-[11px] ${getEventColorClasses(event.color)}`}
                   title={`${formatEventTimeLabel(event)} ${event.title}`}
+                  onClick={() => openEditPopup(event)}
+                  onContextMenu={(mouseEvent) => {
+                    mouseEvent.preventDefault();
+                    if (onDuplicateEvent) {
+                      void onDuplicateEvent(event.id);
+                    }
+                  }}
                 >
                   <span className="font-medium">{formatEventTimeLabel(event)}</span> {event.title}
-                </div>
+                </button>
               ))}
               {day.events.length > 3 && (
                 <div className="px-1 text-[11px] font-medium text-gray-500">+{day.events.length - 3} more</div>
@@ -1414,8 +1475,9 @@ export const CalendarSection = ({
         )}
         <TaskPopup
           isOpen={isPopupOpen}
-          onClose={() => setIsPopupOpen(false)}
+          onClose={closePopup}
           defaultStartTime={selectedTime}
+          initialEntry={selectedEvent}
           onSave={handleSave}
         />
       </div>

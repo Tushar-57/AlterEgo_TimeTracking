@@ -467,12 +467,14 @@ import { X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Switch } from '../../../../components/ui/switch';
 import { calculatePosition } from '../../../../../Dashboard';
+import type { CalendarEvent } from '../../../../components/DraggableEvent';
 // import { Label } from '../../../../components/ui/label';
 
 interface TaskPopupProps {
   isOpen: boolean;
   onClose: () => void;
   defaultStartTime?: Date;
+  initialEntry?: CalendarEvent | null;
   onSave: () => Promise<void>;
 }
 
@@ -497,16 +499,16 @@ const toLocalDateTimeString = (date: Date) => {
   )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 };
 
-export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPopupProps) {
+export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onSave }: TaskPopupProps) {
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [projectId, setProjectId] = useState<string | null>(null);
-  const [tagId, setTagId] = useState<string | null>(null);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [billable, setBillable] = useState(false);
   const [linkedGoal, setLinkedGoal] = useState<string | null>(null);
-  const [focusScore, setFocusScore] = useState<string>('5');
-  const [energyScore, setEnergyScore] = useState<string>('5');
+  const [focusScore, setFocusScore] = useState<string>('');
+  const [energyScore, setEnergyScore] = useState<string>('');
   const [contextNotes, setContextNotes] = useState('');
   const [blockers, setBlockers] = useState('');
   const [aiDetail, setAiDetail] = useState('');
@@ -518,20 +520,76 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
   const { toast } = useToast();
   const popupRef = useRef<HTMLDivElement>(null);
 
-  // Initialize default start and end times
-  useEffect(() => {
-    if (defaultStartTime) {
-      const start = defaultStartTime;
-      const end = new Date(defaultStartTime);
-      end.setHours(end.getHours() + 1);
-      setStartTime(
-        `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`
-      );
-      setEndTime(
-        `${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`
-      );
+  const formatTimeInput = (date: Date) =>
+    `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+  const resetForm = () => {
+    setDescription('');
+    setStartTime('');
+    setEndTime('');
+    setProjectId(null);
+    setSelectedTagIds([]);
+    setBillable(false);
+    setLinkedGoal(null);
+    setFocusScore('');
+    setEnergyScore('');
+    setContextNotes('');
+    setBlockers('');
+    setAiDetail('');
+  };
+
+  const initializeCreateForm = (baseDate?: Date) => {
+    resetForm();
+
+    if (!baseDate) {
+      return;
     }
-  }, [defaultStartTime]);
+
+    const start = new Date(baseDate);
+    const end = new Date(baseDate);
+    end.setHours(end.getHours() + 1);
+    setStartTime(formatTimeInput(start));
+    setEndTime(formatTimeInput(end));
+  };
+
+  const initializeEditForm = (entry: CalendarEvent) => {
+    resetForm();
+
+    const start = new Date(entry.startTime);
+    const fallbackDurationSeconds = Number.isFinite(entry.durationSeconds)
+      ? (entry.durationSeconds as number)
+      : Math.max(900, Math.round((Number.parseFloat(entry.height) / 60) * 3600));
+    const end = new Date(start.getTime() + fallbackDurationSeconds * 1000);
+
+    setDescription(entry.title ?? '');
+    setStartTime(formatTimeInput(start));
+    setEndTime(formatTimeInput(end));
+    setProjectId(entry.projectId !== null && entry.projectId !== undefined ? entry.projectId.toString() : null);
+    setSelectedTagIds((entry.tagIds ?? []).map((id) => id.toString()));
+    setBillable(entry.billable ?? false);
+  };
+
+  const toggleTagSelection = (tagValue: string) => {
+    setSelectedTagIds((previous) =>
+      previous.includes(tagValue)
+        ? previous.filter((currentTag) => currentTag !== tagValue)
+        : [...previous, tagValue]
+    );
+  };
+
+  // Initialize form state whenever popup opens in create or edit mode.
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (initialEntry) {
+      initializeEditForm(initialEntry);
+      return;
+    }
+
+    initializeCreateForm(defaultStartTime);
+  }, [isOpen, defaultStartTime, initialEntry]);
 
   // Fetch projects and tags
   useEffect(() => {
@@ -670,12 +728,23 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
       }
 
       // Construct start and end times in local datetime format expected by backend
-      const startDate = new Date(defaultStartTime || Date.now());
+      const baseDate = initialEntry ? new Date(initialEntry.startTime) : new Date(defaultStartTime || Date.now());
+      const startDate = new Date(baseDate);
       const [startHours, startMinutes] = startTime.split(':').map(Number);
       startDate.setHours(startHours, startMinutes, 0, 0);
       const endDate = new Date(startDate);
       const [endHours, endMinutes] = endTime.split(':').map(Number);
       endDate.setHours(endHours, endMinutes, 0, 0);
+
+      if (endDate <= startDate) {
+        toast({
+          title: 'Validation Error',
+          description: 'End time must be after start time.',
+          variant: 'destructive',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+        });
+        return;
+      }
 
       const startTimeLocal = toLocalDateTimeString(startDate);
       const endTimeLocal = toLocalDateTimeString(endDate);
@@ -686,20 +755,23 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
         startTime: startTimeLocal,
         endTime: endTimeLocal,
         projectId: projectId ? parseInt(projectId) : null,
-        tagIds: tagId ? [parseInt(tagId)] : [],
+        tagIds: selectedTagIds.map((tagValue) => parseInt(tagValue, 10)).filter((id) => Number.isInteger(id)),
         billable,
         positionTop: top,
         positionLeft: left,
         linkedGoal: linkedGoal || null,
-        focusScore: focusScore ? Number(focusScore) : null,
-        energyScore: energyScore ? Number(energyScore) : null,
+        focusScore: focusScore.trim() ? Number(focusScore) : null,
+        energyScore: energyScore.trim() ? Number(energyScore) : null,
         blockers: blockers.trim() || null,
         contextNotes: contextNotes.trim() || null,
         aiDetail: aiDetail.trim() || null,
       };
 
-      const response = await fetch('/api/timers/addTimer', {
-        method: 'POST',
+      const endpoint = initialEntry ? `/api/timers/${initialEntry.id}` : '/api/timers/addTimer';
+      const method = initialEntry ? 'PUT' : 'POST';
+
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -714,8 +786,10 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
       }
 
       toast({
-        title: 'Task Saved',
-        description: 'Your task has been saved successfully.',
+        title: initialEntry ? 'Task Updated' : 'Task Saved',
+        description: initialEntry
+          ? 'Your task has been updated successfully.'
+          : 'Your task has been saved successfully.',
         className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
       await onSave();
@@ -752,7 +826,9 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
           className="w-full max-w-[640px] max-h-[92vh] overflow-y-auto rounded-2xl border border-[#D8BFD8]/45 bg-gradient-to-br from-[#FCFBFF] via-[#F8F5FF] to-[#F1F7FF] p-4 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 dark:text-slate-100 sm:p-6"
         >
           <div className="mb-4 flex items-center justify-between border-b border-[#D8BFD8]/40 pb-3 dark:border-slate-700">
-            <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Add Task</h3>
+            <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+              {initialEntry ? 'Edit Task' : 'Add Task'}
+            </h3>
             <Button
               variant="ghost"
               size="icon"
@@ -826,28 +902,44 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
               </Select>
             </div>
             <div>
-              <label htmlFor="tag" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                Tag
+              <label htmlFor="tags" className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                Tags
               </label>
-              <Select
-                value={tagId || ''}
-                onValueChange={(value) => {
-                  console.log('Tag:', value);
-                  setTagId(value === '0' ? null : value);
-                }}
+              <div
+                id="tags"
+                className="mt-1 flex min-h-[44px] flex-wrap gap-2 rounded-xl border border-[#D8BFD8]/50 bg-white/95 p-2 shadow-sm dark:border-slate-600 dark:bg-slate-800"
               >
-                <SelectTrigger className="z-10 mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-                  <SelectValue placeholder="Select tag" />
-                </SelectTrigger>
-                <SelectContent className="radix-select-content z-50 border-[#D8BFD8]/50 bg-white text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-                  <SelectItem value="0">No tag</SelectItem>
-                  {tags.map((tag) => (
-                    <SelectItem key={tag.id} value={tag.id.toString()}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTagIds([])}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                    selectedTagIds.length === 0
+                      ? 'border-[#A795C9] bg-[#EDE4FF] text-[#5A4E84] dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100'
+                      : 'border-[#D8BFD8]/60 text-slate-600 hover:bg-[#F3EEFF] dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  No tags
+                </button>
+                {tags.map((tag) => {
+                  const tagValue = tag.id.toString();
+                  const isSelected = selectedTagIds.includes(tagValue);
+
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => toggleTagSelection(tagValue)}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                        isSelected
+                          ? 'border-[#A795C9] bg-[#EDE4FF] text-[#5A4E84] dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100'
+                          : 'border-[#D8BFD8]/60 text-slate-600 hover:bg-[#F3EEFF] dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700'
+                      }`}
+                    >
                       {tag.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="col-span-2 flex items-center gap-2">
               <Switch
@@ -967,7 +1059,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
                 disabled={loading}
                 className="w-full rounded-xl bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] px-5 py-2 text-slate-900 shadow-sm transition-all duration-200 hover:from-[#CFAEE4] hover:to-[#9DB7D8] hover:shadow-md dark:from-slate-700 dark:to-slate-600 dark:text-slate-100 sm:w-auto"
               >
-                {loading ? 'Saving...' : 'Save'}
+                {loading ? 'Saving...' : initialEntry ? 'Save Changes' : 'Save'}
               </Button>
             </motion.div>
           </div>

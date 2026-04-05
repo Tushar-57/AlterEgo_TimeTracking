@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { BarChart2, Clock, LayoutDashboard, ListChecks, Menu } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { BarChart2, Brain, Clock, LayoutDashboard, ListChecks, Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import TimeTracker from './components/TimeTracker/TimeTracker';
 import Analytics from './components/Analytics';
@@ -74,8 +74,13 @@ const ProtectedRoutes = () => {
     { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
     { label: 'Tasks', to: '/tasks', icon: ListChecks },
     { label: 'Analytics', to: '/analytics', icon: BarChart2 },
-    { label: 'Coach', to: '/coach', icon: Clock },
+    { label: 'Coach', to: '/coach', icon: Brain },
   ];
+
+  const activeMobileTab = useMemo(
+    () => mobileTabs.find((tab) => location.pathname === tab.to || location.pathname.startsWith(`${tab.to}/`)),
+    [location.pathname]
+  );
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -108,7 +113,7 @@ const ProtectedRoutes = () => {
 
   return (
     <ChatProvider>
-      <div className="relative flex h-[100dvh] min-h-screen overflow-hidden bg-gradient-to-b from-[#F5FBFA] via-[#F1F9FF] to-[#FFF9EE] text-slate-900 dark:from-[#0B1220] dark:via-[#0F172A] dark:to-[#1E293B] dark:text-slate-100">
+      <div className="relative flex min-h-[100dvh] overflow-x-hidden bg-gradient-to-b from-[#F5FBFA] via-[#F1F9FF] to-[#FFF9EE] text-slate-900 dark:from-[#0B1220] dark:via-[#0F172A] dark:to-[#1E293B] dark:text-slate-100">
         <div className="fixed left-0 right-0 top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between border-b border-teal-200/60 bg-white/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:hidden dark:border-slate-700 dark:bg-slate-900/95">
           <button
             type="button"
@@ -118,12 +123,15 @@ const ProtectedRoutes = () => {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold tracking-wide text-slate-900 dark:text-slate-100">Alter Ego Workspace</span>
+          <div className="text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Alter Ego Workspace</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{activeMobileTab?.label ?? 'Workspace'}</p>
+          </div>
           <ThemeToggle className="h-10 w-10 p-0" />
         </div>
 
         <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
-        <main className="min-h-0 min-w-0 flex-1 ml-0 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-[calc(4rem+env(safe-area-inset-top))] md:ml-64 md:pb-0 md:pt-0">
+        <main className="ml-0 min-h-0 min-w-0 flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))] pt-[calc(4rem+env(safe-area-inset-top))] md:ml-64 md:pb-0 md:pt-0">
           <Routes>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

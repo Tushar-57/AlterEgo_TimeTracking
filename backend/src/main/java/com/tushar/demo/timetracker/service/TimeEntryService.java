@@ -11,6 +11,7 @@ import java.util.List;
 public interface TimeEntryService {
     TimeEntry startTimeEntry(StartTimeEntryRequest request, Users user);
     TimeEntry addTimeEntry(addTimeEntryRequest request, Users user);
+    TimeEntry updateTimeEntry(Long timerId, addTimeEntryRequest request, Users user);
     TimeEntry stopTimer(Long timerId, Users user, LocalDateTime manualEnd);
     TimeEntry getActiveTimer(Users user);
     List<TimeEntry> getRecentTimeEntries(Users user, int limit);

@@ -231,6 +231,50 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         return savedEntry;
     }
 
+    @Override
+    public TimeEntry updateTimeEntry(Long timerId, addTimeEntryRequest request, Users user) {
+        logger.info("Updating time entry {} for user: {}", timerId, user.getEmail());
+
+        if (!request.getEndTime().isAfter(request.getStartTime())) {
+            logger.warn("Invalid update range for user {}: startTime={}, endTime={}",
+                    user.getEmail(), request.getStartTime(), request.getEndTime());
+            throw new IllegalArgumentException("End time must be after start time");
+        }
+
+        TimeEntry timeEntry = timeEntryRepository.findByIdAndUser(timerId, user)
+                .orElseThrow(() -> new ResourceNotFoundException("Time entry not found with ID: " + timerId));
+
+        Project project = null;
+        if (request.getProjectId() != null) {
+            project = projectRepository.findById(request.getProjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Project not found with ID: " + request.getProjectId()));
+        }
+
+        List<Long> tagIds = new ArrayList<>();
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            List<Tags> tags = tagRepository.findAllById(request.getTagIds());
+            if (tags.size() != request.getTagIds().size()) {
+                throw new ResourceNotFoundException("One or more tags not found");
+            }
+            tagIds = tags.stream().map(Tags::getId).toList();
+        }
+
+        timeEntry.setDescription(request.getDescription());
+        timeEntry.setStartTime(request.getStartTime());
+        timeEntry.setEndTime(request.getEndTime());
+        timeEntry.setProject(project);
+        timeEntry.setTagIds(tagIds);
+        timeEntry.setBillable(request.isBillable());
+        timeEntry.setPositionTop(request.getPositionTop());
+        timeEntry.setPositionLeft(request.getPositionLeft());
+        timeEntry.setIsActive(false);
+
+        TimeEntry updatedEntry = timeEntryRepository.save(timeEntry);
+        upsertEntryDetail(updatedEntry, request);
+        logger.info("Successfully updated time entry {} for user: {}", timerId, user.getEmail());
+        return updatedEntry;
+    }
+
     private void upsertEntryDetail(TimeEntry entry, addTimeEntryRequest request) {
         if (entry == null || entry.getId() == null || !hasDetailPayload(request)) {
             return;
