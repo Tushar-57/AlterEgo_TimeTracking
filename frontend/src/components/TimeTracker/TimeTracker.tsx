@@ -19,6 +19,7 @@ import { motion } from 'framer-motion';
 import { Project, Tag, TimeEntry, UserPreferences, TimerStatus, TimerMode, PomodoroState } from './types';
 import { formatTime, getRandomColor } from './utility';
 import 'react-circular-progressbar/dist/styles.css';
+import { useTheme } from '../../context/ThemeContext';
 
 const toLocalDateTimeString = (date: Date) => {
   const pad = (value: number) => value.toString().padStart(2, '0');
@@ -30,6 +31,7 @@ const toLocalDateTimeString = (date: Date) => {
 export default function TimeTracker() {
   const { isAuthenticated, user, logout } = useAuth();
   const { toast } = useToast();
+  const { isDark, setThemeMode } = useTheme();
 
   // Timer states per mode
   const [timerState, setTimerState] = useState<{
@@ -130,7 +132,7 @@ export default function TimeTracker() {
     const saved = localStorage.getItem('timeTracker_preferences');
     return saved ? JSON.parse(saved) : {
       timerMode: 'stopwatch',
-      darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+      darkMode: isDark,
       soundEnabled: true,
       notificationsEnabled: true,
       pomodoroSettings: {
@@ -174,9 +176,16 @@ export default function TimeTracker() {
     if (savedPreferences) {
       try {
         const parsedPreferences = JSON.parse(savedPreferences);
+        const nextDarkMode =
+          typeof parsedPreferences?.darkMode === 'boolean' ? parsedPreferences.darkMode : isDark;
+
         setPreferences(prev => ({ ...prev, ...parsedPreferences }));
         setTimerMode(parsedPreferences.timerMode || 'stopwatch');
-        document.documentElement.classList.toggle('dark', parsedPreferences.darkMode);
+
+        if (typeof parsedPreferences?.darkMode === 'boolean') {
+          setThemeMode(nextDarkMode ? 'dark' : 'light');
+        }
+
         toast({
           title: 'Preferences Loaded',
           description: 'User preferences loaded successfully.',
@@ -191,21 +200,30 @@ export default function TimeTracker() {
           className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
       }
-    } else {
-      document.documentElement.classList.toggle('dark', preferences.darkMode);
     }
-  }, [toast]);
+  }, [isDark, setThemeMode, toast]);
+
+  useEffect(() => {
+    setPreferences(prev => {
+      if (prev.darkMode === isDark) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        darkMode: isDark,
+      };
+    });
+  }, [isDark]);
 
   // Save preferences and sync dark mode
   useEffect(() => {
     try {
       localStorage.setItem('timeTracker_preferences', JSON.stringify(preferences));
-      document.documentElement.classList.toggle('dark', preferences.darkMode);
-      toast({
-        title: 'Preferences Saved',
-        description: `Dark mode ${preferences.darkMode ? 'enabled' : 'disabled'}.`,
-        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
-      });
+
+      if (preferences.darkMode !== isDark) {
+        setThemeMode(preferences.darkMode ? 'dark' : 'light');
+      }
     } catch (error) {
       console.error('Error saving preferences:', error);
       toast({
@@ -215,7 +233,7 @@ export default function TimeTracker() {
         className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
     }
-  }, [preferences, toast]);
+  }, [isDark, preferences, setThemeMode, toast]);
 
   // Set up audio elements
   useEffect(() => {

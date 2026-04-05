@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from './ThemeToggle';
 
 const NavItem = ({
   icon: Icon,
@@ -39,8 +40,8 @@ const NavItem = ({
       onClick={onNavigate}
       className={`group flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 ${
         isActive 
-          ? 'bg-black text-white shadow-md' 
-          : 'text-gray-500 hover:bg-gray-100 hover:shadow-sm'
+          ? 'bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] text-slate-900 shadow-md dark:from-slate-700 dark:to-slate-600 dark:text-slate-100'
+          : 'text-slate-600 hover:bg-[#F3EEFF] hover:shadow-sm dark:text-slate-300 dark:hover:bg-slate-800'
       }`}
     >
       <Icon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-12" />
@@ -75,55 +76,58 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
       />
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-screen w-64 border-r border-gray-100 bg-white p-6 shadow-xl transition-transform duration-300 md:z-20 md:translate-x-0 md:shadow-none ${
+        className={`fixed left-0 top-0 z-50 h-screen w-64 border-r border-[#D8BFD8]/40 bg-white/95 p-6 shadow-xl backdrop-blur transition-transform duration-300 dark:border-slate-700 dark:bg-slate-900/95 md:z-20 md:translate-x-0 md:shadow-none ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <WatchIcon className="w-8 h-8" />
-          <span className="text-xl font-light">Alter Ego</span>
+          <WatchIcon className="h-8 w-8 text-[#7C7AA6] dark:text-[#B0C4DE]" />
+          <span className="text-xl font-light text-slate-900 dark:text-slate-100">Alter Ego</span>
         </div>
-        <button
-          type="button"
-          onClick={onMobileClose}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 md:hidden"
-          aria-label="Close navigation menu"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle className="h-9 w-9 p-0" />
+          <button
+            type="button"
+            onClick={onMobileClose}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-[#F3EEFF] dark:text-slate-300 dark:hover:bg-slate-800 md:hidden"
+            aria-label="Close navigation menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       <div className="flex h-[calc(100%-5.5rem)] flex-col space-y-1 overflow-y-auto pb-4">
         <div className="mb-6">
-        <div className="text-xs font-medium text-gray-400 mb-3 px-4">OVERVIEW</div>
+        <div className="mb-3 px-4 text-xs font-medium tracking-[0.14em] text-[#8A88B2] dark:text-slate-400">OVERVIEW</div>
           <NavItem icon={Timer} label="Timer" to="/" onNavigate={onMobileClose} />
           <NavItem icon={LayoutDashboard} label="Dashboard" to="/dashboard" onNavigate={onMobileClose} />
           <div className="mb-6">
           </div>
         </div>
         <div className="mb-6">
-          <div className="text-xs font-medium text-gray-400 mb-3 px-4">PLANNER</div>
+          <div className="mb-3 px-4 text-xs font-medium tracking-[0.14em] text-[#8A88B2] dark:text-slate-400">PLANNER</div>
           <NavItem icon={LucideCalendarCheck2} label="Tasks" to="/tasks" onNavigate={onMobileClose} />
           <NavItem icon={Clock} label="AI Coach" to="/coach" onNavigate={onMobileClose} />
           <br/>
         </div>
 
         <div className="mb-6">
-          <div className="text-xs font-medium text-gray-400 mb-3 px-4">ANALYZE</div>
+          <div className="mb-3 px-4 text-xs font-medium tracking-[0.14em] text-[#8A88B2] dark:text-slate-400">ANALYZE</div>
           <NavItem icon={BarChart2} label="Analytics" to="/analytics" onNavigate={onMobileClose} />
           <NavItem icon={PieChart} label="Reports" to="/reports" onNavigate={onMobileClose} />
         </div>
 
         <div className="mb-6">
-          <div className="text-xs font-medium text-gray-400 mb-3 px-4">MANAGE</div>
+          <div className="mb-3 px-4 text-xs font-medium tracking-[0.14em] text-[#8A88B2] dark:text-slate-400">MANAGE</div>
           <NavItem icon={Users} label="Projects" to="/projects" onNavigate={onMobileClose} />
           <NavItem icon={UserPlus} label="Clients" to="/clients" onNavigate={onMobileClose} />
           <NavItem icon={FileText} label="Invoices" to="/invoices" onNavigate={onMobileClose} />
           <NavItem icon={Tag} label="Tags" to="/tags" onNavigate={onMobileClose} />
         </div>
 
-        <div className="mt-auto space-y-1 border-t border-gray-100 pt-4">
+        <div className="mt-auto space-y-1 border-t border-[#D8BFD8]/40 pt-4 dark:border-slate-700">
           <NavItem icon={UserRound} label="Profile" to="/profile" onNavigate={onMobileClose} />
           <NavItem icon={Settings} label="Settings" to="/settings" onNavigate={onMobileClose} />
           <div
@@ -131,7 +135,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
               onMobileClose();
               logout();
             }}
-            className="flex items-center space-x-3 px-4 py-3 text-gray-500 hover:bg-gray-100 rounded-lg transition-all duration-200 cursor-pointer"
+            className="flex cursor-pointer items-center space-x-3 rounded-lg px-4 py-3 text-slate-600 transition-all duration-200 hover:bg-[#F3EEFF] dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <svg 
               xmlns="http://www.w3.org/2000/svg" 

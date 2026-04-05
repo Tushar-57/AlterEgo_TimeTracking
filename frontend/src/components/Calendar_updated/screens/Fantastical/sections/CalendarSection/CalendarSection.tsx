@@ -403,6 +403,8 @@ export const CalendarSection = ({
 }: CalendarSectionProps): JSX.Element => {
   const [view, setView] = useState<"day" | "week" | "month" | "year">("week");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [mobileViewMode, setMobileViewMode] = useState<"calendar" | "agenda">("calendar");
+  const [mobileSelectedDate, setMobileSelectedDate] = useState(new Date());
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<Date | undefined>(undefined);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -415,13 +417,30 @@ export const CalendarSection = ({
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobileLayout(window.innerWidth < 1024);
+      const nextIsMobile = window.innerWidth < 1024;
+      setIsMobileLayout(nextIsMobile);
+
+      if (nextIsMobile) {
+        setView("month");
+      }
     };
 
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    if (
+      mobileSelectedDate.getMonth() !== currentDate.getMonth() ||
+      mobileSelectedDate.getFullYear() !== currentDate.getFullYear()
+    ) {
+      const nextSelectedDate = new Date(currentDate);
+      const maxDayInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+      nextSelectedDate.setDate(Math.min(mobileSelectedDate.getDate(), maxDayInMonth));
+      setMobileSelectedDate(nextSelectedDate);
+    }
+  }, [currentDate, mobileSelectedDate]);
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(new Date()), 30000);
@@ -745,6 +764,109 @@ export const CalendarSection = ({
   const yearData = getYearData(currentDate);
   const todayWeekIndex = weekDays.findIndex((day) => day.isToday);
 
+  const openTaskForDate = (baseDate: Date) => {
+    const entryDate = new Date(baseDate);
+    entryDate.setHours(now.getHours(), 0, 0, 0);
+    setSelectedTime(entryDate);
+    setIsPopupOpen(true);
+  };
+
+  const renderMobileCalendar = () => {
+    const selectedDayEvents = getEventsForDate(mobileSelectedDate);
+
+    return (
+      <div className="space-y-4 p-1">
+        <div className="rounded-2xl border border-[#D8BFD8]/40 bg-white/95 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/95">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8A88B2] dark:text-slate-400">Selected Day</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {mobileSelectedDate.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              className="h-8 gap-1 bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] px-3 text-slate-900 hover:from-[#CFAEE4] hover:to-[#9DB7D8] dark:from-slate-700 dark:to-slate-600 dark:text-slate-100"
+              onClick={() => openTaskForDate(mobileSelectedDate)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel) => (
+              <span key={dayLabel} className="py-1">
+                {dayLabel}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-1 grid grid-cols-7 gap-1">
+            {monthData.map((day, index) => {
+              const isSelected = isSameDay(day.fullDate, mobileSelectedDate);
+
+              return (
+                <button
+                  key={`${day.fullDate.toISOString()}-${index}`}
+                  type="button"
+                  onClick={() => setMobileSelectedDate(new Date(day.fullDate))}
+                  className={`relative flex h-10 items-center justify-center rounded-lg text-xs font-medium transition ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] text-slate-900 shadow-sm dark:from-slate-700 dark:to-slate-600 dark:text-slate-100'
+                      : day.isCurrentMonth
+                      ? 'bg-white text-slate-700 hover:bg-[#F3EEFF] dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+                      : 'bg-slate-100 text-slate-400 dark:bg-slate-900 dark:text-slate-500'
+                  }`}
+                >
+                  <span>{day.date}</span>
+                  {day.events.length > 0 && (
+                    <span className="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-[#7C7AA6] dark:bg-[#B0C4DE]" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-[#D8BFD8]/40 bg-white/95 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/95">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Entries For Day</p>
+            <span className="rounded-full bg-[#F3EEFF] px-2 py-1 text-[11px] font-medium text-[#7C7AA6] dark:bg-slate-800 dark:text-slate-300">
+              {selectedDayEvents.length}
+            </span>
+          </div>
+
+          {selectedDayEvents.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[#D8BFD8]/50 bg-[#FBFAFF] p-4 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              No entries for this day yet.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {selectedDayEvents.map((event) => (
+                <button
+                  key={event.id}
+                  type="button"
+                  className="w-full rounded-xl border border-[#D8BFD8]/40 bg-[#FBFAFF] p-3 text-left transition hover:bg-[#F3EEFF] dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+                  onClick={() => openTaskForDate(new Date(event.startTime))}
+                >
+                  <div className="text-xs font-semibold text-[#7C7AA6] dark:text-[#B0C4DE]">
+                    {formatEventTimeLabel(event)}
+                  </div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{event.title}</div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderMobileAgenda = () => {
     const range = getVisibleRange(currentDate, view);
     const visibleEvents = searchableEvents
@@ -777,8 +899,7 @@ export const CalendarSection = ({
               size="sm"
               className="h-8 gap-1 bg-indigo-600 px-3 text-white hover:bg-indigo-700"
               onClick={() => {
-                setSelectedTime(new Date());
-                setIsPopupOpen(true);
+                openTaskForDate(new Date());
               }}
             >
               <Plus className="h-3.5 w-3.5" />
@@ -1175,40 +1296,67 @@ export const CalendarSection = ({
             </motion.div>
           </div>
 
-          <ToggleGroup type="single" value={view} onValueChange={handleViewChange} className="flex overflow-x-auto pb-1">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <ToggleGroupItem
-                value="day"
-                className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
+          {isMobileLayout ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setMobileViewMode("calendar")}
+                className={`h-9 rounded-lg px-4 text-sm font-medium transition ${
+                  mobileViewMode === "calendar"
+                    ? "bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] text-slate-900 shadow-sm dark:from-slate-700 dark:to-slate-600 dark:text-slate-100"
+                    : "bg-white text-slate-600 hover:bg-[#F3EEFF] dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+                }`}
               >
-                Daily
-              </ToggleGroupItem>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <ToggleGroupItem
-                value="week"
-                className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
+                Calendar
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileViewMode("agenda")}
+                className={`h-9 rounded-lg px-4 text-sm font-medium transition ${
+                  mobileViewMode === "agenda"
+                    ? "bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] text-slate-900 shadow-sm dark:from-slate-700 dark:to-slate-600 dark:text-slate-100"
+                    : "bg-white text-slate-600 hover:bg-[#F3EEFF] dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+                }`}
               >
-                Weekly
-              </ToggleGroupItem>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <ToggleGroupItem
-                value="month"
-                className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
-              >
-                Monthly
-              </ToggleGroupItem>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <ToggleGroupItem
-                value="year"
-                className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
-              >
-                Yearly
-              </ToggleGroupItem>
-            </motion.div>
-          </ToggleGroup>
+                Agenda
+              </button>
+            </div>
+          ) : (
+            <ToggleGroup type="single" value={view} onValueChange={handleViewChange} className="flex overflow-x-auto pb-1">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <ToggleGroupItem
+                  value="day"
+                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
+                >
+                  Daily
+                </ToggleGroupItem>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <ToggleGroupItem
+                  value="week"
+                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
+                >
+                  Weekly
+                </ToggleGroupItem>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <ToggleGroupItem
+                  value="month"
+                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
+                >
+                  Monthly
+                </ToggleGroupItem>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <ToggleGroupItem
+                  value="year"
+                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
+                >
+                  Yearly
+                </ToggleGroupItem>
+              </motion.div>
+            </ToggleGroup>
+          )}
 
           <div className="flex w-full items-center lg:w-[200px]">
             <motion.div
@@ -1228,7 +1376,7 @@ export const CalendarSection = ({
       </motion.div>
       <div className="relative flex-1 overflow-x-hidden overflow-y-auto">
         {isMobileLayout ? (
-          renderMobileAgenda()
+          mobileViewMode === "agenda" ? renderMobileAgenda() : renderMobileCalendar()
         ) : (
           <>
             {view === "day" && renderDayView()}

@@ -1,10 +1,27 @@
 import { ArrowUpRight, Eye, ExternalLink } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-const ALLOWED_EXTERNAL_COACH_HOSTS = ((import.meta.env.VITE_ALLOWED_COACH_HOSTS as string | undefined) || '')
+const BUILTIN_COACH_URL_CANDIDATES = [
+  'https://agenticlyf-tushar-sharmas-projects-b09f4a9f.vercel.app/coach/',
+  'https://agenticlyf-git-main-tushar-sharmas-projects-b09f4a9f.vercel.app/coach/',
+];
+
+const BUILTIN_ALLOWED_COACH_HOSTS = BUILTIN_COACH_URL_CANDIDATES.map((url) => {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+}).filter((host) => host.length > 0);
+
+const ENV_ALLOWED_COACH_HOSTS = ((import.meta.env.VITE_ALLOWED_COACH_HOSTS as string | undefined) || '')
   .split(',')
   .map((host) => host.trim().toLowerCase())
   .filter((host) => host.length > 0);
+
+const ALLOWED_EXTERNAL_COACH_HOSTS = Array.from(
+  new Set([...BUILTIN_ALLOWED_COACH_HOSTS, ...ENV_ALLOWED_COACH_HOSTS]),
+);
 
 const normalizePath = (path: string): string => {
   const normalized = path.replace(/\/+$/, '');
@@ -37,6 +54,13 @@ const resolveCoachSrc = (): string => {
 
   if (agenticApiOrigin) {
     return toTrustedUrl(`${agenticApiOrigin.replace(/\/+$/, '')}/coach/`) || '/coach/';
+  }
+
+  for (const fallbackUrl of BUILTIN_COACH_URL_CANDIDATES) {
+    const trustedUrl = toTrustedUrl(fallbackUrl);
+    if (trustedUrl) {
+      return trustedUrl;
+    }
   }
 
   return '/coach/';
@@ -142,8 +166,8 @@ const CoachWorkspace = () => {
           </>
         ) : (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            Coach endpoint resolves to this same route. Configure VITE_AGENTIC_COACH_URL (preferred) or
-            VITE_AGENTIC_API_ORIGIN so this launcher can open the dedicated Coach application.
+            Coach endpoint resolves to this same route. Configure VITE_AGENTIC_COACH_URL (preferred) and keep
+            VITE_ALLOWED_COACH_HOSTS updated so this launcher can open the dedicated Coach application safely.
           </div>
         )}
       </div>

@@ -741,7 +741,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-2 backdrop-blur-sm sm:p-4"
       >
         <motion.div
           ref={popupRef}
@@ -749,17 +749,17 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 50 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="w-full max-w-[600px] rounded-xl border border-gray-200 bg-gradient-to-br from-indigo-50 to-blue-50 p-4 shadow-xl dark:border-gray-700 dark:bg-gray-900 dark:from-gray-800 dark:to-gray-900 sm:p-6"
+          className="w-full max-w-[640px] max-h-[92vh] overflow-y-auto rounded-2xl border border-[#D8BFD8]/45 bg-gradient-to-br from-[#FCFBFF] via-[#F8F5FF] to-[#F1F7FF] p-4 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 dark:text-slate-100 sm:p-6"
         >
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Add Task</h3>
+          <div className="mb-4 flex items-center justify-between border-b border-[#D8BFD8]/40 pb-3 dark:border-slate-700">
+            <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Add Task</h3>
             <Button
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
+              className="rounded-full text-slate-600 hover:bg-[#EFE8FF] dark:text-slate-300 dark:hover:bg-slate-700"
             >
-              <X className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              <X className="h-5 w-5" />
             </Button>
           </div>
 
@@ -773,12 +773,12 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter task description"
-                className="mt-1 h-12 text-base bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 hover:shadow-sm"
+                className="mt-1 h-12 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-base text-slate-900 shadow-sm transition-all duration-200 hover:shadow-md focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
               />
             </div>
             <div>
               
-              <label htmlFor="startTime" className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label htmlFor="startTime" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Start Time
               </label>
               <Input
@@ -786,11 +786,11 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 hover:shadow-sm"
+                className="mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm transition-all duration-200 hover:shadow-md focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
               />
             </div>
             <div>
-              <label htmlFor="endTime" className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label htmlFor="endTime" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 End Time
               </label>
               <Input
@@ -798,11 +798,11 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 hover:shadow-sm"
+                className="mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm transition-all duration-200 hover:shadow-md focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
               />
             </div>
             <div>
-              <label htmlFor="project" className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label htmlFor="project" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Project
               </label>
               <Select
@@ -812,10 +812,10 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
                   setProjectId(value === '0' ? null : value);
                 }}
               >
-                <SelectTrigger className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 z-10">
+                <SelectTrigger className="z-10 mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                   <SelectValue placeholder="Select project" />
                 </SelectTrigger>
-                <SelectContent className="z-50 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 radix-select-content">
+                <SelectContent className="radix-select-content z-50 border-[#D8BFD8]/50 bg-white text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                   <SelectItem value="0">No project</SelectItem>
                   {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id.toString()}>
@@ -826,7 +826,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
               </Select>
             </div>
             <div>
-              <label htmlFor="tag" className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label htmlFor="tag" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Tag
               </label>
               <Select
@@ -836,10 +836,10 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
                   setTagId(value === '0' ? null : value);
                 }}
               >
-                <SelectTrigger className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 z-10">
+                <SelectTrigger className="z-10 mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                   <SelectValue placeholder="Select tag" />
                 </SelectTrigger>
-                <SelectContent className="z-50 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 radix-select-content">
+                <SelectContent className="radix-select-content z-50 border-[#D8BFD8]/50 bg-white text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                   <SelectItem value="0">No tag</SelectItem>
                   {tags.map((tag) => (
                     <SelectItem key={tag.id} value={tag.id.toString()}>
@@ -854,34 +854,34 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
                 id="billable"
                 checked={billable}
                 onCheckedChange={setBillable}
-                className="data-[state=checked]:bg-indigo-600"
+                className="data-[state=checked]:bg-[#A795C9]"
               />
-              <label htmlFor="billable" className="text-sm text-gray-600 dark:text-gray-300">
+              <label htmlFor="billable" className="text-sm text-slate-600 dark:text-slate-300">
                 Billable
               </label>
             </div>
-            <div className="col-span-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-              <Clock className="h-4 w-4 text-indigo-500" />
+            <div className="col-span-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+              <Clock className="h-4 w-4 text-[#7C7AA6] dark:text-[#B0C4DE]" />
               <span>Duration: {duration || 'Not set'}</span>
             </div>
 
-            <div className="col-span-2 rounded-lg border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/40 dark:bg-indigo-950/20">
-              <h4 className="text-sm font-semibold text-indigo-700 dark:text-indigo-200">AI Context Details</h4>
-              <p className="mt-1 text-xs text-indigo-600/80 dark:text-indigo-300/80">
+            <div className="col-span-2 rounded-xl border border-[#D8BFD8]/45 bg-[#F8F5FF]/80 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+              <h4 className="text-sm font-semibold text-[#6B6697] dark:text-slate-200">AI Context Details</h4>
+              <p className="mt-1 text-xs text-[#6B6697]/80 dark:text-slate-300">
                 These fields are stored as detailed context for smarter Agentic insights and embeddings.
               </p>
 
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Linked Goal</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Linked Goal</label>
                   <Select
                     value={linkedGoal || ''}
                     onValueChange={(value) => setLinkedGoal(value === 'none' ? null : value)}
                   >
-                    <SelectTrigger className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg">
+                    <SelectTrigger className="mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                       <SelectValue placeholder="Select a goal" />
                     </SelectTrigger>
-                    <SelectContent className="z-50 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 radix-select-content">
+                    <SelectContent className="radix-select-content z-50 border-[#D8BFD8]/50 bg-white text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
                       <SelectItem value="none">No linked goal</SelectItem>
                       {goalOptions.map((goal) => (
                         <SelectItem key={goal} value={goal}>
@@ -893,67 +893,67 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Focus (1-10)</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Focus (1-10)</label>
                   <Input
                     type="number"
                     min={1}
                     max={10}
                     value={focusScore}
                     onChange={(event) => setFocusScore(event.target.value)}
-                    className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg"
+                    className="mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Energy (1-10)</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Energy (1-10)</label>
                   <Input
                     type="number"
                     min={1}
                     max={10}
                     value={energyScore}
                     onChange={(event) => setEnergyScore(event.target.value)}
-                    className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg"
+                    className="mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Blockers</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Blockers</label>
                   <Input
                     value={blockers}
                     onChange={(event) => setBlockers(event.target.value)}
                     placeholder="Context switch, dependency, distraction..."
-                    className="mt-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-lg"
+                    className="mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Context Notes</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Context Notes</label>
                   <textarea
                     value={contextNotes}
                     onChange={(event) => setContextNotes(event.target.value)}
                     placeholder="What made this session productive or difficult?"
-                    className="mt-1 min-h-[80px] w-full rounded-lg border border-gray-200 bg-white p-2 text-sm text-gray-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    className="mt-1 min-h-[88px] w-full rounded-xl border border-[#D8BFD8]/50 bg-white/95 p-2 text-sm text-slate-800 focus:border-[#A795C9] focus:outline-none focus:ring-1 focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Detailed AI Notes</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Detailed AI Notes</label>
                   <textarea
                     value={aiDetail}
                     onChange={(event) => setAiDetail(event.target.value)}
                     placeholder="Add rich details that should be included in AI memory and embeddings"
-                    className="mt-1 min-h-[100px] w-full rounded-lg border border-gray-200 bg-white p-2 text-sm text-gray-800 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                    className="mt-1 min-h-[112px] w-full rounded-xl border border-[#D8BFD8]/50 bg-white/95 p-2 text-sm text-slate-800 focus:border-[#A795C9] focus:outline-none focus:ring-1 focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="sticky bottom-0 mt-4 flex flex-col-reverse gap-2 border-t border-[#D8BFD8]/40 bg-white/85 pt-3 backdrop-blur sm:flex-row sm:justify-end dark:border-slate-700 dark:bg-slate-900/85">
             <Button
               variant="outline"
               onClick={onClose}
-              className="border-gray-300 text-gray-700 dark:text-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-4 py-1"
+              className="w-full rounded-xl border-[#D8BFD8]/50 px-4 py-2 text-slate-700 hover:bg-[#F3EEFF] dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700 sm:w-auto"
             >
               Cancel
             </Button>
@@ -965,7 +965,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, onSave }: TaskPop
               <Button
                 onClick={handleSave}
                 disabled={loading}
-                className="bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg px-4 py-1 shadow-sm hover:shadow-md transition-all duration-200"
+                className="w-full rounded-xl bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] px-5 py-2 text-slate-900 shadow-sm transition-all duration-200 hover:from-[#CFAEE4] hover:to-[#9DB7D8] hover:shadow-md dark:from-slate-700 dark:to-slate-600 dark:text-slate-100 sm:w-auto"
               >
                 {loading ? 'Saving...' : 'Save'}
               </Button>

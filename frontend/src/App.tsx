@@ -22,22 +22,26 @@ import ConnectedPlaceholderPage from './components/Workspace/ConnectedPlaceholde
 import { ChatProvider } from './components/AIChat/ChatContext';
 import FullScreenChat from './components/AIChat/FullScreenChat';
 import ChatToggleButton from './components/AIChat/ChatToggleButton';
+import ThemeToggle from './components/ThemeToggle';
+import { ThemeProvider } from './context/ThemeContext';
 
 const App = () => (
   <Router>
-    <AuthProvider>
-      <ToastProvider>
-        <Routes>
-          <Route path="/login" element={<LoginClassic />} />
-          <Route path="/signup" element={<SignupClassic />} />
-          <Route path="/verify-email" element={<EmailVerificationPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/onboarding" element={<ProtectedOnboarding />} />
-          <Route path="/*" element={<ProtectedRoutes />} />
-        </Routes>
-        <ToastViewport className="[--viewport-padding:_25px] fixed bottom-0 right-0 flex flex-col p-[var(--viewport-padding)] gap-[25px] w-[390px] max-w-[100vw] m-0 list-none z-[2147483647] outline-none" />
-      </ToastProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <Routes>
+            <Route path="/login" element={<LoginClassic />} />
+            <Route path="/signup" element={<SignupClassic />} />
+            <Route path="/verify-email" element={<EmailVerificationPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/onboarding" element={<ProtectedOnboarding />} />
+            <Route path="/*" element={<ProtectedRoutes />} />
+          </Routes>
+          <ToastViewport className="[--viewport-padding:_25px] fixed bottom-0 right-0 flex flex-col p-[var(--viewport-padding)] gap-[25px] w-[390px] max-w-[100vw] m-0 list-none z-[2147483647] outline-none" />
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </Router>
 );
 
@@ -104,18 +108,18 @@ const ProtectedRoutes = () => {
 
   return (
     <ChatProvider>
-      <div className="relative flex min-h-screen overflow-x-hidden bg-gray-50">
-        <div className="fixed left-0 right-0 top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 md:hidden">
+      <div className="relative flex min-h-screen overflow-x-hidden bg-gradient-to-b from-[#F8FAFC] via-[#F8F5FF] to-[#EEF4FF] text-slate-900 dark:from-[#0B1220] dark:via-[#0F172A] dark:to-[#1E293B] dark:text-slate-100">
+        <div className="fixed left-0 right-0 top-0 z-30 flex h-16 items-center justify-between border-b border-[#D8BFD8]/40 bg-white/95 px-4 backdrop-blur md:hidden dark:border-slate-700 dark:bg-slate-900/95">
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition hover:bg-[#F3EEFF] dark:text-slate-100 dark:hover:bg-slate-800"
             aria-label="Open navigation menu"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold text-gray-900">Alter Ego</span>
-          <div className="w-10" aria-hidden="true" />
+          <span className="text-sm font-semibold tracking-wide text-slate-900 dark:text-slate-100">Alter Ego</span>
+          <ThemeToggle className="h-10 w-10 p-0" />
         </div>
 
         <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
@@ -282,7 +286,7 @@ const ProtectedRoutes = () => {
           </Routes>
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-gray-200 bg-white/95 px-1 py-1 backdrop-blur md:hidden">
+        <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-[#D8BFD8]/40 bg-white/95 px-1 py-1 backdrop-blur md:hidden dark:border-slate-700 dark:bg-slate-900/95">
           {mobileTabs.map((tab) => {
             const isActive = tab.to === '/' ? location.pathname === '/' : location.pathname.startsWith(tab.to);
             return (
@@ -294,7 +298,9 @@ const ProtectedRoutes = () => {
                   setMobileNavOpen(false);
                 }}
                 className={`flex flex-col items-center justify-center rounded-lg py-2 text-[11px] font-medium transition ${
-                  isActive ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100'
+                  isActive
+                    ? 'bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] text-slate-900 shadow-sm dark:from-slate-700 dark:to-slate-600 dark:text-slate-100'
+                    : 'text-slate-600 hover:bg-[#F3EEFF] dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
                 <tab.icon className="mb-1 h-4 w-4" />
