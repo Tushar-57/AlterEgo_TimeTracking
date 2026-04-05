@@ -13,6 +13,7 @@ import { TimerProgressIndicator } from './TimerProgress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../Calendar_updated/components/ui/tabs';
 import { Button } from '../Calendar_updated/components/ui/button';
 import { Input } from '../Calendar_updated/components/ui/input';
+import { Switch } from '../Calendar_updated/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '../Calendar_updated/components/ui/dialog';
 import { Timer, AlarmClock, Coffee, Plus, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -99,6 +100,9 @@ export default function TimeTracker() {
   });
   const [countdownPreset, setCountdownPreset] = useState(() => timerState.countdownTime || 1500);
   const [customMinutes, setCustomMinutes] = useState<number>(25);
+  const [customHours, setCustomHours] = useState<number>(0);
+  const [showAdvancedCustomCountdown, setShowAdvancedCustomCountdown] = useState(false);
+  const [isCustomCountdownDialogOpen, setIsCustomCountdownDialogOpen] = useState(false);
 
   // Data states
   const [projects, setProjects] = useState<Project[]>([]);
@@ -873,15 +877,17 @@ export default function TimeTracker() {
   const handleSelectCountdownPreset = (seconds: number) => {
     const safeSeconds = Math.max(60, Math.floor(Number.isFinite(seconds) ? seconds : 60));
     setCountdownPreset(safeSeconds);
-    setCustomMinutes(Math.floor(safeSeconds / 60));
+    setCustomHours(Math.floor(safeSeconds / 3600));
+    setCustomMinutes(Math.floor((safeSeconds % 3600) / 60));
     setTimerState(prev => ({ ...prev, countdownTime: safeSeconds }));
   };
 
   const handleSetCustomCountdown = (minutes: number) => {
-    const safeMinutes = Math.min(180, Math.max(1, Math.floor(Number.isFinite(minutes) ? minutes : 1)));
+    const safeMinutes = Math.min(720, Math.max(1, Math.floor(Number.isFinite(minutes) ? minutes : 1)));
     const seconds = safeMinutes * 60;
     setCountdownPreset(seconds);
-    setCustomMinutes(safeMinutes);
+    setCustomHours(Math.floor(safeMinutes / 60));
+    setCustomMinutes(safeMinutes % 60);
     setTimerState(prev => ({ ...prev, countdownTime: seconds }));
   };
 
@@ -1230,7 +1236,7 @@ export default function TimeTracker() {
                       {Math.floor(seconds / 60)}m
                     </Button>
                   ))}
-                  <Dialog>
+                  <Dialog open={isCustomCountdownDialogOpen} onOpenChange={setIsCustomCountdownDialogOpen}>
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
@@ -1241,32 +1247,104 @@ export default function TimeTracker() {
                         Custom
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-[#FFFFFF] dark:bg-[#2D3748] border-[#D8BFD8]/30 rounded-xl">
+                    <DialogContent className="max-w-[94vw] sm:max-w-md bg-[#FFFFFF] dark:bg-[#2D3748] border-[#D8BFD8]/30 rounded-xl">
                       <DialogHeader>
-                        <DialogTitle className="text-[#2D3748] dark:text-[#E6E6FA] font-serif">Set Custom Time</DialogTitle>
-                        <DialogDescription className="text-[#6B7280] dark:text-[#B0C4DE]">Enter the number of minutes for your timer.</DialogDescription>
+                        <DialogTitle className="text-[#2D3748] dark:text-[#E6E6FA] font-serif">Set Custom Duration</DialogTitle>
+                        <DialogDescription className="text-[#6B7280] dark:text-[#B0C4DE]">
+                          Quick mode keeps it compact. Enable advanced mode for hour + minute control.
+                        </DialogDescription>
                       </DialogHeader>
-                      <div className="flex items-center space-x-4 py-4">
-                        <Input
-                          type="number"
-                          min="1"
-                          max="180"
-                          placeholder="Minutes"
-                          value={customMinutes}
-                          onChange={(e) => {
-                            const parsed = Number(e.target.value);
-                            setCustomMinutes(Number.isFinite(parsed) ? parsed : 1);
-                          }}
-                          className="flex-1 bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#2D3748] dark:text-[#E6E6FA]"
-                          id="custom-minutes"
-                        />
+
+                      <div className="space-y-4 py-2">
+                        <div className="flex items-center justify-between rounded-xl border border-[#D8BFD8]/35 bg-[#F8FAFC] px-3 py-2 dark:bg-[#3C4A5E]/70">
+                          <div>
+                            <p className="text-sm font-semibold text-[#2D3748] dark:text-[#E6E6FA]">Advanced Input</p>
+                            <p className="text-xs text-[#6B7280] dark:text-[#B0C4DE]">Toggle extra controls only when needed</p>
+                          </div>
+                          <Switch
+                            checked={showAdvancedCustomCountdown}
+                            onCheckedChange={setShowAdvancedCustomCountdown}
+                            aria-label="Toggle advanced custom timer inputs"
+                          />
+                        </div>
+
+                        {!showAdvancedCustomCountdown && (
+                          <div className="flex items-center gap-3">
+                            <div className="min-w-[4.5rem] rounded-lg bg-[#EEF2FF] px-2 py-1 text-center text-xs font-semibold text-[#4F46E5] dark:bg-[#2F3B5E] dark:text-[#C7D2FE]">
+                              Quick
+                            </div>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="720"
+                              placeholder="Minutes"
+                              value={customHours > 0 ? customHours * 60 + customMinutes : customMinutes}
+                              onChange={(e) => {
+                                const parsed = Number(e.target.value);
+                                const safeMinutes = Number.isFinite(parsed) ? Math.max(1, Math.min(720, Math.floor(parsed))) : 1;
+                                setCustomHours(Math.floor(safeMinutes / 60));
+                                setCustomMinutes(safeMinutes % 60);
+                              }}
+                              className="flex-1 bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#2D3748] dark:text-[#E6E6FA]"
+                              id="custom-minutes"
+                            />
+                          </div>
+                        )}
+
+                        {showAdvancedCustomCountdown && (
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label htmlFor="custom-hours" className="mb-1 block text-xs font-semibold text-[#6B7280] dark:text-[#B0C4DE]">
+                                Hours
+                              </label>
+                              <Input
+                                id="custom-hours"
+                                type="number"
+                                min="0"
+                                max="12"
+                                value={customHours}
+                                onChange={(e) => {
+                                  const parsed = Number(e.target.value);
+                                  setCustomHours(Number.isFinite(parsed) ? Math.max(0, Math.min(12, Math.floor(parsed))) : 0);
+                                }}
+                                className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#2D3748] dark:text-[#E6E6FA]"
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="custom-minutes-advanced" className="mb-1 block text-xs font-semibold text-[#6B7280] dark:text-[#B0C4DE]">
+                                Minutes
+                              </label>
+                              <Input
+                                id="custom-minutes-advanced"
+                                type="number"
+                                min="0"
+                                max="59"
+                                value={customMinutes}
+                                onChange={(e) => {
+                                  const parsed = Number(e.target.value);
+                                  setCustomMinutes(Number.isFinite(parsed) ? Math.max(0, Math.min(59, Math.floor(parsed))) : 0);
+                                }}
+                                className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#2D3748] dark:text-[#E6E6FA]"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="rounded-lg border border-[#D8BFD8]/35 bg-[#F8FAFC] px-3 py-2 text-xs text-[#6B7280] dark:bg-[#334155]/60 dark:text-[#B0C4DE]">
+                          Total Duration: <span className="font-semibold text-[#2D3748] dark:text-[#E6E6FA]">{customHours}h {customMinutes}m</span>
+                        </div>
                       </div>
+
                       <DialogFooter>
                         <Button
-                          onClick={() => handleSetCustomCountdown(customMinutes)}
+                          onClick={() => {
+                            const totalMinutes = Math.max(1, customHours * 60 + customMinutes);
+                            handleSetCustomCountdown(totalMinutes);
+                            setIsCustomCountdownDialogOpen(false);
+                          }}
                           className="bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/80 font-serif"
                         >
-                          Set Timer
+                          Apply Duration
                         </Button>
                       </DialogFooter>
                     </DialogContent>

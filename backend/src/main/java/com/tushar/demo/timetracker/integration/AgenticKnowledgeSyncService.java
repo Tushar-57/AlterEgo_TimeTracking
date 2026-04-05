@@ -87,7 +87,12 @@ public class AgenticKnowledgeSyncService {
     }
 
     public void syncTimeEntry(TimeEntry entry, Users user, String sourceAction) {
-        if (!isConfigured() || entry == null || entry.getEndTime() == null) {
+        if (!isConfigured() || entry == null) {
+            return;
+        }
+
+        if (entry.getEndTime() == null) {
+            logger.debug("Skipping Agentic time-entry sync for running entry {} (sourceAction={})", entry.getId(), sourceAction);
             return;
         }
 
@@ -101,6 +106,9 @@ public class AgenticKnowledgeSyncService {
             context.put("source_action", sourceAction);
             context.put("category", "time_entry");
             context.put("time_entry_id", entry.getId());
+            if (entry.getId() != null) {
+                context.put("sync_event_key", "alterego:time_entry:" + entry.getId());
+            }
             context.put("description", description);
             context.put("start_time", entry.getStartTime() != null ? entry.getStartTime().toString() : null);
             context.put("end_time", entry.getEndTime().toString());
