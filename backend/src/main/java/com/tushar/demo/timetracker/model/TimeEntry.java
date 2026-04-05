@@ -80,7 +80,9 @@ public class TimeEntry {
     public Project getProject() { return project; }
     public void setProject(Project project) { this.project = project; }
     public List<Long> getTagIds() { return tagIds; }
-    public void setTagIds(List<Long> tagIds) { this.tagIds = tagIds; }
+    public void setTagIds(List<Long> tagIds) {
+        this.tagIds = tagIds == null ? new ArrayList<>() : new ArrayList<>(tagIds);
+    }
     public boolean isBillable() { return billable; }
     public void setBillable(boolean billable) { this.billable = billable; }
     public String getClient() { return client; }

@@ -74,7 +74,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
                 logger.error("Some tags not found for IDs: {} for user: {}", request.getTagIds(), user.getEmail());
                 throw new ResourceNotFoundException("One or more tags not found");
             }
-            tagIds = tags.stream().map(Tags::getId).toList();
+            tagIds = new ArrayList<>(tags.stream().map(Tags::getId).toList());
         }
 
         // Create new time entry
@@ -209,7 +209,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
                 logger.error("Some tags not found for IDs: {} for user: {}", request.getTagIds(), user.getEmail());
                 throw new ResourceNotFoundException("One or more tags not found");
             }
-            tagIds = tags.stream().map(Tags::getId).toList();
+            tagIds = new ArrayList<>(tags.stream().map(Tags::getId).toList());
         }
 
         // Create new time entry
@@ -256,7 +256,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
             if (tags.size() != request.getTagIds().size()) {
                 throw new ResourceNotFoundException("One or more tags not found");
             }
-            tagIds = tags.stream().map(Tags::getId).toList();
+            tagIds = new ArrayList<>(tags.stream().map(Tags::getId).toList());
         }
 
         timeEntry.setDescription(request.getDescription());
