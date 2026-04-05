@@ -161,6 +161,9 @@ import { Clock, Calendar, Briefcase, DollarSign, ArrowRight, Download, Tag } fro
 import { TimeEntry } from './types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Button } from '../Calendar_updated/components/ui/button';
+import { useMemo, useState } from 'react';
+
+const COLLAPSED_ENTRY_COUNT = 3;
 
 const exportTimeEntries = (timeEntries: TimeEntry[]) => {
   const headers = ['Description', 'Project', 'Date', 'Duration', 'Billable', 'Tags'];
@@ -215,16 +218,39 @@ export const TimeEntriesList = ({
   sortBy: 'newest' | 'oldest' | 'duration';
   setSortBy: (value: 'newest' | 'oldest' | 'duration') => void;
   formatTime: (seconds: number) => string;
-}) => (
-  <div className="mt-10 rounded-2xl border border-[#D8BFD8]/30 bg-[#FFFFFF] p-4 shadow-lg sm:p-6 md:p-8">
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const sortedEntries = useMemo(() => {
+    const entries = [...timeEntries];
+
+    if (sortBy === 'oldest') {
+      return entries.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    }
+
+    if (sortBy === 'duration') {
+      return entries.sort((a, b) => (b.duration || 0) - (a.duration || 0));
+    }
+
+    return entries.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+  }, [sortBy, timeEntries]);
+
+  const visibleEntries = isExpanded
+    ? sortedEntries
+    : sortedEntries.slice(0, COLLAPSED_ENTRY_COUNT);
+
+  const hiddenEntryCount = Math.max(0, sortedEntries.length - visibleEntries.length);
+
+  return (
+  <div className="mt-10 rounded-[1.5rem] border border-[#D8BFD8]/30 bg-[#FFFFFF]/95 p-4 shadow-[0_20px_45px_rgba(45,55,72,0.12)] backdrop-blur sm:p-6 md:p-8 dark:bg-[#1f2b3b]/92">
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <h2 className="text-xl font-serif font-semibold flex items-center text-[#2D3748] dark:text-[#E6E6FA]">
+      <h2 className="flex items-center text-xl font-serif font-semibold text-[#2D3748] dark:text-[#E6E6FA]">
         <Calendar className="mr-2 h-5 w-5 text-[#D8BFD8]" />
         Recent Time Entries
       </h2>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <Select onValueChange={setSortBy} value={sortBy}>
-          <SelectTrigger className="w-full sm:w-44 bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] dark:text-[#B0C4DE]">
+          <SelectTrigger className="h-11 w-full rounded-2xl border-[#D8BFD8]/50 bg-[#F8FAFC] text-[#6B7280] dark:bg-[#2d3c52] dark:text-[#B0C4DE] sm:h-10 sm:w-44">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50">
@@ -237,7 +263,7 @@ export const TimeEntriesList = ({
           <Button
             variant="outline"
             onClick={() => exportTimeEntries(timeEntries)}
-            className="w-full sm:w-auto bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#B0C4DE] hover:bg-[#D8BFD8]/20 shadow-sm"
+            className="h-11 w-full rounded-2xl border-[#D8BFD8]/50 bg-[#F8FAFC] text-[#6B7280] shadow-sm hover:bg-[#D8BFD8]/20 dark:bg-[#2d3c52] dark:text-[#B0C4DE] sm:h-10 sm:w-auto"
           >
             <Download className="h-4 w-4 mr-2" />
             Export Entries
@@ -256,7 +282,7 @@ export const TimeEntriesList = ({
         </motion.div>
         Loading time entries...
       </div>
-    ) : timeEntries.length === 0 ? (
+    ) : sortedEntries.length === 0 ? (
       <div className="py-12 text-center text-[#B0C4DE]">
         <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
         <p>No time entries yet. Start tracking your time!</p>
@@ -264,7 +290,7 @@ export const TimeEntriesList = ({
     ) : (
       <div className="space-y-4">
         <AnimatePresence>
-          {timeEntries.map((entry) => (
+          {visibleEntries.map((entry) => (
             <motion.div
               key={entry.id}
               initial={{ opacity: 0, y: 20 }}
@@ -272,30 +298,30 @@ export const TimeEntriesList = ({
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
             >
-              <div className="border border-[#D8BFD8]/30 rounded-xl p-5 bg-[#F7F7F7] dark:bg-[#3C4A5E] hover:bg-[#D8BFD8]/10 transition-all shadow-sm hover:shadow-md">
-                  <div className="grid grid-cols-1 gap-3 items-start sm:grid-cols-3 sm:items-center">
-                    <div className="sm:col-span-2">
-                      <h3 className="mb-2 font-serif text-base sm:text-lg font-semibold text-[#2D3748] dark:text-[#E6E6FA]">
+              <div className="rounded-2xl border border-[#D8BFD8]/30 bg-[#F8FAFC] p-4 shadow-sm transition-all hover:bg-[#D8BFD8]/10 hover:shadow-md dark:bg-[#2d3c52]">
+                  <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3 sm:items-center">
+                    <div className="space-y-2 sm:col-span-2">
+                      <h3 className="font-serif text-base font-semibold text-[#2D3748] sm:text-lg dark:text-[#E6E6FA]">
                       {entry.description || 'Untitled Task'}
                     </h3>
-                    <div className="flex items-center gap-4 text-sm text-[#6B7280] dark:text-[#B0C4DE] flex-wrap">
-                      <div className="flex items-center">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-[#6B7280] dark:text-[#B0C4DE] sm:text-sm">
+                      <div className="inline-flex items-center rounded-full bg-[#E2E8F0]/80 px-2.5 py-1 dark:bg-[#1f2b3b]">
                         <Calendar className="h-4 w-4 mr-1" />
                         {new Date(entry.startTime).toLocaleDateString()}
                       </div>
-                      <div className="flex items-center">
+                      <div className="inline-flex items-center rounded-full bg-[#E2E8F0]/80 px-2.5 py-1 dark:bg-[#1f2b3b]">
                         <Clock className="h-4 w-4 mr-1" />
                         {formatEntryTimeRange(entry)}
                       </div>
                       {entry.project && (
-                        <div className="flex items-center">
+                        <div className="inline-flex items-center rounded-full bg-[#E2E8F0]/80 px-2.5 py-1 dark:bg-[#1f2b3b]">
                           <Briefcase className="h-4 w-4 mr-1" />
                           {entry.project.name}
                         </div>
                       )}
                       {entry.tags && entry.tags.length > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Tag className="h-4 w-4 mr-1" />
+                        <div className="inline-flex items-center gap-1 rounded-full bg-[#E2E8F0]/80 px-2.5 py-1 dark:bg-[#1f2b3b]">
+                          <Tag className="h-4 w-4" />
                           {entry.tags.map((tag) => tag.name).join(', ')}
                         </div>
                       )}
@@ -310,6 +336,19 @@ export const TimeEntriesList = ({
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {sortedEntries.length > COLLAPSED_ENTRY_COUNT && (
+          <div className="flex justify-center pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsExpanded((previous) => !previous)}
+              className="rounded-xl border-[#D8BFD8]/50 bg-[#F8FAFC] text-[#6B7280] hover:bg-[#D8BFD8]/20 dark:bg-[#2d3c52] dark:text-[#B0C4DE]"
+            >
+              {isExpanded ? 'Show less entries' : `Show ${hiddenEntryCount} more entries`}
+            </Button>
+          </div>
+        )}
       </div>
     )}
     <div className="mt-8 text-center">
@@ -327,4 +366,5 @@ export const TimeEntriesList = ({
       </motion.div>
     </div>
   </div>
-);
+  );
+};

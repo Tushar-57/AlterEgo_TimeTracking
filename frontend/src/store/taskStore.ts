@@ -3,9 +3,11 @@ import { persist } from 'zustand/middleware';
 
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type TaskStatus = 'todo' | 'in-progress' | 'completed';
+export type TaskType = 'todo' | 'habit';
 
-interface Task {
+export interface Task {
   id: string;
+  type: TaskType;
   title: string;
   description: string;
   projectId?: string;
@@ -17,6 +19,14 @@ interface Task {
   status: TaskStatus;
   estimatedDuration: number;
   timeSpent: number;
+  deadline?: string;
+  followUpDate?: string;
+  noteToAI?: string;
+  streakTarget?: number;
+  currentStreak: number;
+  completedDates: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface TaskState {
@@ -25,18 +35,69 @@ interface TaskState {
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
+  toggleTaskCompletion: (id: string, completedAt?: Date) => void;
 }
+
+const toDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const calculateCurrentStreak = (completedDates: string[]) => {
+  if (completedDates.length === 0) {
+    return 0;
+  }
+
+  const sorted = Array.from(new Set(completedDates)).sort((left, right) => right.localeCompare(left));
+  const today = new Date();
+  let streak = 0;
+
+  for (let index = 0; index < sorted.length; index += 1) {
+    const expectedDate = new Date(today);
+    expectedDate.setDate(today.getDate() - index);
+
+    if (sorted[index] !== toDateKey(expectedDate)) {
+      break;
+    }
+
+    streak += 1;
+  }
+
+  return streak;
+};
 
 export const useTaskStore = create<TaskState>()(
   persist(
     (set) => ({
       tasks: [],
-      addTask: (task) => set((state) => ({ 
-        tasks: [...state.tasks, task] 
-      })),
+      addTask: (task) =>
+        set((state) => {
+          const nowIso = new Date().toISOString();
+          const nextTask: Task = {
+            ...task,
+            type: task.type || 'todo',
+            status: task.status || 'todo',
+            currentStreak: task.currentStreak ?? 0,
+            completedDates: task.completedDates ?? [],
+            createdAt: task.createdAt || nowIso,
+            updatedAt: nowIso,
+          };
+
+          return {
+            tasks: [...state.tasks, nextTask],
+          };
+        }),
       updateTask: (id, updates) => set((state) => ({
         tasks: state.tasks.map((task) =>
-          task.id === id ? { ...task, ...updates } : task
+          task.id === id
+            ? {
+                ...task,
+                ...updates,
+                updatedAt: new Date().toISOString(),
+              }
+            : task
         ),
       })),
       deleteTask: (id) => set((state) => ({
@@ -44,9 +105,51 @@ export const useTaskStore = create<TaskState>()(
       })),
       updateTaskStatus: (id, status) => set((state) => ({
         tasks: state.tasks.map((task) =>
-          task.id === id ? { ...task, status } : task
+          task.id === id
+            ? {
+                ...task,
+                status,
+                updatedAt: new Date().toISOString(),
+              }
+            : task
         ),
       })),
+      toggleTaskCompletion: (id, completedAt = new Date()) =>
+        set((state) => ({
+          tasks: state.tasks.map((task) => {
+            if (task.id !== id) {
+              return task;
+            }
+
+            const nowIso = new Date().toISOString();
+            const dayKey = toDateKey(completedAt);
+
+            if (task.type === 'habit') {
+              const alreadyCompletedToday = task.completedDates.includes(dayKey);
+              const nextCompletedDates = alreadyCompletedToday
+                ? task.completedDates.filter((date) => date !== dayKey)
+                : [...task.completedDates, dayKey];
+
+              const includesToday = nextCompletedDates.includes(toDateKey(new Date()));
+
+              return {
+                ...task,
+                completedDates: nextCompletedDates,
+                currentStreak: calculateCurrentStreak(nextCompletedDates),
+                status: includesToday ? 'completed' : 'in-progress',
+                updatedAt: nowIso,
+              };
+            }
+
+            const isCompleted = task.status === 'completed';
+            return {
+              ...task,
+              status: isCompleted ? 'todo' : 'completed',
+              completedDates: isCompleted ? [] : [dayKey],
+              updatedAt: nowIso,
+            };
+          }),
+        })),
     }),
     {
       name: 'task-storage',

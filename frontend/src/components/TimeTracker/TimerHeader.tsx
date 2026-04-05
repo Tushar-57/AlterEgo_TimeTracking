@@ -147,19 +147,22 @@ export const TimerHeader = ({
   setShowSettingsDialog: (show: boolean) => void;
   setShowKeyboardShortcutsDialog: (show: boolean) => void;
 }) => (
-  <header className="bg-gradient-to-r from-[#F7F7F7] to-[#E6E6FA] dark:from-[#2D3748] dark:to-[#3C4A5E] shadow-sm px-4 py-3 sm:px-6 sm:py-4">
-    <div className="max-w-7xl mx-auto flex justify-between items-center gap-3">
+  <header className="sticky top-0 z-30 border-b border-[#D8BFD8]/30 bg-[#F7F7F7]/85 shadow-sm backdrop-blur-md dark:border-[#3C4A5E] dark:bg-[#1f2b3b]/90">
+    <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
       <div className="flex items-center space-x-3">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
         >
-          <Clock className="text-[#D8BFD8] h-8 w-8" />
+          <Clock className="h-7 w-7 text-[#D8BFD8] sm:h-8 sm:w-8" />
         </motion.div>
-        <h1 className="text-lg sm:text-2xl font-serif font-bold text-[#2D3748] dark:text-[#E6E6FA]">TimeTracker</h1>
+        <div>
+          <h1 className="text-base font-serif font-bold text-[#2D3748] sm:text-2xl dark:text-[#E6E6FA]">Focus Timer</h1>
+          <p className="text-[11px] text-[#6B7280] sm:text-xs dark:text-[#B0C4DE]">Track quickly, stay in flow</p>
+        </div>
       </div>
-      <div className="flex items-center gap-1 sm:gap-3">
+      <div className="flex items-center gap-1 sm:gap-2">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -257,7 +260,7 @@ export const TimerHeader = ({
             whileHover={{ scale: 1.1, boxShadow: '0 0 12px rgba(216, 191, 216, 0.4)' }}
             transition={{ duration: 0.2 }}
           >
-            <div className="bg-gradient-to-br from-[#D8BFD8] to-[#B0C4DE] rounded-full h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center text-white font-medium shadow-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#D8BFD8] to-[#B0C4DE] text-sm font-medium text-white shadow-sm sm:h-9 sm:w-9">
               {user.name ? user.name[0] : user.email[0]}
             </div>
           </motion.div>

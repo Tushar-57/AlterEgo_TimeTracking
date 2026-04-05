@@ -378,6 +378,19 @@ const formatEventTimeLabel = (event: CalendarEvent) => {
   return parsed.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 };
 
+const getEventDurationSeconds = (event: CalendarEvent) => {
+  if (Number.isFinite(event.durationSeconds)) {
+    return Math.max(0, Math.round(Number(event.durationSeconds)));
+  }
+
+  const parsedHeight = Number.parseFloat(event.height);
+  if (Number.isFinite(parsedHeight)) {
+    return Math.max(900, Math.round((parsedHeight / HOUR_ROW_HEIGHT) * 3600));
+  }
+
+  return 0;
+};
+
 interface PositionedEvent {
   event: CalendarEvent;
   top: number;
@@ -420,6 +433,8 @@ export const CalendarSection = ({
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [now, setNow] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileEntrySort, setMobileEntrySort] = useState<"newest" | "oldest" | "duration">("newest");
+  const [mobileEntryFilter, setMobileEntryFilter] = useState<"all" | "billable" | "non-billable">("all");
   const [dragPreview, setDragPreview] = useState<Record<number, { top: number; left: number }>>({});
   const [weekGridWidth, setWeekGridWidth] = useState(0);
   const timelineScrollRef = useRef<HTMLDivElement>(null);
@@ -651,6 +666,32 @@ export const CalendarSection = ({
       })
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
+  const applyMobileEntryFilter = (sourceEvents: CalendarEvent[]) => {
+    if (mobileEntryFilter === "billable") {
+      return sourceEvents.filter((event) => event.billable);
+    }
+
+    if (mobileEntryFilter === "non-billable") {
+      return sourceEvents.filter((event) => !event.billable);
+    }
+
+    return sourceEvents;
+  };
+
+  const sortMobileEntries = (sourceEvents: CalendarEvent[]) => {
+    const eventsCopy = [...sourceEvents];
+
+    if (mobileEntrySort === "oldest") {
+      return eventsCopy.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    }
+
+    if (mobileEntrySort === "duration") {
+      return eventsCopy.sort((a, b) => getEventDurationSeconds(b) - getEventDurationSeconds(a));
+    }
+
+    return eventsCopy.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+  };
+
   const getPositionedEvents = (dayEvents: CalendarEvent[]): PositionedEvent[] => {
     const laneEndTimes: number[] = [];
 
@@ -826,7 +867,7 @@ export const CalendarSection = ({
   };
 
   const renderMobileCalendar = () => {
-    const selectedDayEvents = getEventsForDate(mobileSelectedDate);
+    const selectedDayEvents = sortMobileEntries(applyMobileEntryFilter(getEventsForDate(mobileSelectedDate)));
 
     return (
       <div className="space-y-4 p-1">
@@ -895,6 +936,54 @@ export const CalendarSection = ({
             </span>
           </div>
 
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <select
+              value={mobileEntrySort}
+              onChange={(event) => setMobileEntrySort(event.target.value as "newest" | "oldest" | "duration")}
+              className="rounded-lg border border-[#D8BFD8]/50 bg-[#FBFAFF] px-2 py-1.5 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="duration">Longest</option>
+            </select>
+
+            <div className="flex items-center gap-1 rounded-lg bg-[#F3EEFF] p-1 dark:bg-slate-800">
+              <button
+                type="button"
+                className={`rounded-md px-2 py-1 text-[11px] font-medium transition ${
+                  mobileEntryFilter === "all"
+                    ? "bg-white text-slate-800 shadow-sm dark:bg-slate-700 dark:text-slate-100"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
+                }`}
+                onClick={() => setMobileEntryFilter("all")}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                className={`rounded-md px-2 py-1 text-[11px] font-medium transition ${
+                  mobileEntryFilter === "billable"
+                    ? "bg-white text-slate-800 shadow-sm dark:bg-slate-700 dark:text-slate-100"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
+                }`}
+                onClick={() => setMobileEntryFilter("billable")}
+              >
+                Billable
+              </button>
+              <button
+                type="button"
+                className={`rounded-md px-2 py-1 text-[11px] font-medium transition ${
+                  mobileEntryFilter === "non-billable"
+                    ? "bg-white text-slate-800 shadow-sm dark:bg-slate-700 dark:text-slate-100"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
+                }`}
+                onClick={() => setMobileEntryFilter("non-billable")}
+              >
+                Non-Billable
+              </button>
+            </div>
+          </div>
+
           {selectedDayEvents.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[#D8BFD8]/50 bg-[#FBFAFF] p-4 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
               No entries for this day yet.
@@ -918,6 +1007,11 @@ export const CalendarSection = ({
                     {formatEventTimeLabel(event)}
                   </div>
                   <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{event.title}</div>
+                  <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
+                    <span>{Math.round(getEventDurationSeconds(event) / 60)} min</span>
+                    <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+                    <span>{event.billable ? "Billable" : "Non-billable"}</span>
+                  </div>
                 </button>
               ))}
             </div>
@@ -929,12 +1023,15 @@ export const CalendarSection = ({
 
   const renderMobileAgenda = () => {
     const range = getVisibleRange(currentDate, view);
-    const visibleEvents = searchableEvents
+    const visibleEvents = sortMobileEntries(
+      applyMobileEntryFilter(
+        searchableEvents
       .filter((event) => {
         const eventDate = new Date(event.startTime);
         return eventDate >= range.start && eventDate <= range.end;
       })
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      )
+    );
 
     const groupedEvents = visibleEvents.reduce<Record<string, CalendarEvent[]>>((acc, event) => {
       const eventDate = new Date(event.startTime);
@@ -965,6 +1062,26 @@ export const CalendarSection = ({
               <Plus className="h-3.5 w-3.5" />
               Add
             </Button>
+          </div>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <select
+              value={mobileEntrySort}
+              onChange={(event) => setMobileEntrySort(event.target.value as "newest" | "oldest" | "duration")}
+              className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="duration">Longest</option>
+            </select>
+            <select
+              value={mobileEntryFilter}
+              onChange={(event) => setMobileEntryFilter(event.target.value as "all" | "billable" | "non-billable")}
+              className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700"
+            >
+              <option value="all">All</option>
+              <option value="billable">Billable</option>
+              <option value="non-billable">Non-billable</option>
+            </select>
           </div>
           <p className="text-xs text-gray-500">Optimized timeline for phone screens while keeping full add-entry functionality.</p>
         </div>
@@ -1004,6 +1121,11 @@ export const CalendarSection = ({
                         {event.time} {event.period}
                       </div>
                       <div className="mt-1 text-sm font-semibold text-gray-800">{event.title}</div>
+                      <div className="mt-2 flex items-center gap-2 text-[11px] text-gray-500">
+                        <span>{Math.round(getEventDurationSeconds(event) / 60)} min</span>
+                        <span className="h-1 w-1 rounded-full bg-gray-300" />
+                        <span>{event.billable ? 'Billable' : 'Non-billable'}</span>
+                      </div>
                     </button>
                   ))}
                 </div>

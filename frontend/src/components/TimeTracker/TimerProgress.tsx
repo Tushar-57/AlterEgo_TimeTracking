@@ -62,8 +62,8 @@ export const TimerProgressIndicator = ({ progress, progressStyle }: TimerProgres
   if (progressStyle === 'circular') {
     return (
       <motion.div
-        className="w-36 h-36 mt-8 relative"
-        animate={{ scale: [1, 1.03, 1], boxShadow: '0 0 10px rgba(216, 191, 216, 0.3)' }}
+        className="relative mt-6 h-32 w-32 sm:mt-8 sm:h-36 sm:w-36"
+        animate={{ scale: [1, 1.02, 1] }}
         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
         <CircularProgressbar
@@ -71,17 +71,15 @@ export const TimerProgressIndicator = ({ progress, progressStyle }: TimerProgres
           text={`${Math.round(normalizedProgress)}%`}
           styles={buildStyles({
             pathColor: '#D8BFD8',
-            trailColor: '#F7F7F7',
+            trailColor: '#E2E8F0',
             textColor: '#2D3748',
-            textSize: '18px',
+            textSize: '16px',
             pathTransitionDuration: 0.5,
-            backgroundColor: '#E6E6FA',
           })}
-          className="dark:text-[#E6E6FA] dark:trail-[#2D3748] dark:path-[#B0C4DE]"
         />
         <motion.div
           className="absolute inset-0 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(216, 191, 216, 0.2), transparent)' }}
+          style={{ background: 'radial-gradient(circle, rgba(216, 191, 216, 0.18), transparent 65%)' }}
           animate={{ opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         />
@@ -91,7 +89,7 @@ export const TimerProgressIndicator = ({ progress, progressStyle }: TimerProgres
 
   return (
     <motion.div
-      className="w-full max-w-lg h-4 bg-[#F7F7F7] dark:bg-[#3C4A5E] rounded-full mt-8 overflow-hidden shadow-inner"
+      className="mt-6 h-3.5 w-full max-w-lg overflow-hidden rounded-full bg-[#E2E8F0] shadow-inner dark:bg-[#3C4A5E] sm:mt-8"
       animate={{ scaleY: [1, 1.02, 1] }}
       transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
     >

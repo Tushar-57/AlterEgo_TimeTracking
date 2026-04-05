@@ -28,6 +28,14 @@ const toLocalDateTimeString = (date: Date) => {
   )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 };
 
+const QUOTES = [
+  { text: 'Productivity is being able to do things that you were never able to do before.', author: 'Franz Kafka' },
+  { text: 'The key is not to prioritize what\'s on your schedule, but to schedule your priorities.', author: 'Stephen Covey' },
+  { text: 'Time management is life management.', author: 'Robin Sharma' },
+  { text: 'Focus on being productive instead of busy.', author: 'Tim Ferriss' },
+  { text: 'Your time is limited, so don\'t waste it living someone else\'s life.', author: 'Steve Jobs' },
+];
+
 export default function TimeTracker() {
   const { isAuthenticated, user, logout } = useAuth();
   const { toast } = useToast();
@@ -154,14 +162,6 @@ export default function TimeTracker() {
 
   // Refs
   const intervalRef = useRef<number>();
-
-  const quotes = [
-    { text: 'Productivity is being able to do things that you were never able to do before.', author: 'Franz Kafka' },
-    { text: 'The key is not to prioritize what\'s on your schedule, but to schedule your priorities.', author: 'Stephen Covey' },
-    { text: 'Time management is life management.', author: 'Robin Sharma' },
-    { text: 'Focus on being productive instead of busy.', author: 'Tim Ferriss' },
-    { text: 'Your time is limited, so don\'t waste it living someone else\'s life.', author: 'Steve Jobs' },
-  ];
 
   // Persist states
   useEffect(() => {
@@ -300,7 +300,13 @@ export default function TimeTracker() {
         });
 
         if (resp.status === 204) {
-          setTimerState(prev => ({ ...prev, activeTimerId: null, startTime: undefined }));
+            setTimerState(prev => ({
+              ...prev,
+              activeTimerId: null,
+              startTime: undefined,
+              status: 'stopped',
+              stopwatchTime: 0,
+            }));
           return;
         }
 
@@ -343,7 +349,13 @@ export default function TimeTracker() {
           setTimerMode('stopwatch');
           console.log('Active timer tags:', response.data.tags);
         } else {
-          setTimerState(prev => ({ ...prev, activeTimerId: null, startTime: undefined }));
+          setTimerState(prev => ({
+            ...prev,
+            activeTimerId: null,
+            startTime: undefined,
+            status: 'stopped',
+            stopwatchTime: 0,
+          }));
         }
       } catch (error) {
         console.error('Error checking active timer:', error);
@@ -357,6 +369,51 @@ export default function TimeTracker() {
     };
     if (isAuthenticated) checkActiveTimer();
   }, [isAuthenticated, logout, toast]);
+
+  const clearTimerStateLocally = ({
+    showResetToast = false,
+    resetDescription = 'Timer has been reset.',
+  }: {
+    showResetToast?: boolean;
+    resetDescription?: string;
+  } = {}) => {
+    setTimerState(prev => ({
+      ...prev,
+      stopwatchTime: 0,
+      countdownTime: countdownPreset,
+      pomodoroTime: preferences.pomodoroSettings.workDuration * 60,
+      status: 'stopped',
+      activeTimerId: null,
+      startTime: undefined,
+    }));
+
+    setCurrentTask({
+      description: '',
+      projectId: 'noproject',
+      tags: [],
+      billable: false,
+      newTag: '',
+      category: '',
+    });
+
+    if (timerMode === 'pomodoro') {
+      setPomodoroState({
+        currentSession: 1,
+        isBreak: false,
+        totalSessions: 0,
+      });
+    }
+
+    setDescriptionError(false);
+
+    if (showResetToast) {
+      toast({
+        title: 'Timer Reset',
+        description: resetDescription,
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
+    }
+  };
 
   // Timer logic
   useEffect(() => {
@@ -378,7 +435,7 @@ export default function TimeTracker() {
 
         if (timerMode === 'countdown') {
           setTimerState(prev => {
-            const nextCountdown = prev.countdownTime - 1;
+            const nextCountdown = Math.max(0, prev.countdownTime - 1);
 
             if (nextCountdown <= 0) {
               clearInterval(intervalRef.current);
@@ -404,7 +461,7 @@ export default function TimeTracker() {
         }
 
         setTimerState(prev => {
-          const nextPomodoro = prev.pomodoroTime - 1;
+          const nextPomodoro = Math.max(0, prev.pomodoroTime - 1);
 
           if (nextPomodoro <= 0) {
             clearInterval(intervalRef.current);
@@ -549,6 +606,23 @@ export default function TimeTracker() {
   };
 
   const startTimer = async () => {
+    const modeTime =
+      timerMode === 'countdown'
+        ? timerState.countdownTime
+        : timerMode === 'pomodoro'
+        ? timerState.pomodoroTime
+        : timerState.stopwatchTime;
+
+    if (timerMode !== 'stopwatch' && modeTime <= 0) {
+      toast({
+        title: 'Timer Duration Needed',
+        description: 'Please set a valid duration before starting.',
+        variant: 'destructive',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
+      return;
+    }
+
     if ((timerMode === 'countdown' || (timerMode === 'pomodoro' && pomodoroState.isBreak)) && !currentTask.description.trim()) {
       setTimerState(prev => ({ ...prev, status: 'running' }));
       return;
@@ -663,10 +737,12 @@ export default function TimeTracker() {
     }
   };
 
-  const stopTimer = async () => {
+  const stopTimer = async (options?: { triggeredByReset?: boolean }) => {
     if (timerMode === 'countdown' || (timerMode === 'pomodoro' && pomodoroState.isBreak)) {
-      setTimerState(prev => ({ ...prev, status: 'stopped', startTime: undefined }));
-      resetTimer();
+      clearTimerStateLocally({
+        showResetToast: true,
+        resetDescription: 'Timer has been reset.',
+      });
       return;
     }
     if (!timerState.activeTimerId || !timerState.startTime) {
@@ -738,17 +814,27 @@ export default function TimeTracker() {
         setTimeEntries(entryData.data.filter((entry: TimeEntry) => entry.endTime !== null));
         console.log('Updated time entries:', entryData.data);
       }
-      resetTimer();
-      toast({
-        title: 'Time Entry Saved',
-        description: `Saved time entry for "${currentTask.description}"`,
-        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
-      });
+      clearTimerStateLocally();
+      if (options?.triggeredByReset) {
+        toast({
+          title: 'Timer Reset',
+          description: `Stopped and saved "${currentTask.description}" before reset.`,
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+        });
+      } else {
+        toast({
+          title: 'Time Entry Saved',
+          description: `Saved time entry for "${currentTask.description}"`,
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+        });
+      }
     } catch (error) {
       console.error('Stop timer error:', error);
       toast({
         title: 'Network Error',
-        description: 'Could not connect to the server.',
+        description: options?.triggeredByReset
+          ? 'Could not stop and save the active timer before reset.'
+          : 'Could not connect to the server.',
         variant: 'destructive',
         className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
@@ -756,36 +842,12 @@ export default function TimeTracker() {
   };
 
   const resetTimer = () => {
-    setTimerState(prev => ({
-      ...prev,
-      stopwatchTime: prev.activeTimerId ? prev.stopwatchTime : 0,
-      countdownTime: countdownPreset,
-      pomodoroTime: preferences.pomodoroSettings.workDuration * 60,
-      status: 'stopped',
-      activeTimerId: null,
-      startTime: undefined,
-    }));
-    setCurrentTask({
-      description: '',
-      projectId: 'noproject',
-      tags: [],
-      billable: false,
-      newTag: '',
-      category: '',
-    });
-    if (timerMode === 'pomodoro') {
-      setPomodoroState({
-        currentSession: 1,
-        isBreak: false,
-        totalSessions: 0,
-      });
+    if (timerMode === 'stopwatch' && timerState.activeTimerId && timerState.startTime) {
+      void stopTimer({ triggeredByReset: true });
+      return;
     }
-    setDescriptionError(false);
-    toast({
-      title: 'Timer Reset',
-      description: 'Timer has been reset.',
-      className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
-    });
+
+    clearTimerStateLocally({ showResetToast: true });
   };
 
   const toggleTimer = () => {
@@ -809,15 +871,17 @@ export default function TimeTracker() {
   };
 
   const handleSelectCountdownPreset = (seconds: number) => {
-    setCountdownPreset(seconds);
-    setCustomMinutes(seconds / 60);
-    setTimerState(prev => ({ ...prev, countdownTime: seconds }));
+    const safeSeconds = Math.max(60, Math.floor(Number.isFinite(seconds) ? seconds : 60));
+    setCountdownPreset(safeSeconds);
+    setCustomMinutes(Math.floor(safeSeconds / 60));
+    setTimerState(prev => ({ ...prev, countdownTime: safeSeconds }));
   };
 
   const handleSetCustomCountdown = (minutes: number) => {
-    const seconds = minutes * 60;
+    const safeMinutes = Math.min(180, Math.max(1, Math.floor(Number.isFinite(minutes) ? minutes : 1)));
+    const seconds = safeMinutes * 60;
     setCountdownPreset(seconds);
-    setCustomMinutes(minutes);
+    setCustomMinutes(safeMinutes);
     setTimerState(prev => ({ ...prev, countdownTime: seconds }));
   };
 
@@ -905,19 +969,20 @@ export default function TimeTracker() {
   const QuoteComponent = useMemo(() => {
     return () => (
       <motion.div
-        className="relative mb-8 flex items-center justify-between gap-3 rounded-xl border border-[#D8BFD8]/30 bg-[#F7F7F7] p-4 shadow-inner sm:gap-4 sm:p-6 dark:bg-[#2D3748]"
+        className="relative mb-6 flex items-center justify-between gap-3 overflow-hidden rounded-2xl border border-[#D8BFD8]/30 bg-[#F7F7F7] p-4 shadow-sm sm:mb-8 sm:gap-4 sm:p-6 dark:bg-[#223145]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         style={{
           background: preferences.darkMode
-            ? 'linear-gradient(145deg, #2D3748, #3C4A5E)'
-            : 'linear-gradient(145deg, #F7F7F7, #E6E6FA)',
+            ? 'linear-gradient(145deg, #223145, #2d3c52)'
+            : 'linear-gradient(145deg, #F8FAFC, #E6E6FA)',
         }}
       >
+        <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#D8BFD8]/20 blur-2xl" />
         <div className="flex-1">
           <motion.div
-            className="text-center font-serif text-base italic text-[#6B7280] sm:text-lg dark:text-[#E6E6FA]"
+            className="text-center font-serif text-sm italic text-[#6B7280] sm:text-lg dark:text-[#E6E6FA]"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -925,7 +990,7 @@ export default function TimeTracker() {
           >
             "{currentQuote.text}"
           </motion.div>
-          <div className="text-center text-[#9CA3AF] dark:text-[#B0C4DE] text-sm mt-2">
+          <div className="mt-2 text-center text-xs text-[#9CA3AF] dark:text-[#B0C4DE] sm:text-sm">
             — {currentQuote.author}
           </div>
         </div>
@@ -934,7 +999,7 @@ export default function TimeTracker() {
             variant="ghost"
             size="icon"
             className="text-[#B0C4DE] hover:bg-[#D8BFD8]/20 hover:shadow-sm transition-all"
-            onClick={() => setCurrentQuote(quotes[Math.floor(Math.random() * quotes.length)])}
+            onClick={() => setCurrentQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)])}
           >
             <motion.div
               animate={{ rotate: 360 }}
@@ -963,23 +1028,39 @@ export default function TimeTracker() {
               : preferences.pomodoroSettings.shortBreakDuration) * 60
           : preferences.pomodoroSettings.workDuration * 60
       ) : 3600;
-    const progress = timerMode === 'stopwatch' ? currentTime / totalTime : (totalTime - currentTime) / totalTime;
+    const safeTotalTime = Math.max(1, totalTime);
+    const rawProgress = timerMode === 'stopwatch'
+      ? currentTime / safeTotalTime
+      : (safeTotalTime - currentTime) / safeTotalTime;
+    const progress = Math.min(1, Math.max(0, rawProgress));
+    const modeLabel = timerMode.charAt(0).toUpperCase() + timerMode.slice(1);
+    const statusLabel = timerState.status.charAt(0).toUpperCase() + timerState.status.slice(1);
 
     return (
-      <div className="flex flex-col items-center mt-6">
-        <motion.div
-          className="text-4xl sm:text-6xl font-mono font-serif text-[#2D3748] dark:text-[#E6E6FA]"
-          animate={{ scale: timerState.status === 'running' ? [1, 1.03, 1] : 1 }}
-          transition={{ duration: 2, repeat: timerState.status === 'running' ? Infinity : 0 }}
-        >
-          {formattedTime}
-        </motion.div>
-        {(timerMode === 'countdown' || timerMode === 'pomodoro') && (
-          <TimerProgressIndicator
-            progress={progress}
-            progressStyle={preferences.progressStyle}
-          />
-        )}
+      <div className="mt-6 w-full">
+        <div className="mx-auto w-full max-w-xl rounded-3xl border border-[#D8BFD8]/40 bg-[#F7F7F7]/95 p-5 shadow-[0_18px_40px_rgba(45,55,72,0.12)] backdrop-blur sm:p-7 dark:bg-[#233043]/85">
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+            <span className="rounded-full bg-[#D8BFD8]/25 px-3 py-1 text-xs font-semibold tracking-wide text-[#4B5563] dark:text-[#E6E6FA]">
+              {modeLabel}
+            </span>
+            <span className="rounded-full bg-[#B0C4DE]/30 px-3 py-1 text-xs font-semibold tracking-wide text-[#4B5563] dark:text-[#E6E6FA]">
+              {statusLabel}
+            </span>
+          </div>
+          <motion.div
+            className="text-center font-mono text-5xl font-semibold tracking-wider text-[#1F2937] sm:text-7xl dark:text-[#F8FAFC]"
+            animate={{ scale: timerState.status === 'running' ? [1, 1.025, 1] : 1 }}
+            transition={{ duration: 2, repeat: timerState.status === 'running' ? Infinity : 0 }}
+          >
+            {formattedTime}
+          </motion.div>
+          {(timerMode === 'countdown' || timerMode === 'pomodoro') && (
+            <TimerProgressIndicator
+              progress={progress}
+              progressStyle={preferences.progressStyle}
+            />
+          )}
+        </div>
       </div>
     );
   };
@@ -1019,10 +1100,11 @@ export default function TimeTracker() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [timerState.status, toggleTimer, stopTimer, resetTimer]);
+  }, [timerState.status, toggleTimer, stopTimer, resetTimer, handleTimerModeChange]);
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#1F2937] font-sans">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fafc_0%,_#eef2ff_40%,_#e2e8f0_100%)] font-sans dark:bg-[#111827]">
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-72 bg-[radial-gradient(circle,_rgba(176,196,222,0.28),_transparent_70%)]" />
       <TimerHeader
         preferences={preferences}
         setPreferences={setPreferences}
@@ -1030,7 +1112,7 @@ export default function TimeTracker() {
         setShowSettingsDialog={setShowSettingsDialog}
         setShowKeyboardShortcutsDialog={setShowKeyboardShortcutsDialog}
       />
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10 md:py-12">
+      <main className="relative z-10 mx-auto w-full max-w-5xl px-3 pb-8 pt-4 sm:px-6 sm:pb-12 sm:pt-8 md:pt-10">
         {fetchError && (
           <motion.div
             className="bg-[#FECACA]/20 border border-[#FECACA]/50 text-[#DC2626] p-4 rounded-xl mb-8 shadow-sm"
@@ -1049,7 +1131,9 @@ export default function TimeTracker() {
 
         <QuoteComponent />
 
-        <div className="mb-8 rounded-2xl bg-[#FFFFFF] p-4 shadow-lg sm:p-6 md:p-8 dark:bg-[#2D3748]">
+        <div className="relative mb-8 overflow-hidden rounded-[1.75rem] border border-[#D8BFD8]/35 bg-[#FFFFFF]/95 p-4 shadow-[0_24px_55px_rgba(45,55,72,0.14)] backdrop-blur sm:p-6 md:p-8 dark:bg-[#1f2b3b]/92">
+          <div className="pointer-events-none absolute -right-12 -top-14 h-40 w-40 rounded-full bg-[#D8BFD8]/15 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-12 h-36 w-36 rounded-full bg-[#B0C4DE]/20 blur-2xl" />
           <div className="relative">
             <Input
               type="text"
@@ -1059,7 +1143,7 @@ export default function TimeTracker() {
                 setCurrentTask(prev => ({ ...prev, description: e.target.value }));
                 setDescriptionError(false);
               }}
-              className={`w-full rounded-xl border-[#D8BFD8]/50 bg-[#F7F7F7] p-4 font-serif text-base text-[#2D3748] shadow-sm focus:ring-2 focus:ring-[#D8BFD8] sm:p-6 sm:text-xl dark:bg-[#3C4A5E] dark:text-[#E6E6FA] ${descriptionError ? 'border-[#DC2626] border-2' : ''}`}
+              className={`w-full rounded-2xl border-[#D8BFD8]/50 bg-[#F8FAFC] px-4 py-4 font-serif text-base text-[#1F2937] shadow-sm focus:ring-2 focus:ring-[#B0C4DE] sm:px-5 sm:py-5 sm:text-xl dark:bg-[#2d3c52] dark:text-[#E6E6FA] ${descriptionError ? 'border-[#DC2626] border-2' : ''}`}
               disabled={timerState.status === 'running'}
               id="task-description-input"
             />
@@ -1089,11 +1173,11 @@ export default function TimeTracker() {
             onValueChange={(value: string) => handleTimerModeChange(value as TimerMode)}
             className="mt-6"
           >
-            <TabsList className="grid grid-cols-3 rounded-xl border border-[#D8BFD8]/30 bg-[#F7F7F7] shadow-sm dark:bg-[#3C4A5E]">
+            <TabsList className="grid h-auto grid-cols-3 rounded-2xl border border-[#D8BFD8]/35 bg-[#F7F7F7] p-1.5 shadow-sm dark:bg-[#2d3c52]">
               <TabsTrigger
                 value="stopwatch"
                 disabled={timerState.status !== 'stopped'}
-                className="flex items-center gap-1 py-2 text-xs font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
+                className="flex items-center gap-1 rounded-xl py-2.5 text-xs font-semibold tracking-wide text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/25 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
               >
                 <Timer className="h-4 w-4" />
                 Stopwatch
@@ -1101,7 +1185,7 @@ export default function TimeTracker() {
               <TabsTrigger
                 value="countdown"
                 disabled={timerState.status !== 'stopped'}
-                className="flex items-center gap-1 py-2 text-xs font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
+                className="flex items-center gap-1 rounded-xl py-2.5 text-xs font-semibold tracking-wide text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/25 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
               >
                 <AlarmClock className="h-4 w-4" />
                 Countdown
@@ -1109,14 +1193,14 @@ export default function TimeTracker() {
               <TabsTrigger
                 value="pomodoro"
                 disabled={timerState.status !== 'stopped'}
-                className="flex items-center gap-1 py-2 text-xs font-serif text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/20 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
+                className="flex items-center gap-1 rounded-xl py-2.5 text-xs font-semibold tracking-wide text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/25 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
               >
                 <Coffee className="h-4 w-4" />
                 Pomodoro
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="stopwatch" className="p-4">
+            <TabsContent value="stopwatch" className="mt-4 p-0">
               <div className="flex flex-col items-center gap-6">
                 {renderTimer()}
                 <TimerControls
@@ -1128,18 +1212,18 @@ export default function TimeTracker() {
               </div>
             </TabsContent>
 
-            <TabsContent value="countdown" className="p-4">
+            <TabsContent value="countdown" className="mt-4 p-0">
               <div className="flex flex-col items-center gap-6">
-                <div className="flex flex-wrap gap-2 justify-center mb-4">
+                <div className="mb-1 flex w-full max-w-xl gap-2 overflow-x-auto pb-2">
                   {preferences.countdownPresets.map(seconds => (
                     <Button
                       key={seconds}
                       variant={countdownPreset === seconds ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => handleSelectCountdownPreset(seconds)}
-                      className={`min-w-[4rem] font-serif ${
+                      className={`min-w-[4.5rem] rounded-xl px-4 font-serif ${
                         countdownPreset === seconds
-                          ? 'bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/80'
+                          ? 'bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/85'
                           : 'bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20'
                       }`}
                     >
@@ -1151,7 +1235,7 @@ export default function TimeTracker() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20 font-serif"
+                        className="rounded-xl bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20 font-serif"
                       >
                         <Plus className="h-4 w-4 mr-1" />
                         Custom
@@ -1169,7 +1253,10 @@ export default function TimeTracker() {
                           max="180"
                           placeholder="Minutes"
                           value={customMinutes}
-                          onChange={(e) => setCustomMinutes(Number(e.target.value))}
+                          onChange={(e) => {
+                            const parsed = Number(e.target.value);
+                            setCustomMinutes(Number.isFinite(parsed) ? parsed : 1);
+                          }}
                           className="flex-1 bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#2D3748] dark:text-[#E6E6FA]"
                           id="custom-minutes"
                         />
@@ -1195,7 +1282,7 @@ export default function TimeTracker() {
               </div>
             </TabsContent>
 
-            <TabsContent value="pomodoro" className="p-4">
+            <TabsContent value="pomodoro" className="mt-4 p-0">
               <div className="flex flex-col items-center gap-6">
                 <PomodoroStatus
                   pomodoroState={pomodoroState}

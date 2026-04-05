@@ -244,7 +244,7 @@ export const ProjectTagSelectors = ({
   const tagInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="mt-4 flex flex-wrap gap-3 sm:gap-4">
+    <div className="mt-4 grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-center sm:gap-4">
       <div className="relative w-full sm:w-auto">
         <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
           <Button
@@ -255,7 +255,7 @@ export const ProjectTagSelectors = ({
               setShowProjectSelect(!showProjectSelect);
             }}
             disabled={timerState.status === 'running'}
-            className="flex w-full items-center justify-between gap-2 rounded-xl border-[#D8BFD8]/50 bg-[#F7F7F7] px-4 py-2 text-[#6B7280] shadow-sm hover:bg-[#D8BFD8]/20 dark:bg-[#3C4A5E] dark:text-[#B0C4DE] sm:w-auto"
+            className="flex h-11 w-full items-center justify-between gap-2 rounded-2xl border-[#D8BFD8]/50 bg-[#F8FAFC] px-4 text-[#4B5563] shadow-sm hover:bg-[#D8BFD8]/20 dark:bg-[#2d3c52] dark:text-[#B0C4DE] sm:h-10 sm:w-auto"
           >
             <Briefcase className="h-4 w-4" />
             {getProjectNameById(currentTask.projectId, projects)}
@@ -315,7 +315,7 @@ export const ProjectTagSelectors = ({
               setShowTagInput(!showTagInput);
             }}
             disabled={timerState.status === 'running'}
-            className="flex w-full items-center justify-between gap-2 rounded-xl border-[#D8BFD8]/50 bg-[#F7F7F7] px-4 py-2 text-[#6B7280] shadow-sm hover:bg-[#D8BFD8]/20 dark:bg-[#3C4A5E] dark:text-[#B0C4DE] sm:w-auto"
+            className="flex h-11 w-full items-center justify-between gap-2 rounded-2xl border-[#D8BFD8]/50 bg-[#F8FAFC] px-4 text-[#4B5563] shadow-sm hover:bg-[#D8BFD8]/20 dark:bg-[#2d3c52] dark:text-[#B0C4DE] sm:h-10 sm:w-auto"
           >
             <TagsIcon className="h-4 w-4" />
             Tags
@@ -387,7 +387,7 @@ export const ProjectTagSelectors = ({
           </motion.div>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#D8BFD8]/35 bg-[#F8FAFC] px-3 py-2 shadow-sm dark:bg-[#2d3c52]">
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Switch
             checked={currentTask.billable}
@@ -403,11 +403,11 @@ export const ProjectTagSelectors = ({
         />
         <span className="text-sm text-[#6B7280] dark:text-[#B0C4DE] font-serif">Billable</span>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 sm:min-h-[2.25rem]">
         {currentTask.tags.map((tag: Tag) => (
           <motion.div
             key={tag.id}
-            className="flex items-center gap-1 pl-1 pr-2 py-1 bg-[#F7F7F7] dark:bg-[#3C4A5E] rounded-xl shadow-sm"
+            className="flex items-center gap-1 rounded-full bg-[#F7F7F7] py-1 pl-2 pr-2.5 shadow-sm dark:bg-[#3C4A5E]"
             style={{ backgroundColor: `${tag.color}20` }}
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

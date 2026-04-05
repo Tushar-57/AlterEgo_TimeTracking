@@ -702,6 +702,19 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     };
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const { overflow } = document.body.style;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = overflow;
+    };
+  }, [isOpen]);
+
   const handleSave = async () => {
     if (!description || !startTime || !endTime) {
       toast({
@@ -815,7 +828,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-2 backdrop-blur-sm sm:p-4"
+        className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
       >
         <motion.div
           ref={popupRef}
@@ -823,9 +836,9 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 50 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="w-full max-w-[640px] max-h-[92vh] overflow-y-auto rounded-2xl border border-[#D8BFD8]/45 bg-gradient-to-br from-[#FCFBFF] via-[#F8F5FF] to-[#F1F7FF] p-4 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 dark:text-slate-100 sm:p-6"
+          className="w-full max-h-[88dvh] overflow-y-auto rounded-t-3xl border border-[#D8BFD8]/45 bg-gradient-to-br from-[#FCFBFF] via-[#F8F5FF] to-[#F1F7FF] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 dark:text-slate-100 sm:max-h-[92vh] sm:max-w-[640px] sm:rounded-2xl sm:p-6"
         >
-          <div className="mb-4 flex items-center justify-between border-b border-[#D8BFD8]/40 pb-3 dark:border-slate-700">
+          <div className="sticky top-0 z-10 mb-4 flex items-center justify-between border-b border-[#D8BFD8]/40 bg-[#FCFBFF]/95 pb-3 pt-1 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
             <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
               {initialEntry ? 'Edit Task' : 'Add Task'}
             </h3>
@@ -1041,7 +1054,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
             </div>
           </div>
 
-          <div className="sticky bottom-0 mt-4 flex flex-col-reverse gap-2 border-t border-[#D8BFD8]/40 bg-white/85 pt-3 backdrop-blur sm:flex-row sm:justify-end dark:border-slate-700 dark:bg-slate-900/85">
+          <div className="sticky bottom-0 mt-4 flex flex-col-reverse gap-2 border-t border-[#D8BFD8]/40 bg-white/90 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:flex-row sm:justify-end dark:border-slate-700 dark:bg-slate-900/88">
             <Button
               variant="outline"
               onClick={onClose}
