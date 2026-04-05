@@ -56,6 +56,11 @@ const modeThemes: Record<TaskType, { cardBorder: string; title: string; subtitle
   },
 };
 
+const normalizeTaskType = (rawType: unknown): TaskType => {
+  const normalized = String(rawType || '').trim().toLowerCase();
+  return normalized === 'habit' ? 'habit' : 'todo';
+};
+
 const formatDuration = (minutes: number) => {
   const safeMinutes = Math.max(0, Math.floor(Number.isFinite(minutes) ? minutes : 0));
   const hours = Math.floor(safeMinutes / 60);
@@ -103,7 +108,7 @@ const defaultDraft = (mode: TaskType): DraftTask => ({
 });
 
 const draftFromTask = (task: Task): DraftTask => ({
-  type: task.type,
+  type: normalizeTaskType(task.type),
   title: task.title,
   description: task.description,
   priority: task.priority,
@@ -120,6 +125,7 @@ const TaskManager = () => {
   const { tasks, addTask, updateTask, deleteTask, updateTaskStatus, toggleTaskCompletion, seedSampleHabits } = useTaskStore();
 
   const [activeMode, setActiveMode] = useState<TaskType>('todo');
+  const [hasUserSelectedMode, setHasUserSelectedMode] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -132,16 +138,16 @@ const TaskManager = () => {
   }, [seedSampleHabits]);
 
   useEffect(() => {
-    const todoCount = tasks.filter((task) => task.type === 'todo').length;
-    const habitCount = tasks.filter((task) => task.type === 'habit').length;
-    if (activeMode === 'todo' && todoCount === 0 && habitCount > 0) {
+    const todoCount = tasks.filter((task) => normalizeTaskType(task.type) === 'todo').length;
+    const habitCount = tasks.filter((task) => normalizeTaskType(task.type) === 'habit').length;
+    if (!hasUserSelectedMode && activeMode === 'todo' && todoCount === 0 && habitCount > 0) {
       setActiveMode('habit');
     }
-  }, [activeMode, tasks]);
+  }, [activeMode, hasUserSelectedMode, tasks]);
 
   const modeTasks = useMemo(() => {
     return tasks
-      .filter((task) => task.type === activeMode)
+      .filter((task) => normalizeTaskType(task.type) === activeMode)
       .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
   }, [activeMode, tasks]);
 
@@ -155,7 +161,7 @@ const TaskManager = () => {
     const total = modeTasks.length;
     const completed = modeTasks.filter((task) => task.status === 'completed').length;
     const dueSoon = modeTasks.filter((task) => {
-      if (!task.deadline || task.type !== 'todo') {
+      if (!task.deadline || normalizeTaskType(task.type) !== 'todo') {
         return false;
       }
 
@@ -165,7 +171,7 @@ const TaskManager = () => {
       return diffMs >= 0 && diffMs <= 3 * 24 * 60 * 60 * 1000;
     }).length;
 
-    const completedTodayCount = modeTasks.filter((task) => task.type === 'habit' && isCompletedToday(task)).length;
+    const completedTodayCount = modeTasks.filter((task) => normalizeTaskType(task.type) === 'habit' && isCompletedToday(task)).length;
     const highestStreak = modeTasks.reduce((max, task) => Math.max(max, task.currentStreak), 0);
 
     return {
@@ -186,7 +192,8 @@ const TaskManager = () => {
 
   const openEdit = (task: Task) => {
     setEditingTaskId(task.id);
-    setActiveMode(task.type);
+    setHasUserSelectedMode(true);
+    setActiveMode(normalizeTaskType(task.type));
     setDraft(draftFromTask(task));
     setShowAdvanced(Boolean(task.description || task.tags.length || task.followUpDate || task.noteToAI));
     setShowEditor(true);
@@ -212,20 +219,21 @@ const TaskManager = () => {
       .filter((tag) => tag.length > 0);
 
     const nowIso = new Date().toISOString();
+    const normalizedDraftType = normalizeTaskType(draft.type);
 
     if (editingTaskId) {
       updateTask(editingTaskId, {
-        type: draft.type,
+        type: normalizedDraftType,
         title: trimmedTitle,
         description: draft.description.trim(),
         priority: draft.priority,
-        status: draft.type === 'habit' ? 'in-progress' : draft.status,
+        status: normalizedDraftType === 'habit' ? 'in-progress' : draft.status,
         tags,
         estimatedDuration: Math.max(0, Number(draft.estimatedDuration) || 0),
         deadline: draft.deadline || undefined,
         followUpDate: draft.followUpDate || undefined,
         noteToAI: draft.noteToAI.trim() || undefined,
-        streakTarget: draft.type === 'habit' ? Math.max(1, Number(draft.streakTarget) || 1) : undefined,
+        streakTarget: normalizedDraftType === 'habit' ? Math.max(1, Number(draft.streakTarget) || 1) : undefined,
         updatedAt: nowIso,
       });
       closeEditor();
@@ -234,18 +242,18 @@ const TaskManager = () => {
 
     addTask({
       id: crypto.randomUUID(),
-      type: draft.type,
+      type: normalizedDraftType,
       title: trimmedTitle,
       description: draft.description.trim(),
       tags,
       priority: draft.priority,
-      status: draft.type === 'habit' ? 'in-progress' : draft.status,
+      status: normalizedDraftType === 'habit' ? 'in-progress' : draft.status,
       estimatedDuration: Math.max(0, Number(draft.estimatedDuration) || 0),
       timeSpent: 0,
       deadline: draft.deadline || undefined,
       followUpDate: draft.followUpDate || undefined,
       noteToAI: draft.noteToAI.trim() || undefined,
-      streakTarget: draft.type === 'habit' ? Math.max(1, Number(draft.streakTarget) || 1) : undefined,
+      streakTarget: normalizedDraftType === 'habit' ? Math.max(1, Number(draft.streakTarget) || 1) : undefined,
       currentStreak: 0,
       completedDates: [],
       createdAt: nowIso,
@@ -272,7 +280,10 @@ const TaskManager = () => {
             <div className="inline-flex w-full max-w-[360px] rounded-2xl border border-slate-200 bg-slate-100 p-1 shadow-inner">
               <button
                 type="button"
-                onClick={() => setActiveMode('todo')}
+                onClick={() => {
+                  setHasUserSelectedMode(true);
+                  setActiveMode('todo');
+                }}
                 className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition ${
                   isTaskMode
                     ? 'bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow'
@@ -283,7 +294,10 @@ const TaskManager = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveMode('habit')}
+                onClick={() => {
+                  setHasUserSelectedMode(true);
+                  setActiveMode('habit');
+                }}
                 className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition ${
                   !isTaskMode
                     ? 'bg-gradient-to-r from-fuchsia-600 to-violet-600 text-white shadow'
@@ -388,8 +402,9 @@ const TaskManager = () => {
         ) : (
           <div className="space-y-3">
             {filteredTasks.map((task) => {
-              const completedToday = task.type === 'habit' && isCompletedToday(task);
-              const isSampleHabit = task.type === 'habit' && task.tags.some((tag) => tag.toLowerCase() === 'sample');
+              const taskType = normalizeTaskType(task.type);
+              const completedToday = taskType === 'habit' && isCompletedToday(task);
+              const isSampleHabit = taskType === 'habit' && task.tags.some((tag) => tag.toLowerCase() === 'sample');
               return (
                 <div key={task.id} className={`rounded-2xl border ${theme.cardBorder} bg-white p-4 shadow-sm transition hover:shadow-md`}>
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -415,7 +430,7 @@ const TaskManager = () => {
                           {formatDuration(task.timeSpent)} / {formatDuration(task.estimatedDuration)}
                         </span>
 
-                        {task.type === 'todo' ? (
+                        {taskType === 'todo' ? (
                           <>
                             <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
                               <CalendarDays className="h-3.5 w-3.5" />
@@ -456,7 +471,7 @@ const TaskManager = () => {
                     </div>
 
                     <div className="flex flex-row flex-wrap items-center gap-2 md:w-[230px] md:justify-end">
-                      {task.type === 'habit' ? (
+                      {taskType === 'habit' ? (
                         <button
                           type="button"
                           onClick={() => toggleTaskCompletion(task.id)}
@@ -484,7 +499,7 @@ const TaskManager = () => {
                         </button>
                       )}
 
-                      {task.type === 'todo' && (
+                      {taskType === 'todo' && (
                         <select
                           value={task.status}
                           onChange={(event) => updateTaskStatus(task.id, event.target.value as TaskStatus)}

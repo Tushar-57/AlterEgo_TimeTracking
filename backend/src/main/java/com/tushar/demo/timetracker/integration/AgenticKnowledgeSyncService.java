@@ -13,8 +13,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -39,6 +43,8 @@ public class AgenticKnowledgeSyncService {
     private final TimeEntryDetailRepository timeEntryDetailRepository;
     private final JwtUtils jwtUtils;
     private final long bridgeTokenTtlSeconds;
+    private final int maxAttempts;
+    private final long retryBackoffMs;
 
     public static final class SyncBackfillResult {
         private final boolean configured;
@@ -95,6 +101,8 @@ public class AgenticKnowledgeSyncService {
             @Value("${agentic.sync.enabled:false}") boolean enabled,
             @Value("${agentic.sync.base-url:}") String baseUrl,
             @Value("${agentic.sync.bridge-token-ttl-seconds:180}") long bridgeTokenTtlSeconds,
+            @Value("${agentic.sync.max-attempts:3}") int maxAttempts,
+            @Value("${agentic.sync.retry-backoff-ms:350}") long retryBackoffMs,
             @Value("${agentic.sync.connect-timeout-ms:5000}") long connectTimeoutMs,
             @Value("${agentic.sync.request-timeout-ms:8000}") long requestTimeoutMs) {
         this.timeEntryRepository = timeEntryRepository;
@@ -103,6 +111,8 @@ public class AgenticKnowledgeSyncService {
         this.enabled = enabled;
         this.baseUrl = normalizeBaseUrl(baseUrl);
         this.bridgeTokenTtlSeconds = bridgeTokenTtlSeconds;
+        this.maxAttempts = Math.max(1, maxAttempts);
+        this.retryBackoffMs = Math.max(0L, retryBackoffMs);
         this.requestTimeout = Duration.ofMillis(requestTimeoutMs);
         this.objectMapper = new ObjectMapper();
         this.httpClient = HttpClient.newBuilder()
@@ -335,7 +345,7 @@ public class AgenticKnowledgeSyncService {
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendWithRetry(request, syncType);
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 logger.info("Agentic {} sync successful for user {}", syncType, user != null ? user.getEmail() : "unknown");
                 return true;
@@ -368,7 +378,7 @@ public class AgenticKnowledgeSyncService {
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = sendWithRetry(request, syncType);
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 logger.info("Agentic {} request successful for user {}", syncType, user != null ? user.getEmail() : "unknown");
                 try {
@@ -398,6 +408,88 @@ public class AgenticKnowledgeSyncService {
             logger.warn("Agentic {} request failed: {}", syncType, e.getMessage());
             throw new IllegalStateException("Agentic " + syncType + " request failed", e);
         }
+    }
+
+    private HttpResponse<String> sendWithRetry(HttpRequest request, String syncType) throws Exception {
+        HttpResponse<String> lastResponse = null;
+        Exception lastException = null;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (!isRetryableStatus(response.statusCode()) || attempt == maxAttempts) {
+                    return response;
+                }
+
+                lastResponse = response;
+                logger.warn(
+                        "Agentic {} attempt {}/{} returned retryable status {}",
+                        syncType,
+                        attempt,
+                        maxAttempts,
+                        response.statusCode()
+                );
+            } catch (Exception e) {
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+
+                if (!isRetryableException(e) || attempt == maxAttempts) {
+                    throw e;
+                }
+
+                lastException = e;
+                logger.warn(
+                        "Agentic {} attempt {}/{} failed with retryable transport error: {}",
+                        syncType,
+                        attempt,
+                        maxAttempts,
+                        e.getMessage()
+                );
+            }
+
+            if (attempt < maxAttempts) {
+                sleepBackoff(attempt);
+            }
+        }
+
+        if (lastResponse != null) {
+            return lastResponse;
+        }
+        if (lastException != null) {
+            throw lastException;
+        }
+
+        throw new IllegalStateException("Agentic sync failed without response details");
+    }
+
+    private boolean isRetryableStatus(int statusCode) {
+        return statusCode == 408 || statusCode == 429 || statusCode >= 500;
+    }
+
+    private boolean isRetryableException(Exception exception) {
+        Throwable root = rootCause(exception);
+        return root instanceof HttpTimeoutException
+                || root instanceof ConnectException
+                || root instanceof SocketException
+                || root instanceof IOException;
+    }
+
+    private Throwable rootCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current;
+    }
+
+    private void sleepBackoff(int attempt) throws InterruptedException {
+        if (retryBackoffMs <= 0) {
+            return;
+        }
+        long delayMs = retryBackoffMs * attempt;
+        Thread.sleep(delayMs);
     }
 
     private boolean isConfigured() {

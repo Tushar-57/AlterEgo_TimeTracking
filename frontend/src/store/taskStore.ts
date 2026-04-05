@@ -46,6 +46,29 @@ const toDateKey = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const normalizeTaskType = (rawType: unknown): TaskType => {
+  const normalized = String(rawType || '').trim().toLowerCase();
+  return normalized === 'habit' ? 'habit' : 'todo';
+};
+
+const normalizeTaskStatus = (rawStatus: unknown, type: TaskType): TaskStatus => {
+  const normalized = String(rawStatus || '').trim().toLowerCase();
+
+  if (normalized === 'completed') {
+    return 'completed';
+  }
+
+  if (normalized === 'in-progress') {
+    return 'in-progress';
+  }
+
+  if (normalized === 'todo') {
+    return type === 'habit' ? 'in-progress' : 'todo';
+  }
+
+  return type === 'habit' ? 'in-progress' : 'todo';
+};
+
 const calculateCurrentStreak = (completedDates: string[]) => {
   if (completedDates.length === 0) {
     return 0;
@@ -100,10 +123,11 @@ export const useTaskStore = create<TaskState>()(
       addTask: (task) =>
         set((state) => {
           const nowIso = new Date().toISOString();
+          const normalizedType = normalizeTaskType(task.type);
           const nextTask: Task = {
             ...task,
-            type: task.type || 'todo',
-            status: task.status || 'todo',
+            type: normalizedType,
+            status: normalizeTaskStatus(task.status, normalizedType),
             currentStreak: task.currentStreak ?? 0,
             completedDates: task.completedDates ?? [],
             createdAt: task.createdAt || nowIso,
@@ -117,12 +141,21 @@ export const useTaskStore = create<TaskState>()(
       updateTask: (id, updates) => set((state) => ({
         tasks: state.tasks.map((task) =>
           task.id === id
-            ? {
+            ? (() => {
+                const nextType = normalizeTaskType(updates.type ?? task.type);
+                return {
+                  ...task,
+                  ...updates,
+                  type: nextType,
+                  status: normalizeTaskStatus(updates.status ?? task.status, nextType),
+                  updatedAt: new Date().toISOString(),
+                };
+              })()
+            : {
                 ...task,
-                ...updates,
-                updatedAt: new Date().toISOString(),
+                type: normalizeTaskType(task.type),
+                status: normalizeTaskStatus(task.status, normalizeTaskType(task.type)),
               }
-            : task
         ),
       })),
       deleteTask: (id) => set((state) => ({
@@ -148,8 +181,9 @@ export const useTaskStore = create<TaskState>()(
 
             const nowIso = new Date().toISOString();
             const dayKey = toDateKey(completedAt);
+            const normalizedType = normalizeTaskType(task.type);
 
-            if (task.type === 'habit') {
+            if (normalizedType === 'habit') {
               const alreadyCompletedToday = task.completedDates.includes(dayKey);
               const nextCompletedDates = alreadyCompletedToday
                 ? task.completedDates.filter((date) => date !== dayKey)
@@ -178,7 +212,8 @@ export const useTaskStore = create<TaskState>()(
       seedSampleHabits: () =>
         set((state) => {
           const existingHabitCount = state.tasks.filter((task) => task.type === 'habit').length;
-          if (existingHabitCount > 0) {
+          const normalizedHabitCount = state.tasks.filter((task) => normalizeTaskType(task.type) === 'habit').length;
+          if (existingHabitCount > 0 || normalizedHabitCount > 0) {
             return state;
           }
 

@@ -12,6 +12,7 @@ import com.tushar.demo.timetracker.model.SmartCriteriaEntity;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.OnboardingRepository;
 import com.tushar.demo.timetracker.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -30,6 +31,9 @@ public class OnboardingController {
 	private final OnboardingRepository onboardingRepository;
     private final AgenticKnowledgeSyncService agenticKnowledgeSyncService;
     private final ObjectMapper objectMapper;
+
+    @Value("${agentic.sync.onboarding-read-sync-enabled:false}")
+    private boolean onboardingReadSyncEnabled;
 
     public OnboardingController(UserRepository userRepo,
             OnboardingRepository onboardingRepository,
@@ -185,7 +189,9 @@ public class OnboardingController {
                     payload.put("planner", plannerPayload);
                 }
 
-                syncOnboardingSnapshot(onboarding, user);
+                if (onboardingReadSyncEnabled) {
+                    syncOnboardingSnapshot(onboarding, user);
+                }
                 return ResponseEntity.ok(payload);
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
