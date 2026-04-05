@@ -2,6 +2,7 @@ package com.tushar.demo.timetracker.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tushar.demo.timetracker.dto.request.ApiResponse;
 import com.tushar.demo.timetracker.dto.request.OnboardingRequestDTO;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
 import com.tushar.demo.timetracker.integration.AgenticKnowledgeSyncService;
@@ -243,6 +244,48 @@ public class OnboardingController {
                     .body(Map.of("error", "Processing failed", "message", e.getMessage()));
         }
     }
+
+            @PostMapping("checkups/{checkupType}")
+            public ResponseEntity<ApiResponse<Map<String, Object>>> runDailyCheckup(
+                @PathVariable String checkupType,
+                @RequestBody(required = false) Map<String, Object> request,
+                Authentication authentication) {
+            try {
+                Users user = userRepo.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+                String normalizedType = checkupType == null ? "" : checkupType.trim().toLowerCase();
+                if (!"morning".equals(normalizedType) && !"evening".equals(normalizedType)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(
+                        "Invalid checkup type",
+                        Map.of("code", "INVALID_CHECKUP_TYPE", "message", "Use 'morning' or 'evening'")
+                    ));
+                }
+
+                String date = request != null && request.get("date") != null
+                    ? String.valueOf(request.get("date"))
+                    : null;
+                String note = request != null && request.get("note") != null
+                    ? String.valueOf(request.get("note"))
+                    : null;
+
+                Map<String, Object> checkupPayload = agenticKnowledgeSyncService.runDailyCheckup(user, normalizedType, date, note);
+                return ResponseEntity.ok(ApiResponse.success(checkupPayload, "Checkup generated successfully"));
+            } catch (ResourceNotFoundException e) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Not found", Map.of("message", e.getMessage(), "code", "NOT_FOUND")));
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Validation failed", Map.of("message", e.getMessage(), "code", "VALIDATION_ERROR")));
+            } catch (IllegalStateException e) {
+                return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED)
+                    .body(ApiResponse.error("Checkup unavailable", Map.of("message", e.getMessage(), "code", "CHECKUP_UNAVAILABLE")));
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Processing failed", Map.of("message", e.getMessage(), "code", "CHECKUP_FAILED")));
+            }
+            }
 
     @PatchMapping("updateStyle")
     public ResponseEntity<?> updateStyle(@RequestBody Map<String, String> request, Authentication authentication) {

@@ -19,6 +19,7 @@ import com.tushar.demo.timetracker.service.impl.UserDetailsServiceImpl;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -313,6 +314,56 @@ public class TimerController {
             logger.error("Failed to delete time entry {} for user: {}", id, authName(authentication), e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Delete failed", Map.of("message", e.getMessage())));
+        }
+    }
+
+    @PostMapping("/sync/agentic/backfill")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> backfillAgenticTimeEntries(
+            Authentication authentication,
+            @RequestParam(name = "limit", required = false) Integer limit) {
+        logger.info("Backfilling Agentic time entries for user: {}", authName(authentication));
+
+        try {
+            if (!isAuthenticatedUser(authentication)) {
+                logger.warn("Unauthorized attempt to backfill Agentic time entries");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
+            }
+
+                if (limit != null && limit < 1) {
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Validation failed", Map.of(
+                        "code", "VALIDATION_FAILED",
+                        "message", "limit must be a positive integer when provided"
+                    )));
+                }
+
+                int requestedLimit = limit != null ? limit : 0;
+            Users user = userDetailsService.getCurrentUser(authentication);
+            AgenticKnowledgeSyncService.SyncBackfillResult result =
+                    agenticKnowledgeSyncService.syncHistoricalTimeEntries(user, requestedLimit);
+
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("configured", result.isConfigured());
+            payload.put("requested", result.getRequested());
+            payload.put("scanned", result.getScanned());
+            payload.put("synced", result.getSynced());
+            payload.put("failed", result.getFailed());
+            payload.put("skippedActive", result.getSkippedActive());
+
+            if (!result.isConfigured()) {
+                return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED)
+                        .body(ApiResponse.error(
+                                "Agentic sync is not configured",
+                                Map.of("code", "AGENTIC_SYNC_NOT_CONFIGURED")
+                        ));
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(payload, "Agentic backfill completed"));
+        } catch (Exception e) {
+            logger.error("Failed to backfill Agentic time entries for user: {}", authName(authentication), e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Backfill failed", Map.of("message", e.getMessage())));
         }
     }
 

@@ -36,6 +36,7 @@ interface TaskState {
   deleteTask: (id: string) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
   toggleTaskCompletion: (id: string, completedAt?: Date) => void;
+  seedSampleHabits: () => void;
 }
 
 const toDateKey = (date: Date) => {
@@ -66,6 +67,30 @@ const calculateCurrentStreak = (completedDates: string[]) => {
   }
 
   return streak;
+};
+
+const buildSampleHabit = (overrides: Partial<Task>): Task => {
+  const nowIso = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    title: 'Daily focus ritual',
+    description: 'Start with a 10-minute planning pass and define one meaningful win for the day.',
+    tags: ['sample', 'focus'],
+    priority: 'medium',
+    status: 'in-progress',
+    estimatedDuration: 15,
+    timeSpent: 0,
+    followUpDate: undefined,
+    deadline: undefined,
+    noteToAI: 'Nudge me gently if I miss this two days in a row.',
+    streakTarget: 7,
+    currentStreak: 0,
+    completedDates: [],
+    createdAt: nowIso,
+    updatedAt: nowIso,
+    ...overrides,
+    type: 'habit',
+  };
 };
 
 export const useTaskStore = create<TaskState>()(
@@ -150,6 +175,34 @@ export const useTaskStore = create<TaskState>()(
             };
           }),
         })),
+      seedSampleHabits: () =>
+        set((state) => {
+          const existingHabitCount = state.tasks.filter((task) => task.type === 'habit').length;
+          if (existingHabitCount > 0) {
+            return state;
+          }
+
+          const seededHabits = [
+            buildSampleHabit({
+              title: 'Daily focus ritual',
+              description: 'Start with a 10-minute planning pass and define one meaningful win for the day.',
+              tags: ['sample', 'focus'],
+              estimatedDuration: 15,
+              streakTarget: 7,
+            }),
+            buildSampleHabit({
+              title: 'Evening check-in reflection',
+              description: 'Capture one progress note and one blocker before ending your day.',
+              tags: ['sample', 'reflection'],
+              estimatedDuration: 10,
+              streakTarget: 5,
+            }),
+          ];
+
+          return {
+            tasks: [...state.tasks, ...seededHabits],
+          };
+        }),
     }),
     {
       name: 'task-storage',

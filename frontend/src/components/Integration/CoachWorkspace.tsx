@@ -123,12 +123,39 @@ const requestAgenticBridgeToken = async (): Promise<BridgeTokenResponse | null> 
   }
 };
 
+const AGENTIC_BACKFILL_MARKER = 'alterego-agentic-backfill-date';
+
+const shouldRunFullBackfill = (): boolean => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const lastBackfillDate = window.localStorage.getItem(AGENTIC_BACKFILL_MARKER);
+    if (lastBackfillDate === today) {
+      return false;
+    }
+
+    window.localStorage.setItem(AGENTIC_BACKFILL_MARKER, today);
+    return true;
+  } catch {
+    return true;
+  }
+};
+
 const primeCoachKnowledge = async (): Promise<void> => {
   try {
-    await fetch('/api/onboarding/getOnboardingData', {
-      method: 'GET',
-      credentials: 'include',
-    });
+    const backfillEndpoint = shouldRunFullBackfill()
+      ? '/api/timers/sync/agentic/backfill'
+      : '/api/timers/sync/agentic/backfill?limit=250';
+
+    await Promise.allSettled([
+      fetch('/api/onboarding/getOnboardingData', {
+        method: 'GET',
+        credentials: 'include',
+      }),
+      fetch(backfillEndpoint, {
+        method: 'POST',
+        credentials: 'include',
+      }),
+    ]);
   } catch {
     // Best-effort pre-sync only; Coach launch should continue regardless.
   }

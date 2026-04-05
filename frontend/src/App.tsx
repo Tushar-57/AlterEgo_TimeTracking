@@ -19,6 +19,7 @@ import ChatOnboarding from './components/Onboarding/ChatOnboarding';
 import CoachWorkspace from './components/Integration/CoachWorkspace';
 import ProfilePage from './components/Profile/ProfilePage';
 import ConnectedPlaceholderPage from './components/Workspace/ConnectedPlaceholderPage';
+import CheckupPrompt from './components/checkups/CheckupPrompt';
 import { ChatProvider } from './components/AIChat/ChatContext';
 import FullScreenChat from './components/AIChat/FullScreenChat';
 import ChatToggleButton from './components/AIChat/ChatToggleButton';
@@ -319,6 +320,7 @@ const ProtectedRoutes = () => {
           })}
         </nav>
 
+        <CheckupPrompt />
         <FullScreenChat />
         <ChatToggleButton />
       </div>

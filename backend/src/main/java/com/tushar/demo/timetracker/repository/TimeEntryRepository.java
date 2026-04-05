@@ -18,6 +18,14 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
     @Query(value = "SELECT * FROM time_entry WHERE user_id = :userId ORDER BY start_time DESC LIMIT :limit", nativeQuery = true)
     List<TimeEntry> findTopByUserIdOrderByStartTimeDesc(@Param("userId") Long userId, @Param("limit") int limit);
 
+    @Query(value = "SELECT * FROM time_entry WHERE user_id = :userId ORDER BY start_time DESC LIMIT :limit OFFSET :offset", nativeQuery = true)
+    List<TimeEntry> findByUserIdOrderByStartTimeDescPaged(
+            @Param("userId") Long userId,
+            @Param("limit") int limit,
+            @Param("offset") int offset);
+
+    long countByUserId(Long userId);
+
     Optional<TimeEntry> findByIdAndUser(Long timerId, Users user);
 //    Optional<TimeEntry> findActiveTimerByUser(Users user);
 }
