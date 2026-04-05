@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { clearSession, fetchWithToken, markSessionActive } from '../utils/auth';
+import { clearSession, markSessionActive } from '../utils/auth';
 
 interface User {
   name?: string;
@@ -83,14 +83,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const validateAuth = async (): Promise<boolean> => {
+      const setUnauthenticatedState = () => {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          isAuthenticated: false,
+          user: null,
+          error: null,
+        }));
+        clearSession();
+      };
+
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        const data = await fetchWithToken<{ valid: boolean; user: User }>('/api/auth/validate', {
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch('/api/auth/validate', {
           method: 'GET',
+          credentials: 'include',
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
+
+        if (response.status === 401 || response.status === 403) {
+          setUnauthenticatedState();
+          return false;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Auth validation failed with status ${response.status}`);
+        }
+
+        const data = await response.json() as { valid: boolean; user: User };
 
         if (data.valid === true) {
           markSessionActive();
@@ -106,17 +129,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
           return true;
         } else {
+          setUnauthenticatedState();
+          return false;
+        }
+      } catch (error: unknown) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
           setState(prev => ({
             ...prev,
             loading: false,
             isAuthenticated: false,
             user: null,
-            error: { status: 401, message: 'Invalid token' },
+            error: { status: 408, message: 'Auth validation timed out. Please retry.' },
           }));
           clearSession();
           return false;
         }
-      } catch (error: unknown) {
+
         const message = error instanceof Error ? error.message : 'Session expired. Please log in again.';
         console.warn('Auth validation failed:', message);
         setState(prev => ({

@@ -8,7 +8,6 @@ import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.OnboardingRepository;
 import com.tushar.demo.timetracker.repository.UserRepository;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,7 +24,6 @@ public class AssistantController {
     private final OnboardingRepository onboardingRepository;
     private final UserRepository userRepo;
 
-    @Autowired
     public AssistantController(AgentSociety agentSociety, OnboardingRepository onboardingRepository, UserRepository userRepo) {
         this.agentSociety = agentSociety;
         this.onboardingRepository = onboardingRepository;
@@ -38,7 +36,7 @@ public class AssistantController {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     	String userId = authentication.getName();
         String command = request.get("command");
-        Optional<OnboardingEntity> onboardUserDetails = onboardingRepository.findByUser(user); 
+        Optional<OnboardingEntity> onboardUserDetails = onboardingRepository.findTopByUserOrderByIdDesc(user); 
         String tone = onboardUserDetails.map(entity -> entity.getMentor().getStyle()).orElse("Patient");
         String archetype = onboardUserDetails.map(entity -> entity.getMentor().getArchetype()).orElse("Guide");
 

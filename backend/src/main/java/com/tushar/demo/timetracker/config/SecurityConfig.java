@@ -1,7 +1,9 @@
 package com.tushar.demo.timetracker.config;
 
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 
@@ -26,6 +28,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private static final List<String> DEFAULT_ALLOWED_ORIGIN_PATTERNS = List.of(
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:8088",
+        "https://*.vercel.app",
+        "https://*.netlify.app",
+        "https://alteregoconventional.vercel.app"
+    );
 
     private final JwtAuthEntryPoint authEntryPoint;
     private final JwtAuthFilter jwtAuthFilter;
@@ -121,10 +132,14 @@ public class SecurityConfig {
     }
 
     private List<String> parseAllowedOriginPatterns() {
-        return Arrays.stream(allowedOriginPatternsProperty.split(","))
+        Set<String> patterns = new LinkedHashSet<>(DEFAULT_ALLOWED_ORIGIN_PATTERNS);
+
+        Arrays.stream(allowedOriginPatternsProperty.split(","))
             .map(String::trim)
             .filter(pattern -> !pattern.isEmpty())
-            .toList();
+            .forEach(patterns::add);
+
+        return List.copyOf(patterns);
     }
 
     @Bean

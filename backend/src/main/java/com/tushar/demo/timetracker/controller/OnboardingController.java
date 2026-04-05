@@ -51,7 +51,7 @@ public class OnboardingController {
                         .body(Map.of("error", "Invalid data", "message", "Role, mentor, and planner are required"));
             }
             OnboardingEntity entity = OnboardingEntity.fromRequestDTO(request, user);
-        onboardingRepository.findByUser(user).ifPresent(existing -> entity.setId(existing.getId()));
+        onboardingRepository.findTopByUserOrderByIdDesc(user).ifPresent(existing -> entity.setId(existing.getId()));
             OnboardingEntity savedEntity = onboardingRepository.save(entity);
             user.setOnboardingCompleted(true);
             userRepo.save(user);
@@ -71,7 +71,7 @@ public class OnboardingController {
         try {
             Users user = userRepo.findByEmail(authentication.getName())
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-            OnboardingEntity onboarding = onboardingRepository.findByUser(user)
+            OnboardingEntity onboarding = onboardingRepository.findTopByUserOrderByIdDesc(user)
                     .orElseThrow(() -> new ResourceNotFoundException("Onboarding not found for user: " + user.getEmail()));
 
                 Map<String, Object> payload = new HashMap<>();
@@ -206,7 +206,7 @@ public class OnboardingController {
             }
 
             OnboardingEntity entity = OnboardingEntity.fromRequestDTO(request, user);
-            onboardingRepository.findByUser(user).ifPresent(existing -> entity.setId(existing.getId()));
+            onboardingRepository.findTopByUserOrderByIdDesc(user).ifPresent(existing -> entity.setId(existing.getId()));
             OnboardingEntity savedEntity = onboardingRepository.save(entity);
 
             user.setOnboardingCompleted(true);
@@ -253,7 +253,7 @@ public class OnboardingController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Style is required"));
             }
 
-            OnboardingEntity onboarding = onboardingRepository.findByUser(user)
+                OnboardingEntity onboarding = onboardingRepository.findTopByUserOrderByIdDesc(user)
                     .orElseThrow(() -> new ResourceNotFoundException("Onboarding not found for user: " + user.getEmail()));
             
             onboarding.setMentor(new MentorEntity(onboarding.getMentor().getArchetype(),style,onboarding.getMentor().getName(),onboarding.getCoachAvatar()));
