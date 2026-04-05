@@ -293,9 +293,9 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
   );
 
   return (
-    <div className="flex w-full min-h-screen flex-row">
-      <div className="flex min-h-[1728px] flex-1 flex-col">
-        <div className="relative flex-1 overflow-y-auto">
+    <div className="flex h-full min-h-0 w-full flex-row p-2 sm:p-4">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-[24px] border border-teal-200/60 bg-white/75 shadow-[0_20px_55px_-45px_rgba(15,23,42,0.75)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/75">
           <CalendarSection
             events={calendarEvents}
             refreshEvents={fetchData}

@@ -108,22 +108,22 @@ const ProtectedRoutes = () => {
 
   return (
     <ChatProvider>
-      <div className="relative flex min-h-screen overflow-x-hidden bg-gradient-to-b from-[#F8FAFC] via-[#F8F5FF] to-[#EEF4FF] text-slate-900 dark:from-[#0B1220] dark:via-[#0F172A] dark:to-[#1E293B] dark:text-slate-100">
-        <div className="fixed left-0 right-0 top-0 z-30 flex h-16 items-center justify-between border-b border-[#D8BFD8]/40 bg-white/95 px-4 backdrop-blur md:hidden dark:border-slate-700 dark:bg-slate-900/95">
+      <div className="relative flex h-[100dvh] min-h-screen overflow-hidden bg-gradient-to-b from-[#F5FBFA] via-[#F1F9FF] to-[#FFF9EE] text-slate-900 dark:from-[#0B1220] dark:via-[#0F172A] dark:to-[#1E293B] dark:text-slate-100">
+        <div className="fixed left-0 right-0 top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between border-b border-teal-200/60 bg-white/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:hidden dark:border-slate-700 dark:bg-slate-900/95">
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition hover:bg-[#F3EEFF] dark:text-slate-100 dark:hover:bg-slate-800"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-teal-100 bg-white/75 text-slate-700 transition hover:bg-teal-50 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:hover:bg-slate-800"
             aria-label="Open navigation menu"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold tracking-wide text-slate-900 dark:text-slate-100">Alter Ego</span>
+          <span className="text-sm font-semibold tracking-wide text-slate-900 dark:text-slate-100">Alter Ego Workspace</span>
           <ThemeToggle className="h-10 w-10 p-0" />
         </div>
 
         <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
-        <main className="min-w-0 flex-1 ml-0 pb-20 pt-16 md:ml-64 md:pb-0 md:pt-0">
+        <main className="min-h-0 min-w-0 flex-1 ml-0 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-[calc(4rem+env(safe-area-inset-top))] md:ml-64 md:pb-0 md:pt-0">
           <Routes>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -287,9 +287,9 @@ const ProtectedRoutes = () => {
           </Routes>
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-[#D8BFD8]/40 bg-white/95 px-1 py-1 backdrop-blur md:hidden dark:border-slate-700 dark:bg-slate-900/95">
+        <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-teal-200/60 bg-white/95 px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur-xl md:hidden dark:border-slate-700 dark:bg-slate-900/95">
           {mobileTabs.map((tab) => {
-            const isActive = tab.to === '/' ? location.pathname === '/' : location.pathname.startsWith(tab.to);
+            const isActive = location.pathname === tab.to || location.pathname.startsWith(`${tab.to}/`);
             return (
               <button
                 key={tab.to}
@@ -300,8 +300,8 @@ const ProtectedRoutes = () => {
                 }}
                 className={`flex flex-col items-center justify-center rounded-lg py-2 text-[11px] font-medium transition ${
                   isActive
-                    ? 'bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] text-slate-900 shadow-sm dark:from-slate-700 dark:to-slate-600 dark:text-slate-100'
-                    : 'text-slate-600 hover:bg-[#F3EEFF] dark:text-slate-300 dark:hover:bg-slate-800'
+                    ? 'bg-gradient-to-r from-teal-700 via-cyan-600 to-amber-500 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-teal-50 dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
                 <tab.icon className="mb-1 h-4 w-4" />

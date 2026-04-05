@@ -1283,9 +1283,9 @@ export const CalendarSection = ({
   );
 
   return (
-    <section className="flex h-full w-full flex-col gap-3 overflow-x-hidden overflow-y-auto p-2 sm:gap-4 sm:p-4">
+    <section className="flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden p-2 sm:gap-4 sm:p-4">
       <motion.div
-        className="sticky top-0 z-10 rounded-b-lg border-b bg-gradient-to-r from-gray-50 to-gray-100 px-3 pb-2 pt-3 shadow-sm dark:from-gray-800 dark:to-gray-900 sm:px-6 sm:pt-4"
+        className="sticky top-0 z-10 rounded-b-lg border-b bg-gradient-to-r from-[#ECFEFF] via-[#F0F9FF] to-[#FFF7ED] px-3 pb-2 pt-3 shadow-sm dark:from-gray-800 dark:to-gray-900 sm:px-6 sm:pt-4"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -1401,7 +1401,7 @@ export const CalendarSection = ({
           </div>
         </div>
       </motion.div>
-      <div ref={timelineScrollRef} className="relative flex-1 overflow-x-hidden overflow-y-auto">
+      <div ref={timelineScrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
         {isMobileLayout ? (
           mobileViewMode === "agenda" ? renderMobileAgenda() : renderMobileCalendar()
         ) : (
