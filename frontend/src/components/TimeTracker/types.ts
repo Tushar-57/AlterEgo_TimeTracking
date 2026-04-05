@@ -66,4 +66,5 @@ export interface CurrentTask {
   tags: Tag[];
   billable: boolean;
   newTag: string;
+  category?: string;
 }

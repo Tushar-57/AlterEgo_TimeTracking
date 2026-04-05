@@ -157,7 +157,7 @@
 //   </div>
 // );
 import { AnimatePresence, motion } from 'framer-motion';
-import { Clock, Calendar, Briefcase, DollarSign, ArrowRight, Download, Tag } from 'lucide-react';
+import { Clock, Calendar, Briefcase, DollarSign, ArrowRight, Download, Tag, Trash2 } from 'lucide-react';
 import { TimeEntry } from './types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Button } from '../Calendar_updated/components/ui/button';
@@ -212,12 +212,16 @@ export const TimeEntriesList = ({
   sortBy,
   setSortBy,
   formatTime,
+  onDeleteEntry,
+  deletingEntryId,
 }: {
   timeEntries: TimeEntry[];
   loading: boolean;
   sortBy: 'newest' | 'oldest' | 'duration';
   setSortBy: (value: 'newest' | 'oldest' | 'duration') => void;
   formatTime: (seconds: number) => string;
+  onDeleteEntry?: (entryId: number) => Promise<void> | void;
+  deletingEntryId?: number | null;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -330,6 +334,18 @@ export const TimeEntriesList = ({
                   <div className="flex items-center justify-start gap-3 sm:justify-end">
                     {entry.billable && <DollarSign className="h-5 w-5 text-[#D8BFD8]" />}
                     <span className="font-mono text-xl text-[#2D3748] dark:text-[#E6E6FA]">{formatTime(entry.duration)}</span>
+                    {onDeleteEntry && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onDeleteEntry(entry.id)}
+                        disabled={deletingEntryId === entry.id}
+                        className="h-9 rounded-xl border-rose-200 bg-rose-50 px-3 text-rose-700 hover:bg-rose-100 dark:border-rose-700/60 dark:bg-rose-900/20 dark:text-rose-200"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="ml-1 text-xs font-semibold">{deletingEntryId === entry.id ? 'Deleting' : 'Delete'}</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -463,7 +463,7 @@ import {
   SelectValue,
 } from '../../../../../ui/select';
 import { useToast } from '../../../../components/hooks/use-toast';
-import { X, Clock } from 'lucide-react';
+import { X, Clock, ChevronDown, ChevronUp, Sparkles, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Switch } from '../../../../components/ui/switch';
 import { calculatePosition } from '../../../../../Dashboard';
@@ -476,6 +476,7 @@ interface TaskPopupProps {
   defaultStartTime?: Date;
   initialEntry?: CalendarEvent | null;
   onSave: () => Promise<void>;
+  onDelete?: (entryId: number) => Promise<void> | void;
 }
 
 interface Project {
@@ -499,7 +500,14 @@ const toLocalDateTimeString = (date: Date) => {
   )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 };
 
-export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onSave }: TaskPopupProps) {
+const roundToNextMinute = (date: Date) => {
+  const rounded = new Date(date);
+  rounded.setSeconds(0, 0);
+  rounded.setMinutes(rounded.getMinutes() + 1);
+  return rounded;
+};
+
+export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onSave, onDelete }: TaskPopupProps) {
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -517,6 +525,8 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
   const [tags, setTags] = useState<Tag[]>([]);
   const [goalOptions, setGoalOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showAdvancedFields, setShowAdvancedFields] = useState(false);
   const { toast } = useToast();
   const popupRef = useRef<HTMLDivElement>(null);
 
@@ -541,12 +551,8 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
   const initializeCreateForm = (baseDate?: Date) => {
     resetForm();
 
-    if (!baseDate) {
-      return;
-    }
-
-    const start = new Date(baseDate);
-    const end = new Date(baseDate);
+    const start = baseDate ? new Date(baseDate) : roundToNextMinute(new Date());
+    const end = new Date(start);
     end.setHours(end.getHours() + 1);
     setStartTime(formatTimeInput(start));
     setEndTime(formatTimeInput(end));
@@ -582,6 +588,8 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     if (!isOpen) {
       return;
     }
+
+    setShowAdvancedFields(Boolean(initialEntry));
 
     if (initialEntry) {
       initializeEditForm(initialEntry);
@@ -741,7 +749,11 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
       }
 
       // Construct start and end times in local datetime format expected by backend
-      const baseDate = initialEntry ? new Date(initialEntry.startTime) : new Date(defaultStartTime || Date.now());
+      const baseDate = initialEntry
+        ? new Date(initialEntry.startTime)
+        : defaultStartTime
+        ? new Date(defaultStartTime)
+        : roundToNextMinute(new Date());
       const startDate = new Date(baseDate);
       const [startHours, startMinutes] = startTime.split(':').map(Number);
       startDate.setHours(startHours, startMinutes, 0, 0);
@@ -820,6 +832,28 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     }
   };
 
+  const handleDelete = async () => {
+    if (!initialEntry || !onDelete) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await onDelete(initialEntry.id);
+      onClose();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: 'Delete Failed',
+        description: 'Unable to delete this task right now.',
+        variant: 'destructive',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -828,7 +862,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-2 backdrop-blur-sm sm:p-4"
       >
         <motion.div
           ref={popupRef}
@@ -836,7 +870,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 50 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="w-full max-h-[88dvh] overflow-y-auto rounded-t-3xl border border-[#D8BFD8]/45 bg-gradient-to-br from-[#FCFBFF] via-[#F8F5FF] to-[#F1F7FF] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 dark:text-slate-100 sm:max-h-[92vh] sm:max-w-[640px] sm:rounded-2xl sm:p-6"
+          className="w-full max-h-[95dvh] overflow-y-auto rounded-2xl border border-[#D8BFD8]/45 bg-gradient-to-br from-[#FCFBFF] via-[#F8F5FF] to-[#F1F7FF] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 dark:text-slate-100 sm:max-h-[92vh] sm:max-w-[680px] sm:p-6"
         >
           <div className="sticky top-0 z-10 mb-4 flex items-center justify-between border-b border-[#D8BFD8]/40 bg-[#FCFBFF]/95 pb-3 pt-1 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
             <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -971,11 +1005,26 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
             </div>
 
             <div className="col-span-2 rounded-xl border border-[#D8BFD8]/45 bg-[#F8F5FF]/80 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-              <h4 className="text-sm font-semibold text-[#6B6697] dark:text-slate-200">AI Context Details</h4>
-              <p className="mt-1 text-xs text-[#6B6697]/80 dark:text-slate-300">
-                These fields are stored as detailed context for smarter Agentic insights and embeddings.
-              </p>
+              <button
+                type="button"
+                onClick={() => setShowAdvancedFields((previous) => !previous)}
+                className="flex w-full items-center justify-between rounded-lg px-1 py-1 text-left"
+              >
+                <div>
+                  <p className="flex items-center gap-2 text-sm font-semibold text-[#6B6697] dark:text-slate-200">
+                    <Sparkles className="h-4 w-4" />
+                    Advanced AI Context
+                  </p>
+                  <p className="mt-1 text-xs text-[#6B6697]/80 dark:text-slate-300">
+                    {showAdvancedFields
+                      ? 'Hide detailed fields'
+                      : 'Expand to add goals, focus, energy, blockers, and detailed notes'}
+                  </p>
+                </div>
+                {showAdvancedFields ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
 
+              {showAdvancedFields && (
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Linked Goal</label>
@@ -1051,10 +1100,22 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
                   />
                 </div>
               </div>
+              )}
             </div>
           </div>
 
           <div className="sticky bottom-0 mt-4 flex flex-col-reverse gap-2 border-t border-[#D8BFD8]/40 bg-white/90 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:flex-row sm:justify-end dark:border-slate-700 dark:bg-slate-900/88">
+            {initialEntry && onDelete && (
+              <Button
+                variant="outline"
+                onClick={handleDelete}
+                disabled={loading || isDeleting}
+                className="w-full rounded-xl border-rose-200 px-4 py-2 text-rose-700 hover:bg-rose-50 dark:border-rose-700 dark:text-rose-200 dark:hover:bg-rose-900/30 sm:mr-auto sm:w-auto"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {isDeleting ? 'Deleting...' : 'Delete Entry'}
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={onClose}

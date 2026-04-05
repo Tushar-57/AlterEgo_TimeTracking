@@ -69,6 +69,20 @@ interface TimerPopupProps {
   submitError?: string | null;
 }
 
+const toDateTimeLocalValue = (date: Date) => {
+  const pad = (value: number) => value.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(
+    date.getMinutes()
+  )}`;
+};
+
+const roundToNextMinute = (date: Date) => {
+  const rounded = new Date(date);
+  rounded.setSeconds(0, 0);
+  rounded.setMinutes(rounded.getMinutes() + 1);
+  return rounded;
+};
+
 
 export const TimerPopup = ({
   isSubmitting,
@@ -86,14 +100,22 @@ export const TimerPopup = ({
   const [category, setCategory] = useState('work');
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
-  const [startTime] = useState(new Date());
+  const [startTime] = useState(() => roundToNextMinute(new Date()));
   const [validationError, setValidationError] = useState<string | null>(null);
   // const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Manual mode state
   const [manualMode, setManualMode] = useState(false);
-  const [manualStart, setManualStart] = useState<string>('');
-  const [manualEnd, setManualEnd] = useState<string>('');
+  const [manualStart, setManualStart] = useState<string>(() => {
+    const start = roundToNextMinute(new Date());
+    return toDateTimeLocalValue(start);
+  });
+  const [manualEnd, setManualEnd] = useState<string>(() => {
+    const start = roundToNextMinute(new Date());
+    const end = new Date(start);
+    end.setHours(end.getHours() + 1);
+    return toDateTimeLocalValue(end);
+  });
   const [isBillable, setIsBillable] = useState(false);
   
   // Chat window state

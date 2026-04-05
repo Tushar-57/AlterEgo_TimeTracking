@@ -275,6 +275,20 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         return updatedEntry;
     }
 
+    @Override
+    public void deleteTimeEntry(Long timerId, Users user) {
+        logger.info("Deleting time entry {} for user: {}", timerId, user.getEmail());
+
+        TimeEntry timeEntry = timeEntryRepository.findByIdAndUser(timerId, user)
+                .orElseThrow(() -> new ResourceNotFoundException("Time entry not found with ID: " + timerId));
+
+        timeEntryDetailRepository.findByTimeEntryId(timerId)
+                .ifPresent(timeEntryDetailRepository::delete);
+
+        timeEntryRepository.delete(timeEntry);
+        logger.info("Successfully deleted time entry {} for user: {}", timerId, user.getEmail());
+    }
+
     private void upsertEntryDetail(TimeEntry entry, addTimeEntryRequest request) {
         if (entry == null || entry.getId() == null || !hasDetailPayload(request)) {
             return;

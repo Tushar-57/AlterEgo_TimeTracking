@@ -406,6 +406,7 @@ interface CalendarSectionProps {
   refreshEvents: (range?: { start: Date; end: Date }) => Promise<void>;
   onUpdateEventPosition?: (eventId: number, newPosition: { top: string; left: string }) => Promise<void> | void;
   onDuplicateEvent?: (eventId: number) => Promise<void> | void;
+  onDeleteEvent?: (eventId: number) => Promise<void> | void;
 }
 
 interface CalendarContextMenuState {
@@ -419,6 +420,7 @@ export const CalendarSection = ({
   refreshEvents,
   onUpdateEventPosition,
   onDuplicateEvent,
+  onDeleteEvent,
 }: CalendarSectionProps): JSX.Element => {
   const [view, setView] = useState<"day" | "week" | "month" | "year">(
     () => (window.innerWidth < 1024 ? "month" : "day")
@@ -862,7 +864,10 @@ export const CalendarSection = ({
 
   const openTaskForDate = (baseDate: Date) => {
     const entryDate = new Date(baseDate);
-    entryDate.setHours(now.getHours(), 0, 0, 0);
+    const roundedNow = new Date(now);
+    roundedNow.setSeconds(0, 0);
+    roundedNow.setMinutes(roundedNow.getMinutes() + 1);
+    entryDate.setHours(roundedNow.getHours(), roundedNow.getMinutes(), 0, 0);
     openCreatePopupAt(entryDate);
   };
 
@@ -1601,6 +1606,7 @@ export const CalendarSection = ({
           defaultStartTime={selectedTime}
           initialEntry={selectedEvent}
           onSave={handleSave}
+          onDelete={onDeleteEvent}
         />
       </div>
     </section>

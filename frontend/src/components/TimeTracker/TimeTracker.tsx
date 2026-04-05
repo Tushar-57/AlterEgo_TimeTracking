@@ -17,7 +17,7 @@ import { Switch } from '../Calendar_updated/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '../Calendar_updated/components/ui/dialog';
 import { Timer, AlarmClock, Coffee, Plus, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Project, Tag, TimeEntry, UserPreferences, TimerStatus, TimerMode, PomodoroState } from './types';
+import { CurrentTask, Project, Tag, TimeEntry, UserPreferences, TimerStatus, TimerMode, PomodoroState } from './types';
 import { formatTime, getRandomColor } from './utility';
 import 'react-circular-progressbar/dist/styles.css';
 import { useTheme } from '../../context/ThemeContext';
@@ -27,6 +27,20 @@ const toLocalDateTimeString = (date: Date) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
     date.getHours()
   )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
+const formatTimeInput = (date: Date) => {
+  const pad = (value: number) => value.toString().padStart(2, '0');
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const toProjectId = (value: CurrentTask['projectId']): number | null => {
+  if (value === null || value === 'noproject') {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 };
 
 const QUOTES = [
@@ -103,6 +117,8 @@ export default function TimeTracker() {
   const [customHours, setCustomHours] = useState<number>(0);
   const [showAdvancedCustomCountdown, setShowAdvancedCustomCountdown] = useState(false);
   const [isCustomCountdownDialogOpen, setIsCustomCountdownDialogOpen] = useState(false);
+  const [startFromPreviousTime, setStartFromPreviousTime] = useState(false);
+  const [manualStartTime, setManualStartTime] = useState<string>(() => formatTimeInput(new Date()));
 
   // Data states
   const [projects, setProjects] = useState<Project[]>([]);
@@ -110,14 +126,7 @@ export default function TimeTracker() {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [currentTask, setCurrentTask] = useState<{
-    description: string;
-    projectId: string;
-    tags: Tag[];
-    billable: boolean;
-    newTag: string;
-    category?: string;
-  }>(() => {
+  const [currentTask, setCurrentTask] = useState<CurrentTask>(() => {
     const saved = localStorage.getItem('currentTask');
     return saved ? JSON.parse(saved) : {
       description: '',
@@ -138,6 +147,7 @@ export default function TimeTracker() {
   });
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'duration'>('newest');
   const [descriptionError, setDescriptionError] = useState(false);
+  const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
 
   // User preferences
   const [preferences, setPreferences] = useState<UserPreferences>(() => {
@@ -350,6 +360,8 @@ export default function TimeTracker() {
             newTag: '',
             category: response.data.category || '',
           });
+          setManualStartTime(formatTimeInput(new Date(response.data.startTime)));
+          setStartFromPreviousTime(false);
           setTimerMode('stopwatch');
           console.log('Active timer tags:', response.data.tags);
         } else {
@@ -409,6 +421,8 @@ export default function TimeTracker() {
     }
 
     setDescriptionError(false);
+    setStartFromPreviousTime(false);
+    setManualStartTime(formatTimeInput(new Date()));
 
     if (showResetToast) {
       toast({
@@ -663,10 +677,44 @@ export default function TimeTracker() {
         logout();
         return;
       }
-      const projectId = currentTask.projectId === 'noproject' ? null : parseInt(currentTask.projectId);
+      const projectId = toProjectId(currentTask.projectId);
       const tagIds = currentTask.tags.map(tag => tag.id);
       console.log('Starting timer with tagIds:', tagIds);
-      const startTime = toLocalDateTimeString(new Date());
+      const now = new Date();
+      let requestedStartDate = now;
+
+      if (timerMode === 'stopwatch' && startFromPreviousTime) {
+        const [hoursRaw, minutesRaw] = manualStartTime.split(':');
+        const hours = Number(hoursRaw);
+        const minutes = Number(minutesRaw);
+
+        if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+          toast({
+            title: 'Invalid Start Time',
+            description: 'Please pick a valid start time.',
+            variant: 'destructive',
+            className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+          });
+          return;
+        }
+
+        const candidate = new Date(now);
+        candidate.setHours(hours, minutes, 0, 0);
+
+        if (candidate.getTime() > now.getTime()) {
+          toast({
+            title: 'Future Time Not Allowed',
+            description: 'Start time must be current or earlier.',
+            variant: 'destructive',
+            className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+          });
+          return;
+        }
+
+        requestedStartDate = candidate;
+      }
+
+      const startTime = toLocalDateTimeString(requestedStartDate);
       const res = await fetch('/api/timers/start', {
         method: 'POST',
         headers: {
@@ -722,7 +770,10 @@ export default function TimeTracker() {
         status: 'running',
         activeTimerId: response.data.id,
         startTime: startTime,
-        stopwatchTime: 0,
+        stopwatchTime:
+          timerMode === 'stopwatch'
+            ? Math.max(0, Math.floor((Date.now() - requestedStartDate.getTime()) / 1000))
+            : prev.stopwatchTime,
       }));
       toast({
         title: 'Timer Started',
@@ -771,7 +822,7 @@ export default function TimeTracker() {
         logout();
         return;
       }
-      const projectId = currentTask.projectId === 'noproject' ? null : parseInt(currentTask.projectId);
+      const projectId = toProjectId(currentTask.projectId);
       const tagIds = currentTask.tags.map(tag => tag.id);
       console.log('Stopping timer with tagIds:', tagIds);
       const endTime = toLocalDateTimeString(new Date());
@@ -969,6 +1020,67 @@ export default function TimeTracker() {
         ...prev,
         tags: [...prev.tags, tag],
       }));
+    }
+  };
+
+  const handleDeleteTimeEntry = async (entryId: number) => {
+    if (deletingEntryId === entryId) {
+      return;
+    }
+
+    try {
+      setDeletingEntryId(entryId);
+      const token = sessionStorage.getItem('auth_session');
+      if (!token) {
+        toast({
+          title: 'Authentication Error',
+          description: 'Please log in to delete the entry.',
+          variant: 'destructive',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+        });
+        logout();
+        return;
+      }
+
+      const response = await fetch(`/api/timers/${entryId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        toast({
+          title: 'Authentication Error',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+        });
+        logout();
+        return;
+      }
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.message || 'Failed to delete time entry');
+      }
+
+      setTimeEntries((previous) => previous.filter((entry) => entry.id !== entryId));
+      toast({
+        title: 'Entry Deleted',
+        description: 'Time entry was removed successfully.',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete time entry.';
+      toast({
+        title: 'Delete Failed',
+        description: errorMessage,
+        variant: 'destructive',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
+    } finally {
+      setDeletingEntryId(null);
     }
   };
 
@@ -1208,6 +1320,45 @@ export default function TimeTracker() {
 
             <TabsContent value="stopwatch" className="mt-4 p-0">
               <div className="flex flex-col items-center gap-6">
+                <div className="w-full max-w-xl rounded-2xl border border-[#D8BFD8]/40 bg-[#F7F7F7]/90 p-4 shadow-sm dark:bg-[#2b3850]/80">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-[#2D3748] dark:text-[#E6E6FA]">Start From Previous Time</p>
+                      <p className="text-xs text-[#6B7280] dark:text-[#B0C4DE]">Backdate stopwatch start to an earlier time today.</p>
+                    </div>
+                    <Switch
+                      checked={startFromPreviousTime}
+                      onCheckedChange={setStartFromPreviousTime}
+                      disabled={timerState.status !== 'stopped'}
+                      aria-label="Toggle previous-time stopwatch start"
+                    />
+                  </div>
+
+                  {startFromPreviousTime && (
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+                      <div className="flex-1">
+                        <label htmlFor="manual-start-time" className="text-xs font-semibold text-[#6B7280] dark:text-[#B0C4DE]">
+                          Start Time
+                        </label>
+                        <Input
+                          id="manual-start-time"
+                          type="time"
+                          value={manualStartTime}
+                          onChange={(event) => setManualStartTime(event.target.value)}
+                          className="mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setManualStartTime(formatTimeInput(new Date()))}
+                        className="rounded-xl border-[#D8BFD8]/50 bg-[#F8FAFC] text-[#6B7280] hover:bg-[#D8BFD8]/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                      >
+                        Use Now
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 {renderTimer()}
                 <TimerControls
                   timerState={timerState}
@@ -1386,6 +1537,8 @@ export default function TimeTracker() {
           sortBy={sortBy}
           setSortBy={setSortBy}
           formatTime={formatTime}
+          onDeleteEntry={handleDeleteTimeEntry}
+          deletingEntryId={deletingEntryId}
         />
       </main>
       <SettingsDialog

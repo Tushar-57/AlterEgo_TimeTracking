@@ -288,6 +288,34 @@ public class TimerController {
         }
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteTimeEntry(
+            @PathVariable Long id,
+            Authentication authentication) {
+        logger.info("Deleting time entry {} for user: {}", id, authName(authentication));
+        try {
+            if (!isAuthenticatedUser(authentication)) {
+                logger.warn("Unauthorized attempt to delete timer");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
+            }
+
+            Users user = userDetailsService.getCurrentUser(authentication);
+            timeEntryService.deleteTimeEntry(id, user);
+
+            logger.info("Time entry {} deleted successfully for user: {}", id, user.getName());
+            return ResponseEntity.ok(ApiResponse.success(null, "Time entry deleted successfully"));
+        } catch (ResourceNotFoundException e) {
+            logger.warn("Time entry delete target missing for user {}: {}", authName(authentication), e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Resource not found", Map.of("message", e.getMessage(), "code", "RESOURCE_NOT_FOUND")));
+        } catch (Exception e) {
+            logger.error("Failed to delete time entry {} for user: {}", id, authName(authentication), e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Delete failed", Map.of("message", e.getMessage())));
+        }
+    }
+
     private boolean isAuthenticatedUser(Authentication authentication) {
         return authentication != null
                 && authentication.isAuthenticated()

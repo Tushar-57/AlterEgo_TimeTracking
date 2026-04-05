@@ -292,6 +292,48 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
     [calendarEvents, fetchData, toast]
   );
 
+  const handleDeleteEvent = useCallback(
+    async (eventId: number) => {
+      try {
+        const token = sessionStorage.getItem('auth_session');
+        if (!token) {
+          toast({
+            title: 'Authentication Error',
+            description: 'Please log in to delete entries.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const response = await fetch(`/api/timers/${eventId}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || payload?.success === false) {
+          throw new Error(payload?.message || 'Failed to delete time entry');
+        }
+
+        setCalendarEvents((previous) => previous.filter((entry) => entry.id !== eventId));
+        toast({
+          title: 'Entry Deleted',
+          description: 'Time entry removed successfully.',
+        });
+      } catch (error) {
+        console.error('Error deleting time entry:', error);
+        toast({
+          title: 'Delete failed',
+          description: 'Unable to delete this entry right now.',
+          variant: 'destructive',
+        });
+      }
+    },
+    [toast]
+  );
+
   return (
     <div className="flex h-full min-h-0 w-full flex-row p-2 sm:p-4">
       <div className="flex min-h-0 flex-1 flex-col">
@@ -301,6 +343,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
             refreshEvents={fetchData}
             onUpdateEventPosition={handleUpdateEventPosition}
             onDuplicateEvent={handleDuplicateEvent}
+            onDeleteEvent={handleDeleteEvent}
           />
         </div>
       </div>
