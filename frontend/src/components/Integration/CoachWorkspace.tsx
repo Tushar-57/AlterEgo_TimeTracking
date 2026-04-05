@@ -73,10 +73,16 @@ const resolveCoachSrc = (): string => {
   return '/coach/';
 };
 
-const withEmbedMode = (url: string): string => {
+const buildCoachLaunchUrl = (url: string, embedMode: boolean): string => {
   try {
     const parsed = new URL(url, window.location.origin);
-    parsed.searchParams.set('embed', '1');
+    parsed.searchParams.set('from', 'alterego');
+    parsed.searchParams.set('return_url', `${window.location.origin}/coach`);
+
+    if (embedMode) {
+      parsed.searchParams.set('embed', '1');
+    }
+
     return parsed.toString();
   } catch {
     return url;
@@ -119,22 +125,28 @@ const CoachWorkspace = () => {
     if (!coachSrc) {
       return null;
     }
-    return withEmbedMode(coachSrc);
+    return buildCoachLaunchUrl(coachSrc, true);
   }, [coachSrc]);
 
-  const openCoach = async (newTab: boolean) => {
+  const openCoach = (newTab: boolean) => {
     if (!coachSrc) {
       return;
     }
 
-    await primeCoachKnowledge();
+    const launchUrl = buildCoachLaunchUrl(coachSrc, false);
+
+    // Warm up sync in the background without blocking navigation.
+    void primeCoachKnowledge();
 
     if (newTab) {
-      window.open(coachSrc, '_blank', 'noopener,noreferrer');
+      const openedWindow = window.open(launchUrl, '_blank', 'noopener,noreferrer');
+      if (!openedWindow) {
+        window.location.assign(launchUrl);
+      }
       return;
     }
 
-    window.location.assign(coachSrc);
+    window.location.assign(launchUrl);
   };
 
   return (
@@ -143,7 +155,7 @@ const CoachWorkspace = () => {
         <div className="mb-6 flex flex-col gap-2">
           <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">AI Coach Workspace</h1>
           <p className="text-sm text-gray-600">
-            Switched to a cleaner launch flow. Open Coach in a full window for the best UX and no nested menu duplication.
+            Launch Agentic as an AlterEgo extension with return navigation and background context sync.
           </p>
         </div>
 
