@@ -2,6 +2,7 @@ import { ArrowUpRight, Eye, ExternalLink } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 const BUILTIN_COACH_URL_CANDIDATES = [
+  'https://agenticlyf.vercel.app/coach/',
   'https://agenticlyf-tushar-sharmas-projects-b09f4a9f.vercel.app/coach/',
   'https://agenticlyf-git-main-tushar-sharmas-projects-b09f4a9f.vercel.app/coach/',
 ];
@@ -49,11 +50,17 @@ const resolveCoachSrc = (): string => {
   };
 
   if (explicitCoachUrl) {
-    return toTrustedUrl(explicitCoachUrl) || '/coach/';
+    const trustedExplicitUrl = toTrustedUrl(explicitCoachUrl);
+    if (trustedExplicitUrl) {
+      return trustedExplicitUrl;
+    }
   }
 
   if (agenticApiOrigin) {
-    return toTrustedUrl(`${agenticApiOrigin.replace(/\/+$/, '')}/coach/`) || '/coach/';
+    const trustedAgenticOriginUrl = toTrustedUrl(`${agenticApiOrigin.replace(/\/+$/, '')}/coach/`);
+    if (trustedAgenticOriginUrl) {
+      return trustedAgenticOriginUrl;
+    }
   }
 
   for (const fallbackUrl of BUILTIN_COACH_URL_CANDIDATES) {
