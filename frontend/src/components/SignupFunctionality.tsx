@@ -113,7 +113,9 @@ export default function SignupClassic() {
         setCooldownUntil(Date.now() + COOLDOWN_MS);
       }
 
-      const message = 'Unable to complete signup. Please verify your details and try again.';
+      const message = err instanceof Error && err.message.trim()
+        ? err.message
+        : 'Unable to complete signup. Please verify your details and try again.';
       setError(message);
       toast({
         title: 'Error',
