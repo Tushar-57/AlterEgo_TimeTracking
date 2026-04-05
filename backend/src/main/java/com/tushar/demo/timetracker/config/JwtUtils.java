@@ -3,6 +3,7 @@ package com.tushar.demo.timetracker.config;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import com.tushar.demo.timetracker.model.Users;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -56,6 +57,24 @@ public class JwtUtils {
                    .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000L))
                    .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                    .compact();
+    }
+
+    public String generateAgenticBridgeToken(Users user, long ttlSeconds) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("scope", "agentic_bridge");
+        claims.put("uid", user.getId() != null ? user.getId().toString() : user.getEmail());
+        claims.put("email", user.getEmail());
+        claims.put("name", user.getName());
+        claims.put("source", "alterego");
+
+        long safeTtlSeconds = Math.max(30L, ttlSeconds);
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(user.getEmail())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + safeTtlSeconds * 1000L))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .compact();
     }
 
     public boolean validateToken(String token) {

@@ -88,6 +88,9 @@ public class AuthController {
 	@Value("${app.auth.email-verification.require-before-login:true}")
 	private boolean requireVerifiedEmailForLogin;
 
+	@Value("${app.agentic.bridge.ttl-seconds:180}")
+	private long agenticBridgeTtlSeconds;
+
 	public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository,
 			PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ProjectService projectService,
 			AuthEmailValidationService authEmailValidationService,
@@ -225,6 +228,29 @@ public class AuthController {
 			));
 		}
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("valid", false));
+	}
+
+	@GetMapping("/agentic-bridge-token")
+	public ResponseEntity<?> issueAgenticBridgeToken(Authentication authentication) {
+		if (authentication == null || !StringUtils.hasText(authentication.getName())) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body(Map.of("error", "UNAUTHORIZED", "message", "Authentication required"));
+		}
+
+		String email = normalizeEmail(authentication.getName());
+		Users user = userRepository.findByEmail(email)
+			.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+		String bridgeToken = jwtUtils.generateAgenticBridgeToken(user, agenticBridgeTtlSeconds);
+		return ResponseEntity.ok(Map.of(
+			"token", bridgeToken,
+			"expiresInSeconds", agenticBridgeTtlSeconds,
+			"user", Map.of(
+				"id", user.getId(),
+				"email", user.getEmail(),
+				"name", user.getName()
+			)
+		));
 	}
 
 	@PostMapping("/logout")

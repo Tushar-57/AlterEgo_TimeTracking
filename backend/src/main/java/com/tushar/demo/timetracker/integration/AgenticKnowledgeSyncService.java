@@ -2,6 +2,7 @@ package com.tushar.demo.timetracker.integration;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tushar.demo.timetracker.config.JwtUtils;
 import com.tushar.demo.timetracker.dto.request.OnboardingRequestDTO;
 import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
@@ -32,16 +33,22 @@ public class AgenticKnowledgeSyncService {
     private final String baseUrl;
     private final Duration requestTimeout;
     private final TimeEntryDetailRepository timeEntryDetailRepository;
+    private final JwtUtils jwtUtils;
+    private final long bridgeTokenTtlSeconds;
 
     public AgenticKnowledgeSyncService(
             TimeEntryDetailRepository timeEntryDetailRepository,
+            JwtUtils jwtUtils,
             @Value("${agentic.sync.enabled:false}") boolean enabled,
             @Value("${agentic.sync.base-url:}") String baseUrl,
+            @Value("${agentic.sync.bridge-token-ttl-seconds:180}") long bridgeTokenTtlSeconds,
             @Value("${agentic.sync.connect-timeout-ms:5000}") long connectTimeoutMs,
             @Value("${agentic.sync.request-timeout-ms:8000}") long requestTimeoutMs) {
         this.timeEntryDetailRepository = timeEntryDetailRepository;
+        this.jwtUtils = jwtUtils;
         this.enabled = enabled;
         this.baseUrl = normalizeBaseUrl(baseUrl);
+        this.bridgeTokenTtlSeconds = bridgeTokenTtlSeconds;
         this.requestTimeout = Duration.ofMillis(requestTimeoutMs);
         this.objectMapper = new ObjectMapper();
         this.httpClient = HttpClient.newBuilder()
@@ -137,12 +144,21 @@ public class AgenticKnowledgeSyncService {
     private void postJson(String path, Map<String, Object> payload, String syncType, Users user) {
         try {
             String body = objectMapper.writeValueAsString(payload);
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + path))
                     .timeout(requestTimeout)
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .build();
+                .header("Accept", "application/json");
+
+            if (user != null) {
+            String bridgeToken = jwtUtils.generateAgenticBridgeToken(user, bridgeTokenTtlSeconds);
+            requestBuilder.header("X-Agentic-Bridge-Token", bridgeToken);
+            requestBuilder.header("X-Agentic-User-Id", user.getId() != null ? user.getId().toString() : user.getEmail());
+            }
+
+            HttpRequest request = requestBuilder
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {

@@ -1,5 +1,5 @@
 import { ArrowUpRight, Eye, ExternalLink } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const BUILTIN_COACH_URL_CANDIDATES = [
   'https://agenticlyf.vercel.app/coach/',
@@ -73,11 +73,15 @@ const resolveCoachSrc = (): string => {
   return '/coach/';
 };
 
-const buildCoachLaunchUrl = (url: string, embedMode: boolean): string => {
+const buildCoachLaunchUrl = (url: string, embedMode: boolean, bridgeToken?: string | null): string => {
   try {
     const parsed = new URL(url, window.location.origin);
     parsed.searchParams.set('from', 'alterego');
     parsed.searchParams.set('return_url', `${window.location.origin}/coach`);
+
+    if (bridgeToken) {
+      parsed.searchParams.set('bridge_token', bridgeToken);
+    }
 
     if (embedMode) {
       parsed.searchParams.set('embed', '1');
@@ -86,6 +90,36 @@ const buildCoachLaunchUrl = (url: string, embedMode: boolean): string => {
     return parsed.toString();
   } catch {
     return url;
+  }
+};
+
+type BridgeTokenResponse = {
+  token: string;
+  expiresInSeconds: number;
+};
+
+const requestAgenticBridgeToken = async (): Promise<BridgeTokenResponse | null> => {
+  try {
+    const response = await fetch('/api/auth/agentic-bridge-token', {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as Partial<BridgeTokenResponse>;
+    if (!payload.token) {
+      return null;
+    }
+
+    return {
+      token: payload.token,
+      expiresInSeconds: Math.max(30, payload.expiresInSeconds ?? 180),
+    };
+  } catch {
+    return null;
   }
 };
 
@@ -102,7 +136,24 @@ const primeCoachKnowledge = async (): Promise<void> => {
 
 const CoachWorkspace = () => {
   const [showEmbeddedPreview, setShowEmbeddedPreview] = useState(false);
+  const [bridgeToken, setBridgeToken] = useState<string | null>(null);
+  const [bridgeTokenExpiresAt, setBridgeTokenExpiresAt] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const ensureBridgeToken = useCallback(async (): Promise<string | null> => {
+    if (bridgeToken && Date.now() < bridgeTokenExpiresAt - 15000) {
+      return bridgeToken;
+    }
+
+    const tokenResponse = await requestAgenticBridgeToken();
+    if (!tokenResponse) {
+      return null;
+    }
+
+    setBridgeToken(tokenResponse.token);
+    setBridgeTokenExpiresAt(Date.now() + tokenResponse.expiresInSeconds * 1000);
+    return tokenResponse.token;
+  }, [bridgeToken, bridgeTokenExpiresAt]);
 
   useEffect(() => {
     // Reset both window and scrollable parent containers to avoid opening mid-scroll.
@@ -119,6 +170,10 @@ const CoachWorkspace = () => {
       parent = parent.parentElement;
     }
   }, []);
+
+  useEffect(() => {
+    void ensureBridgeToken();
+  }, [ensureBridgeToken]);
 
   const coachSrc = useMemo(() => {
     const resolved = resolveCoachSrc();
@@ -142,28 +197,41 @@ const CoachWorkspace = () => {
     if (!coachSrc) {
       return null;
     }
-    return buildCoachLaunchUrl(coachSrc, true);
-  }, [coachSrc]);
+    return buildCoachLaunchUrl(coachSrc, true, bridgeToken);
+  }, [coachSrc, bridgeToken]);
 
   const openCoach = (newTab: boolean) => {
     if (!coachSrc) {
       return;
     }
 
-    const launchUrl = buildCoachLaunchUrl(coachSrc, false);
-
     // Warm up sync in the background without blocking navigation.
     void primeCoachKnowledge();
 
-    if (newTab) {
-      const openedWindow = window.open(launchUrl, '_blank', 'noopener,noreferrer');
-      if (!openedWindow) {
-        window.location.assign(launchUrl);
-      }
-      return;
-    }
+    const popup = newTab ? window.open('about:blank', '_blank', 'noopener,noreferrer') : null;
 
-    window.location.assign(launchUrl);
+    const navigateToCoach = (token: string | null) => {
+      const launchUrl = buildCoachLaunchUrl(coachSrc, false, token);
+
+      if (newTab) {
+        if (popup) {
+          popup.location.replace(launchUrl);
+          return;
+        }
+
+        const openedWindow = window.open(launchUrl, '_blank', 'noopener,noreferrer');
+        if (!openedWindow) {
+          window.location.assign(launchUrl);
+        }
+        return;
+      }
+
+      window.location.assign(launchUrl);
+    };
+
+    void ensureBridgeToken()
+      .then((token) => navigateToCoach(token))
+      .catch(() => navigateToCoach(null));
   };
 
   return (
