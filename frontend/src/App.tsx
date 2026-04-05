@@ -57,7 +57,7 @@ const ProtectedOnboarding = () => {
   }
 
   if (user?.onboardingCompleted && !onboardingRedoRequested) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <ChatOnboarding onComplete={() => setOnboardingCompleted(true)} />;
@@ -70,7 +70,7 @@ const ProtectedRoutes = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const mobileTabs = [
-    { label: 'Timer', to: '/', icon: Clock },
+    { label: 'Timer', to: '/timer', icon: Clock },
     { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
     { label: 'Tasks', to: '/tasks', icon: ListChecks },
     { label: 'Analytics', to: '/analytics', icon: BarChart2 },
@@ -125,8 +125,9 @@ const ProtectedRoutes = () => {
         <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
         <main className="min-w-0 flex-1 ml-0 pb-20 pt-16 md:ml-64 md:pb-0 md:pt-0">
           <Routes>
-            <Route index element={<TimeTracker />} />
-            <Route path="/" element={<TimeTracker />} />
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/timer" element={<TimeTracker />} />
             <Route path="/tasks" element={<TaskManager />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route
@@ -149,7 +150,7 @@ const ProtectedRoutes = () => {
                     },
                     {
                       label: 'Timer',
-                      to: '/',
+                      to: '/timer',
                       description: 'Capture time blocks that feed reports.',
                     },
                     {
@@ -229,7 +230,7 @@ const ProtectedRoutes = () => {
                     },
                     {
                       label: 'Timer Entries',
-                      to: '/',
+                      to: '/timer',
                       description: 'Capture missing billable sessions quickly.',
                     },
                   ]}
@@ -282,7 +283,7 @@ const ProtectedRoutes = () => {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/coach" element={<CoachWorkspace />} />
             <Route path="/dashboard" element={<Dashboard isAuthenticated={isAuthenticated} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
 

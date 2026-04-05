@@ -401,7 +401,9 @@ export const CalendarSection = ({
   onUpdateEventPosition,
   onDuplicateEvent,
 }: CalendarSectionProps): JSX.Element => {
-  const [view, setView] = useState<"day" | "week" | "month" | "year">("week");
+  const [view, setView] = useState<"day" | "week" | "month" | "year">(
+    () => (window.innerWidth < 1024 ? "month" : "day")
+  );
   const [currentDate, setCurrentDate] = useState(new Date());
   const [mobileViewMode, setMobileViewMode] = useState<"calendar" | "agenda">("calendar");
   const [mobileSelectedDate, setMobileSelectedDate] = useState(new Date());
@@ -413,6 +415,8 @@ export const CalendarSection = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [dragPreview, setDragPreview] = useState<Record<number, { top: number; left: number }>>({});
   const [weekGridWidth, setWeekGridWidth] = useState(0);
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
+  const didAutoScrollDailyRef = useRef(false);
   const weekGridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -756,6 +760,29 @@ export const CalendarSection = ({
       return !Number.isNaN(eventDate.getTime()) && eventDate >= start && eventDate < end;
     });
   }, [currentDate, searchableEvents]);
+
+  useEffect(() => {
+    if (isMobileLayout || view !== "day") {
+      return;
+    }
+
+    const scrollContainer = timelineScrollRef.current;
+    if (!scrollContainer) {
+      return;
+    }
+
+    const nowDate = new Date();
+    const focusPosition =
+      nowDate.getHours() * HOUR_ROW_HEIGHT + (nowDate.getMinutes() / 60) * HOUR_ROW_HEIGHT;
+    const targetTop = Math.max(0, focusPosition - scrollContainer.clientHeight * 0.35);
+
+    scrollContainer.scrollTo({
+      top: targetTop,
+      behavior: didAutoScrollDailyRef.current ? "smooth" : "auto",
+    });
+
+    didAutoScrollDailyRef.current = true;
+  }, [currentDate, isMobileLayout, view]);
 
   const currentTimePosition = now.getHours() * HOUR_ROW_HEIGHT + (now.getMinutes() / 60) * HOUR_ROW_HEIGHT;
 
@@ -1374,7 +1401,7 @@ export const CalendarSection = ({
           </div>
         </div>
       </motion.div>
-      <div className="relative flex-1 overflow-x-hidden overflow-y-auto">
+      <div ref={timelineScrollRef} className="relative flex-1 overflow-x-hidden overflow-y-auto">
         {isMobileLayout ? (
           mobileViewMode === "agenda" ? renderMobileAgenda() : renderMobileCalendar()
         ) : (

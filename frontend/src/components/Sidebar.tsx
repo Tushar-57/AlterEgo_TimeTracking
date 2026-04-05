@@ -101,7 +101,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
       <div className="flex h-[calc(100%-5.5rem)] flex-col space-y-1 overflow-y-auto pb-4">
         <div className="mb-6">
         <div className="mb-3 px-4 text-xs font-medium tracking-[0.14em] text-[#8A88B2] dark:text-slate-400">OVERVIEW</div>
-          <NavItem icon={Timer} label="Timer" to="/" onNavigate={onMobileClose} />
+          <NavItem icon={Timer} label="Timer" to="/timer" onNavigate={onMobileClose} />
           <NavItem icon={LayoutDashboard} label="Dashboard" to="/dashboard" onNavigate={onMobileClose} />
           <div className="mb-6">
           </div>
