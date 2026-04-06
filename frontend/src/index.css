@@ -44,18 +44,6 @@
     background-color: rgb(15 23 42 / 0.95);
   }
 
-  .dark [class~="bg-white/30"] {
-    background-color: rgb(15 23 42 / 0.42);
-  }
-
-  .dark [class~="bg-white/20"] {
-    background-color: rgb(15 23 42 / 0.34);
-  }
-
-  .dark [class~="bg-white/10"] {
-    background-color: rgb(15 23 42 / 0.24);
-  }
-
   .dark [class~="bg-white/90"] {
     background-color: rgb(15 23 42 / 0.9);
   }
@@ -76,12 +64,6 @@
   .dark [class~="bg-slate-50"],
   .dark [class~="bg-gray-100"] {
     background-color: rgb(30 41 59 / 0.78);
-  }
-
-  .dark [class~="bg-gray-200"],
-  .dark [class~="bg-slate-200"],
-  .dark [class~="bg-gray-300"] {
-    background-color: rgb(51 65 85 / 0.82);
   }
 
   .dark [class~="text-gray-900"],
@@ -106,39 +88,12 @@
     color: rgb(148 163 184);
   }
 
-  .dark [class~="text-gray-400"],
-  .dark [class~="text-slate-400"] {
-    color: rgb(148 163 184);
-  }
-
   .dark [class~="border-gray-100"],
   .dark [class~="border-gray-200"],
   .dark [class~="border-gray-300"],
-  .dark [class~="border-gray-400"],
   .dark [class~="border-slate-200"],
-  .dark [class~="border-slate-300"],
-  .dark [class~="border-slate-400"] {
+  .dark [class~="border-slate-300"] {
     border-color: rgb(51 65 85 / 0.9);
-  }
-
-  .dark [class~="from-white"] {
-    --tw-gradient-from: rgb(15 23 42 / 0.92) var(--tw-gradient-from-position);
-    --tw-gradient-to: rgb(15 23 42 / 0) var(--tw-gradient-to-position);
-  }
-
-  .dark [class~="to-white"] {
-    --tw-gradient-to: rgb(15 23 42 / 0.82) var(--tw-gradient-to-position);
-  }
-
-  .dark [class~="from-gray-50"],
-  .dark [class~="from-slate-50"] {
-    --tw-gradient-from: rgb(30 41 59 / 0.9) var(--tw-gradient-from-position);
-    --tw-gradient-to: rgb(30 41 59 / 0) var(--tw-gradient-to-position);
-  }
-
-  .dark [class~="to-gray-50"],
-  .dark [class~="to-slate-50"] {
-    --tw-gradient-to: rgb(30 41 59 / 0.76) var(--tw-gradient-to-position);
   }
 
   .dark [class~="bg-blue-50"] {
@@ -151,8 +106,6 @@
 
   .dark [class~="hover:bg-gray-50"]:hover,
   .dark [class~="hover:bg-gray-200"]:hover,
-  .dark [class~="hover:bg-white/70"]:hover,
-  .dark [class~="hover:bg-white/50"]:hover,
   .dark [class~="hover:bg-white"]:hover {
     background-color: rgb(51 65 85 / 0.78);
   }

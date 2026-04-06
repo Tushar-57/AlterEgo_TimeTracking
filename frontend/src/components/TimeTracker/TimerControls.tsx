@@ -82,7 +82,7 @@ export function TimerControls({
             variant="outline"
             size="lg"
             onClick={stopTimer}
-            className="h-12 w-full rounded-2xl border-[#D8BFD8]/50 bg-[#F7F7F7] px-4 text-sm font-semibold text-[#6B7280] hover:bg-[#D8BFD8]/20 sm:h-auto sm:w-auto sm:rounded-full sm:p-6 sm:text-base dark:border-[#52627a]/45 dark:bg-[#3C4A5E] dark:text-[#D5E3F4] dark:hover:bg-[#4b5e78]/75"
+            className="h-12 w-full rounded-2xl border-[#D8BFD8]/50 bg-[#F7F7F7] px-4 text-sm font-semibold text-[#6B7280] hover:bg-[#D8BFD8]/20 sm:h-auto sm:w-auto sm:rounded-full sm:p-6 sm:text-base dark:bg-[#3C4A5E]"
             disabled={isStopBlocked}
             title="Stop and save timer"
           >
@@ -96,7 +96,7 @@ export function TimerControls({
             variant="outline"
             size="lg"
             onClick={resetTimer}
-            className="h-12 w-full rounded-2xl border-[#D8BFD8]/50 bg-[#F7F7F7] px-4 text-sm font-semibold text-[#6B7280] hover:bg-[#D8BFD8]/20 disabled:cursor-not-allowed disabled:opacity-40 sm:h-auto sm:w-auto sm:rounded-full sm:p-6 sm:text-base dark:border-[#52627a]/45 dark:bg-[#3C4A5E] dark:text-[#D5E3F4] dark:hover:bg-[#4b5e78]/75"
+            className="h-12 w-full rounded-2xl border-[#D8BFD8]/50 bg-[#F7F7F7] px-4 text-sm font-semibold text-[#6B7280] hover:bg-[#D8BFD8]/20 disabled:cursor-not-allowed disabled:opacity-40 sm:h-auto sm:w-auto sm:rounded-full sm:p-6 sm:text-base dark:bg-[#3C4A5E]"
             disabled={!canReset}
             title={canReset ? 'Reset timer' : 'Reset is available after pausing or after a completed run'}
           >

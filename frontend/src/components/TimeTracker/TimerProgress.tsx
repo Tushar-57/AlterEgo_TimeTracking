@@ -50,7 +50,6 @@
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { motion } from 'framer-motion';
-import { useTheme } from '../../context/ThemeContext';
 
 interface TimerProgressIndicatorProps {
   progress: number;
@@ -59,7 +58,6 @@ interface TimerProgressIndicatorProps {
 
 export const TimerProgressIndicator = ({ progress, progressStyle }: TimerProgressIndicatorProps) => {
   const normalizedProgress = Math.min(Math.max(progress * 100, 0), 100);
-  const { isDark } = useTheme();
 
   if (progressStyle === 'circular') {
     return (
@@ -72,20 +70,16 @@ export const TimerProgressIndicator = ({ progress, progressStyle }: TimerProgres
           value={normalizedProgress}
           text={`${Math.round(normalizedProgress)}%`}
           styles={buildStyles({
-            pathColor: isDark ? '#B0C4DE' : '#D8BFD8',
-            trailColor: isDark ? '#334155' : '#E2E8F0',
-            textColor: isDark ? '#E6E6FA' : '#2D3748',
+            pathColor: '#D8BFD8',
+            trailColor: '#E2E8F0',
+            textColor: '#2D3748',
             textSize: '16px',
             pathTransitionDuration: 0.5,
           })}
         />
         <motion.div
           className="absolute inset-0 rounded-full"
-          style={{
-            background: isDark
-              ? 'radial-gradient(circle, rgba(176, 196, 222, 0.26), transparent 65%)'
-              : 'radial-gradient(circle, rgba(216, 191, 216, 0.18), transparent 65%)',
-          }}
+          style={{ background: 'radial-gradient(circle, rgba(216, 191, 216, 0.18), transparent 65%)' }}
           animate={{ opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         />
