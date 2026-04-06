@@ -355,14 +355,15 @@ const monthNames = [
 const HOUR_ROW_HEIGHT = 72;
 
 const eventColorClasses: Record<string, string> = {
-  lightblue: "border-blue-200 bg-blue-50 text-blue-700",
-  violet: "border-violet-200 bg-violet-50 text-violet-700",
-  amber: "border-amber-200 bg-amber-50 text-amber-700",
-  rose: "border-rose-200 bg-rose-50 text-rose-700",
-  emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  lightblue: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/45 dark:bg-blue-900/28 dark:text-blue-100",
+  violet: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/45 dark:bg-violet-900/28 dark:text-violet-100",
+  amber: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/45 dark:bg-amber-900/28 dark:text-amber-100",
+  rose: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/45 dark:bg-rose-900/28 dark:text-rose-100",
+  emerald: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/45 dark:bg-emerald-900/28 dark:text-emerald-100",
 };
 
-const getEventColorClasses = (color: string) => eventColorClasses[color] ?? "border-slate-200 bg-slate-50 text-slate-700";
+const getEventColorClasses = (color: string) =>
+  eventColorClasses[color] ?? "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-700/60 dark:text-slate-100";
 
 const isSameDay = (left: Date, right: Date) =>
   left.getFullYear() === right.getFullYear() &&
@@ -1056,12 +1057,12 @@ export const CalendarSection = ({
 
     return (
       <div className="space-y-4 p-1">
-        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/90">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="text-sm font-semibold text-gray-800">Mobile Agenda</div>
+            <div className="text-sm font-semibold text-gray-800 dark:text-slate-100">Mobile Agenda</div>
             <Button
               size="sm"
-              className="h-8 gap-1 bg-indigo-600 px-3 text-white hover:bg-indigo-700"
+              className="h-8 gap-1 bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] px-3 text-slate-900 hover:from-[#CFAEE4] hover:to-[#9DB7D8] dark:from-slate-700 dark:to-slate-600 dark:text-slate-100"
               onClick={() => {
                 openTaskForDate(new Date());
               }}
@@ -1074,7 +1075,7 @@ export const CalendarSection = ({
             <select
               value={mobileEntrySort}
               onChange={(event) => setMobileEntrySort(event.target.value as "newest" | "oldest" | "duration")}
-              className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700"
+              className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
             >
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
@@ -1083,26 +1084,26 @@ export const CalendarSection = ({
             <select
               value={mobileEntryFilter}
               onChange={(event) => setMobileEntryFilter(event.target.value as "all" | "billable" | "non-billable")}
-              className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700"
+              className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
             >
               <option value="all">All</option>
               <option value="billable">Billable</option>
               <option value="non-billable">Non-billable</option>
             </select>
           </div>
-          <p className="text-xs text-gray-500">Optimized timeline for phone screens while keeping full add-entry functionality.</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">Optimized timeline for phone screens while keeping full add-entry functionality.</p>
         </div>
 
         {groupedEntries.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center text-sm text-gray-500">
+          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center text-sm text-gray-500 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-300">
             No entries in this range yet.
           </div>
         ) : (
           groupedEntries.map(([dayKey, dayEvents]) => {
             const dayDate = new Date(`${dayKey}T00:00:00`);
             return (
-              <div key={dayKey} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div key={dayKey} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/90">
+                <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                   <Clock3 className="h-3.5 w-3.5" />
                   {dayDate.toLocaleDateString("en-US", {
                     weekday: "long",
@@ -1115,7 +1116,7 @@ export const CalendarSection = ({
                     <button
                       type="button"
                       key={event.id}
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-left transition hover:bg-indigo-50"
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-left transition hover:bg-indigo-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
                       onClick={() => openEditPopup(event)}
                       onContextMenu={(mouseEvent) => {
                         mouseEvent.preventDefault();
@@ -1124,13 +1125,13 @@ export const CalendarSection = ({
                         }
                       }}
                     >
-                      <div className="text-xs font-medium text-indigo-600">
+                      <div className="text-xs font-medium text-indigo-600 dark:text-indigo-300">
                         {event.time} {event.period}
                       </div>
-                      <div className="mt-1 text-sm font-semibold text-gray-800">{event.title}</div>
-                      <div className="mt-2 flex items-center gap-2 text-[11px] text-gray-500">
+                      <div className="mt-1 text-sm font-semibold text-gray-800 dark:text-slate-100">{event.title}</div>
+                      <div className="mt-2 flex items-center gap-2 text-[11px] text-gray-500 dark:text-slate-300">
                         <span>{Math.round(getEventDurationSeconds(event) / 60)} min</span>
-                        <span className="h-1 w-1 rounded-full bg-gray-300" />
+                        <span className="h-1 w-1 rounded-full bg-gray-300 dark:bg-slate-600" />
                         <span>{event.billable ? 'Billable' : 'Non-billable'}</span>
                       </div>
                     </button>
@@ -1149,36 +1150,36 @@ export const CalendarSection = ({
 
     return (
       <div className="flex h-full w-full min-w-0 flex-col">
-        <div className="grid grid-cols-[56px_minmax(0,1fr)] border-b">
-          <div className="border-r bg-gray-50" />
+        <div className="grid grid-cols-[56px_minmax(0,1fr)] border-b dark:border-slate-700/80">
+          <div className="border-r bg-gray-50 dark:border-slate-700/80 dark:bg-slate-800/80" />
           <div
-            className={`px-3 py-2 ${currentDate.toDateString() === now.toDateString() ? "bg-indigo-50" : "bg-white"}`}
+            className={`px-3 py-2 ${currentDate.toDateString() === now.toDateString() ? "bg-indigo-50 dark:bg-indigo-900/30" : "bg-white dark:bg-slate-900"}`}
           >
-            <div className="text-[11px] font-semibold tracking-wide text-gray-500">
+            <div className="text-[11px] font-semibold tracking-wide text-gray-500 dark:text-slate-400">
               {currentDate.toLocaleString("en-US", { weekday: "long" }).toUpperCase()}
             </div>
-            <div className="text-2xl font-semibold text-gray-900">{currentDate.getDate()}</div>
+            <div className="text-2xl font-semibold text-gray-900 dark:text-slate-100">{currentDate.getDate()}</div>
           </div>
         </div>
 
         <div className="grid min-h-[1728px] grid-cols-[56px_minmax(0,1fr)]">
-          <div className="border-r bg-gray-50">
+          <div className="border-r bg-gray-50 dark:border-slate-700/80 dark:bg-slate-800/80">
             {timeSlots.map((time, timeIndex) => (
               <div
                 key={timeIndex}
-                className="flex h-[72px] items-start px-2 pt-1 text-[11px] font-medium text-gray-500"
+                className="flex h-[72px] items-start px-2 pt-1 text-[11px] font-medium text-gray-500 dark:text-slate-400"
               >
                 {time}
               </div>
             ))}
           </div>
 
-          <div className="relative overflow-hidden bg-white">
+          <div className="relative overflow-hidden bg-white dark:bg-slate-900">
             {timeSlots.map((_, timeIndex) => (
               <button
                 key={timeIndex}
                 type="button"
-                className="absolute left-0 right-0 border-b border-gray-100 text-transparent transition hover:bg-indigo-50/40"
+                className="absolute left-0 right-0 border-b border-gray-100 text-transparent transition hover:bg-indigo-50/40 dark:border-slate-700/60 dark:hover:bg-indigo-900/25"
                 style={{
                   top: `${timeIndex * HOUR_ROW_HEIGHT}px`,
                   height: `${HOUR_ROW_HEIGHT}px`,
@@ -1243,45 +1244,49 @@ export const CalendarSection = ({
 
     return (
       <div className="flex h-full w-full min-w-0 flex-col">
-        <div className="grid grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b">
-          <div className="border-r bg-gray-50" />
+        <div className="grid grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b dark:border-slate-700/80">
+          <div className="border-r bg-gray-50 dark:border-slate-700/80 dark:bg-slate-800/80" />
           {weekDays.map((dayInfo, index) => (
             <div
               key={index}
               className={`border-r px-2 py-2 text-center last:border-r-0 ${
-                dayInfo.isWeekend ? "bg-gray-50" : dayInfo.isToday ? "bg-indigo-50" : "bg-white"
+                dayInfo.isWeekend
+                  ? "bg-gray-50 dark:bg-slate-800/75"
+                  : dayInfo.isToday
+                  ? "bg-indigo-50 dark:bg-indigo-900/30"
+                  : "bg-white dark:bg-slate-900"
               }`}
             >
-              <div className="text-[11px] font-semibold text-gray-500">{dayInfo.day}</div>
-              <div className="text-xl font-semibold text-gray-900">{dayInfo.date}</div>
+              <div className="text-[11px] font-semibold text-gray-500 dark:text-slate-400">{dayInfo.day}</div>
+              <div className="text-xl font-semibold text-gray-900 dark:text-slate-100">{dayInfo.date}</div>
             </div>
           ))}
         </div>
 
         <div className="grid min-h-[1728px] grid-cols-[56px_minmax(0,1fr)]">
-          <div className="border-r bg-gray-50">
+          <div className="border-r bg-gray-50 dark:border-slate-700/80 dark:bg-slate-800/80">
             {timeSlots.map((time, timeIndex) => (
               <div
                 key={timeIndex}
-                className="flex h-[72px] items-start px-2 pt-1 text-[11px] font-medium text-gray-500"
+                className="flex h-[72px] items-start px-2 pt-1 text-[11px] font-medium text-gray-500 dark:text-slate-400"
               >
                 {time}
               </div>
             ))}
           </div>
 
-          <div ref={weekGridRef} className="relative overflow-hidden bg-white">
+          <div ref={weekGridRef} className="relative overflow-hidden bg-white dark:bg-slate-900">
             <div className="absolute inset-0 grid grid-cols-7">
               {weekDays.map((dayInfo, dayIndex) => (
                 <div
                   key={dayIndex}
-                  className={`relative border-r last:border-r-0 ${dayInfo.isWeekend ? "bg-gray-50" : "bg-white"}`}
+                  className={`relative border-r last:border-r-0 ${dayInfo.isWeekend ? "bg-gray-50 dark:bg-slate-800/75" : "bg-white dark:bg-slate-900"}`}
                 >
                   {timeSlots.map((_, timeIndex) => (
                     <button
                       key={timeIndex}
                       type="button"
-                      className="absolute left-0 right-0 border-b border-gray-100 text-transparent transition hover:bg-indigo-50/40"
+                      className="absolute left-0 right-0 border-b border-gray-100 text-transparent transition hover:bg-indigo-50/40 dark:border-slate-700/60 dark:hover:bg-indigo-900/25"
                       style={{
                         top: `${timeIndex * HOUR_ROW_HEIGHT}px`,
                         height: `${HOUR_ROW_HEIGHT}px`,
@@ -1328,7 +1333,7 @@ export const CalendarSection = ({
                   >
                     <button
                       type="button"
-                      className="event-actions absolute right-1 top-1 rounded p-0.5 text-current/70 transition hover:bg-white/60 hover:text-current"
+                      className="event-actions absolute right-1 top-1 rounded p-0.5 text-current/70 transition hover:bg-white/60 hover:text-current dark:hover:bg-slate-200/20"
                       onMouseDown={(mouseEvent) => mouseEvent.stopPropagation()}
                       onClick={(mouseEvent) => {
                         mouseEvent.stopPropagation();
@@ -1381,11 +1386,11 @@ export const CalendarSection = ({
   };
 
   const renderMonthView = () => (
-    <div className="flex flex-col w-full h-full">
-      <div className="grid grid-cols-7 border-b bg-gray-50">
+    <div className="flex h-full w-full flex-col">
+      <div className="grid grid-cols-7 border-b bg-gray-50 dark:border-slate-700/80 dark:bg-slate-800/80">
         {weekDays.map((day) => (
-          <div key={day.day} className="border-r p-2 text-center last:border-r-0">
-            <span className="text-xs font-bold text-gray-500">{day.day}</span>
+          <div key={day.day} className="border-r p-2 text-center last:border-r-0 dark:border-slate-700/80">
+            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">{day.day}</span>
           </div>
         ))}
       </div>
@@ -1396,14 +1401,14 @@ export const CalendarSection = ({
             className={`border-b border-r p-2 last:border-r-0 ${
               day.isCurrentMonth
                 ? day.isToday
-                  ? "bg-indigo-50"
+                  ? "bg-indigo-50 dark:bg-indigo-900/30"
                   : day.isWeekend
-                    ? "bg-gray-50"
-                    : "bg-white"
-                : "bg-gray-100"
+                    ? "bg-gray-50 dark:bg-slate-800/75"
+                    : "bg-white dark:bg-slate-900"
+                : "bg-gray-100 dark:bg-slate-950"
             }`}
           >
-            <span className={`text-sm font-medium ${day.isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}>
+            <span className={`text-sm font-medium ${day.isCurrentMonth ? "text-gray-900 dark:text-slate-100" : "text-gray-400 dark:text-slate-500"}`}>
               {day.date}
             </span>
             <div className="mt-2 space-y-1 overflow-hidden">
@@ -1425,7 +1430,7 @@ export const CalendarSection = ({
                 </button>
               ))}
               {day.events.length > 3 && (
-                <div className="px-1 text-[11px] font-medium text-gray-500">+{day.events.length - 3} more</div>
+                <div className="px-1 text-[11px] font-medium text-gray-500 dark:text-slate-400">+{day.events.length - 3} more</div>
               )}
             </div>
           </div>
@@ -1437,14 +1442,14 @@ export const CalendarSection = ({
   const renderYearView = () => (
     <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
       {yearData.map((month) => (
-        <div key={month.month} className="border rounded-lg overflow-hidden">
-          <div className="bg-gray-100 p-2 border-b">
-            <h3 className="text-sm font-semibold text-gray-900">{month.month}</h3>
+        <div key={month.month} className="overflow-hidden rounded-lg border dark:border-slate-700 dark:bg-slate-900/90">
+          <div className="border-b bg-gray-100 p-2 dark:border-slate-700 dark:bg-slate-800/80">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">{month.month}</h3>
           </div>
           <div className="p-2">
             <div className="grid grid-cols-7 gap-1">
               {weekDays.map((day) => (
-                <div key={day.day} className="text-[10px] text-center text-gray-500">
+                <div key={day.day} className="text-[10px] text-center text-gray-500 dark:text-slate-400">
                   {day.day[0]}
                 </div>
               ))}
@@ -1458,7 +1463,7 @@ export const CalendarSection = ({
                 <div
                   key={i}
                   className={`aspect-square flex items-center justify-center text-[10px] ${
-                    isInMonth ? "text-gray-900" : "text-transparent"
+                    isInMonth ? "text-gray-900 dark:text-slate-100" : "text-transparent"
                   }`}
                 >
                   {isInMonth ? day : ""}
@@ -1475,7 +1480,7 @@ export const CalendarSection = ({
   return (
     <section className="flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden p-2 sm:gap-4 sm:p-4">
       <motion.div
-        className="sticky top-0 z-10 rounded-b-lg border-b bg-gradient-to-r from-[#ECFEFF] via-[#F0F9FF] to-[#FFF7ED] px-3 pb-2 pt-3 shadow-sm dark:from-gray-800 dark:to-gray-900 sm:px-6 sm:pt-4"
+        className="sticky top-0 z-10 rounded-b-lg border-b bg-gradient-to-r from-[#ECFEFF] via-[#F0F9FF] to-[#FFF7ED] px-3 pb-2 pt-3 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:via-[#172033] dark:to-slate-800 sm:px-6 sm:pt-4"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -1577,12 +1582,12 @@ export const CalendarSection = ({
 
           <div className="flex w-full items-center lg:w-[200px]">
             <motion.div
-              className="flex items-center gap-2 p-2 flex-1 bg-white dark:bg-gray-700 rounded-lg shadow-sm"
+              className="flex flex-1 items-center gap-2 rounded-lg bg-white p-2 shadow-sm dark:bg-slate-800"
               whileHover={{ scale: 1.02 }}
             >
-              <SearchIcon className="w-5 h-5 text-gray-500" />
+              <SearchIcon className="h-5 w-5 text-gray-500 dark:text-slate-300" />
               <Input
-                className="flex-1 border-0 bg-transparent p-0 text-sm text-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0 h-auto"
+                className="h-auto flex-1 border-0 bg-transparent p-0 text-sm text-gray-700 placeholder:text-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0 dark:text-slate-100 dark:placeholder:text-slate-400"
                 placeholder="Search tasks..."
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}

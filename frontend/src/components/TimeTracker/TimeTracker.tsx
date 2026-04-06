@@ -1156,12 +1156,12 @@ export default function TimeTracker() {
 
     return (
       <div className="mt-6 w-full">
-        <div className="mx-auto w-full max-w-xl rounded-3xl border border-[#D8BFD8]/40 bg-[#F7F7F7]/95 p-5 shadow-[0_18px_40px_rgba(45,55,72,0.12)] backdrop-blur sm:p-7 dark:bg-[#233043]/85">
+        <div className="mx-auto w-full max-w-xl rounded-3xl border border-[#D8BFD8]/40 bg-[#F7F7F7]/95 p-5 shadow-[0_18px_40px_rgba(45,55,72,0.12)] backdrop-blur sm:p-7 dark:border-[#52627a]/45 dark:bg-[#233043]/88 dark:shadow-[0_22px_48px_rgba(2,6,23,0.6)]">
           <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
-            <span className="rounded-full bg-[#D8BFD8]/25 px-3 py-1 text-xs font-semibold tracking-wide text-[#4B5563] dark:text-[#E6E6FA]">
+            <span className="rounded-full bg-[#D8BFD8]/25 px-3 py-1 text-xs font-semibold tracking-wide text-[#4B5563] dark:bg-[#3b4b63]/70 dark:text-[#E6E6FA]">
               {modeLabel}
             </span>
-            <span className="rounded-full bg-[#B0C4DE]/30 px-3 py-1 text-xs font-semibold tracking-wide text-[#4B5563] dark:text-[#E6E6FA]">
+            <span className="rounded-full bg-[#B0C4DE]/30 px-3 py-1 text-xs font-semibold tracking-wide text-[#4B5563] dark:bg-[#334865]/70 dark:text-[#E6E6FA]">
               {statusLabel}
             </span>
           </div>
@@ -1221,8 +1221,8 @@ export default function TimeTracker() {
   }, [timerState.status, toggleTimer, stopTimer, resetTimer, handleTimerModeChange]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fafc_0%,_#eef2ff_40%,_#e2e8f0_100%)] font-sans dark:bg-[#111827]">
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-72 bg-[radial-gradient(circle,_rgba(176,196,222,0.28),_transparent_70%)]" />
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fafc_0%,_#eef2ff_40%,_#e2e8f0_100%)] font-sans text-[#1F2937] dark:bg-[radial-gradient(circle_at_top,_#1f2937_0%,_#111827_48%,_#020617_100%)] dark:text-[#E2E8F0]">
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-72 bg-[radial-gradient(circle,_rgba(176,196,222,0.28),_transparent_70%)] dark:bg-[radial-gradient(circle,_rgba(148,163,184,0.25),_transparent_70%)]" />
       <TimerHeader
         preferences={preferences}
         setPreferences={setPreferences}
@@ -1233,7 +1233,7 @@ export default function TimeTracker() {
       <main className="relative z-10 mx-auto w-full max-w-5xl px-3 pb-8 pt-4 sm:px-6 sm:pb-12 sm:pt-8 md:pt-10">
         {fetchError && (
           <motion.div
-            className="bg-[#FECACA]/20 border border-[#FECACA]/50 text-[#DC2626] p-4 rounded-xl mb-8 shadow-sm"
+            className="mb-8 rounded-xl border border-[#FECACA]/50 bg-[#FECACA]/20 p-4 text-[#DC2626] shadow-sm dark:border-rose-500/30 dark:bg-rose-900/25 dark:text-rose-200"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
@@ -1249,7 +1249,7 @@ export default function TimeTracker() {
 
         <QuoteComponent />
 
-        <div className="relative mb-8 overflow-hidden rounded-[1.75rem] border border-[#D8BFD8]/35 bg-[#FFFFFF]/95 p-4 shadow-[0_24px_55px_rgba(45,55,72,0.14)] backdrop-blur sm:p-6 md:p-8 dark:bg-[#1f2b3b]/92">
+        <div className="relative mb-8 overflow-hidden rounded-[1.75rem] border border-[#D8BFD8]/35 bg-[#FFFFFF]/95 p-4 shadow-[0_24px_55px_rgba(45,55,72,0.14)] backdrop-blur sm:p-6 md:p-8 dark:border-[#52627a]/45 dark:bg-[#1f2b3b]/92 dark:shadow-[0_28px_58px_rgba(2,6,23,0.6)]">
           <div className="pointer-events-none absolute -right-12 -top-14 h-40 w-40 rounded-full bg-[#D8BFD8]/15 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-12 h-36 w-36 rounded-full bg-[#B0C4DE]/20 blur-2xl" />
           <div className="relative">
@@ -1261,7 +1261,7 @@ export default function TimeTracker() {
                 setCurrentTask(prev => ({ ...prev, description: e.target.value }));
                 setDescriptionError(false);
               }}
-              className={`w-full rounded-2xl border-[#D8BFD8]/50 bg-[#F8FAFC] px-4 py-4 font-serif text-base text-[#1F2937] shadow-sm focus:ring-2 focus:ring-[#B0C4DE] sm:px-5 sm:py-5 sm:text-xl dark:bg-[#2d3c52] dark:text-[#E6E6FA] ${descriptionError ? 'border-[#DC2626] border-2' : ''}`}
+              className={`w-full rounded-2xl border-[#D8BFD8]/50 bg-[#F8FAFC] px-4 py-4 font-serif text-base text-[#1F2937] shadow-sm focus:ring-2 focus:ring-[#B0C4DE] placeholder:text-[#94A3B8] sm:px-5 sm:py-5 sm:text-xl dark:border-[#52627a]/55 dark:bg-[#2d3c52] dark:text-[#E6E6FA] dark:placeholder:text-[#B0C4DE] ${descriptionError ? 'border-[#DC2626] border-2' : ''}`}
               disabled={timerState.status === 'running'}
               id="task-description-input"
             />
@@ -1291,11 +1291,11 @@ export default function TimeTracker() {
             onValueChange={(value: string) => handleTimerModeChange(value as TimerMode)}
             className="mt-6"
           >
-            <TabsList className="grid h-auto grid-cols-3 rounded-2xl border border-[#D8BFD8]/35 bg-[#F7F7F7] p-1.5 shadow-sm dark:bg-[#2d3c52]">
+            <TabsList className="grid h-auto grid-cols-3 rounded-2xl border border-[#D8BFD8]/35 bg-[#F7F7F7] p-1.5 shadow-sm dark:border-[#52627a]/45 dark:bg-[#2d3c52]">
               <TabsTrigger
                 value="stopwatch"
                 disabled={timerState.status !== 'stopped'}
-                className="flex items-center gap-1 rounded-xl py-2.5 text-xs font-semibold tracking-wide text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/25 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
+                className="flex items-center gap-1 rounded-xl py-2.5 text-xs font-semibold tracking-wide text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/25 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:text-[#B0C4DE] dark:data-[state=active]:bg-[#B0C4DE]/20 dark:data-[state=active]:text-[#E6E6FA]"
               >
                 <Timer className="h-4 w-4" />
                 Stopwatch
@@ -1303,7 +1303,7 @@ export default function TimeTracker() {
               <TabsTrigger
                 value="countdown"
                 disabled={timerState.status !== 'stopped'}
-                className="flex items-center gap-1 rounded-xl py-2.5 text-xs font-semibold tracking-wide text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/25 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
+                className="flex items-center gap-1 rounded-xl py-2.5 text-xs font-semibold tracking-wide text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/25 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:text-[#B0C4DE] dark:data-[state=active]:bg-[#B0C4DE]/20 dark:data-[state=active]:text-[#E6E6FA]"
               >
                 <AlarmClock className="h-4 w-4" />
                 Countdown
@@ -1311,7 +1311,7 @@ export default function TimeTracker() {
               <TabsTrigger
                 value="pomodoro"
                 disabled={timerState.status !== 'stopped'}
-                className="flex items-center gap-1 rounded-xl py-2.5 text-xs font-semibold tracking-wide text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/25 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:data-[state=active]:text-[#E6E6FA]"
+                className="flex items-center gap-1 rounded-xl py-2.5 text-xs font-semibold tracking-wide text-[#6B7280] data-[state=active]:bg-[#D8BFD8]/25 data-[state=active]:text-[#2D3748] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 sm:gap-2 sm:text-sm dark:text-[#B0C4DE] dark:data-[state=active]:bg-[#B0C4DE]/20 dark:data-[state=active]:text-[#E6E6FA]"
               >
                 <Coffee className="h-4 w-4" />
                 Pomodoro
@@ -1320,7 +1320,7 @@ export default function TimeTracker() {
 
             <TabsContent value="stopwatch" className="mt-4 p-0">
               <div className="flex flex-col items-center gap-6">
-                <div className="w-full max-w-xl rounded-2xl border border-[#D8BFD8]/40 bg-[#F7F7F7]/90 p-4 shadow-sm dark:bg-[#2b3850]/80">
+                <div className="w-full max-w-xl rounded-2xl border border-[#D8BFD8]/40 bg-[#F7F7F7]/90 p-4 shadow-sm dark:border-[#52627a]/45 dark:bg-[#2b3850]/82">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-[#2D3748] dark:text-[#E6E6FA]">Start From Previous Time</p>
@@ -1352,7 +1352,7 @@ export default function TimeTracker() {
                         type="button"
                         variant="outline"
                         onClick={() => setManualStartTime(formatTimeInput(new Date()))}
-                        className="rounded-xl border-[#D8BFD8]/50 bg-[#F8FAFC] text-[#6B7280] hover:bg-[#D8BFD8]/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                        className="rounded-xl border-[#D8BFD8]/50 bg-[#F8FAFC] text-[#6B7280] hover:bg-[#D8BFD8]/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                       >
                         Use Now
                       </Button>
@@ -1381,7 +1381,7 @@ export default function TimeTracker() {
                       className={`min-w-[4.5rem] rounded-xl px-4 font-serif ${
                         countdownPreset === seconds
                           ? 'bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/85'
-                          : 'bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20'
+                          : 'border-[#D8BFD8]/50 bg-[#F7F7F7] text-[#6B7280] hover:bg-[#D8BFD8]/20 dark:border-[#52627a]/45 dark:bg-[#3C4A5E] dark:text-[#B0C4DE] dark:hover:bg-[#4b5e78]/70'
                       }`}
                     >
                       {Math.floor(seconds / 60)}m
@@ -1392,7 +1392,7 @@ export default function TimeTracker() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="rounded-xl bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20 font-serif"
+                        className="rounded-xl border-[#D8BFD8]/50 bg-[#F7F7F7] font-serif text-[#6B7280] hover:bg-[#D8BFD8]/20 dark:border-[#52627a]/45 dark:bg-[#3C4A5E] dark:text-[#B0C4DE] dark:hover:bg-[#4b5e78]/70"
                       >
                         <Plus className="h-4 w-4 mr-1" />
                         Custom

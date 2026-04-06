@@ -378,7 +378,7 @@ export const ProjectTagSelectors = ({
                   </motion.div>
                 ))}
                 {tags.length === 0 && (
-                  <div className="text-sm text-[#B0C4DE] text-center py-3 font-serif">
+                  <div className="py-3 text-center font-serif text-sm text-[#6B7280] dark:text-[#B0C4DE]">
                     No tags yet. Create one above.
                   </div>
                 )}
@@ -399,7 +399,7 @@ export const ProjectTagSelectors = ({
           />
         </motion.div>
         <DollarSign
-          className={`h-4 w-4 ${currentTask.billable ? 'text-[#D8BFD8]' : 'text-[#6B7280]'}`}
+          className={`h-4 w-4 ${currentTask.billable ? 'text-[#D8BFD8]' : 'text-[#6B7280] dark:text-[#B0C4DE]'}`}
         />
         <span className="text-sm text-[#6B7280] dark:text-[#B0C4DE] font-serif">Billable</span>
       </div>

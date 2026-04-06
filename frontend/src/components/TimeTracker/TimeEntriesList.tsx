@@ -246,7 +246,7 @@ export const TimeEntriesList = ({
   const hiddenEntryCount = Math.max(0, sortedEntries.length - visibleEntries.length);
 
   return (
-  <div className="mt-10 rounded-[1.5rem] border border-[#D8BFD8]/30 bg-[#FFFFFF]/95 p-4 shadow-[0_20px_45px_rgba(45,55,72,0.12)] backdrop-blur sm:p-6 md:p-8 dark:bg-[#1f2b3b]/92">
+  <div className="mt-10 rounded-[1.5rem] border border-[#D8BFD8]/30 bg-[#FFFFFF]/95 p-4 shadow-[0_20px_45px_rgba(45,55,72,0.12)] backdrop-blur sm:p-6 md:p-8 dark:border-[#52627a]/45 dark:bg-[#1f2b3b]/92 dark:shadow-[0_24px_50px_rgba(2,6,23,0.58)]">
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h2 className="flex items-center text-xl font-serif font-semibold text-[#2D3748] dark:text-[#E6E6FA]">
         <Calendar className="mr-2 h-5 w-5 text-[#D8BFD8]" />
@@ -277,7 +277,7 @@ export const TimeEntriesList = ({
     </div>
 
     {loading ? (
-      <div className="py-12 text-center text-[#B0C4DE]">
+      <div className="py-12 text-center text-[#6B7280] dark:text-[#B0C4DE]">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
@@ -287,7 +287,7 @@ export const TimeEntriesList = ({
         Loading time entries...
       </div>
     ) : sortedEntries.length === 0 ? (
-      <div className="py-12 text-center text-[#B0C4DE]">
+      <div className="py-12 text-center text-[#6B7280] dark:text-[#B0C4DE]">
         <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
         <p>No time entries yet. Start tracking your time!</p>
       </div>
@@ -302,7 +302,7 @@ export const TimeEntriesList = ({
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
             >
-              <div className="rounded-2xl border border-[#D8BFD8]/30 bg-[#F8FAFC] p-4 shadow-sm transition-all hover:bg-[#D8BFD8]/10 hover:shadow-md dark:bg-[#2d3c52]">
+              <div className="rounded-2xl border border-[#D8BFD8]/30 bg-[#F8FAFC] p-4 shadow-sm transition-all hover:bg-[#D8BFD8]/10 hover:shadow-md dark:border-[#52627a]/45 dark:bg-[#2d3c52] dark:hover:bg-[#384a62]">
                   <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3 sm:items-center">
                     <div className="space-y-2 sm:col-span-2">
                       <h3 className="font-serif text-base font-semibold text-[#2D3748] sm:text-lg dark:text-[#E6E6FA]">
