@@ -12,6 +12,8 @@ import com.tushar.demo.timetracker.model.SmartCriteriaEntity;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.OnboardingRepository;
 import com.tushar.demo.timetracker.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,12 +30,14 @@ import java.util.LinkedHashMap;
 @RequestMapping("/api/onboarding")
 public class OnboardingController {
 
+    private static final Logger logger = LoggerFactory.getLogger(OnboardingController.class);
+
 	private final UserRepository userRepo;
 	private final OnboardingRepository onboardingRepository;
     private final AgenticKnowledgeSyncService agenticKnowledgeSyncService;
     private final ObjectMapper objectMapper;
 
-    @Value("${agentic.sync.onboarding-read-sync-enabled:false}")
+    @Value("${agentic.sync.onboarding-read-sync-enabled:true}")
     private boolean onboardingReadSyncEnabled;
 
     public OnboardingController(UserRepository userRepo,
@@ -82,7 +86,7 @@ public class OnboardingController {
                     .orElseThrow(() -> new ResourceNotFoundException("Onboarding not found for user: " + user.getEmail()));
 
                 Map<String, Object> payload = new HashMap<>();
-                payload.put("name", onboarding.getName());
+                payload.put("name", firstNonBlank(onboarding.getName(), user.getName(), "Your Alter Ego"));
                 payload.put("preferredTone", onboarding.getPreferredTone());
                 payload.put("coachAvatar", onboarding.getCoachAvatar());
                 payload.put("coachPreferences", onboarding.getCoachPreferencesAsMap());
@@ -194,6 +198,8 @@ public class OnboardingController {
 
                 if (onboardingReadSyncEnabled) {
                     syncOnboardingSnapshot(onboarding, user);
+                } else {
+                    logger.debug("Skipping onboarding read-sync for user {} because onboardingReadSyncEnabled=false", user.getEmail());
                 }
                 return ResponseEntity.ok(payload);
         } catch (ResourceNotFoundException e) {
@@ -452,6 +458,21 @@ public class OnboardingController {
         }
 
         try {
+            Object parsedPayload = objectMapper.readValue(prioritiesJson, Object.class);
+            List<Map<String, Object>> normalized = normalizePrioritiesPayload(parsedPayload);
+            if (!normalized.isEmpty()) {
+            return normalized;
+            }
+
+            if (parsedPayload instanceof List<?>) {
+            return objectMapper.convertValue(parsedPayload, new TypeReference<List<Map<String, Object>>>() {
+            });
+            }
+        } catch (Exception ignored) {
+            // Fall back to legacy parser before giving up.
+        }
+
+        try {
             return objectMapper.readValue(prioritiesJson, new TypeReference<List<Map<String, Object>>>() {
             });
         } catch (Exception ignored) {
@@ -462,68 +483,155 @@ public class OnboardingController {
     private void syncOnboardingSnapshot(OnboardingEntity onboarding, Users user) {
         try {
             OnboardingRequestDTO syncRequest = new OnboardingRequestDTO();
-            syncRequest.setRole(onboarding.getRole());
-            syncRequest.setPreferredTone(onboarding.getPreferredTone());
-            syncRequest.setCoachAvatar(onboarding.getCoachAvatar());
+            String preferredTone = firstNonBlank(onboarding.getPreferredTone(), "Friendly");
+
+            syncRequest.setRole(firstNonBlank(onboarding.getRole(), "professional"));
+            syncRequest.setPreferredTone(preferredTone);
+            syncRequest.setCoachAvatar(firstNonBlank(
+                onboarding.getCoachAvatar(),
+                onboarding.getMentor() != null ? onboarding.getMentor().getAvatar() : null,
+                "/avatars/default.svg"
+            ));
             syncRequest.setCoachPreferences(onboarding.getCoachPreferencesAsMap());
             syncRequest.setDomainPreferences(onboarding.getDomainPreferencesAsMap());
 
-            if (onboarding.getMentor() != null) {
-                OnboardingRequestDTO.Mentor mentor = new OnboardingRequestDTO.Mentor();
-                mentor.setArchetype(onboarding.getMentor().getArchetype());
-                mentor.setStyle(onboarding.getMentor().getStyle());
-                mentor.setName(onboarding.getMentor().getName());
-                mentor.setAvatar(onboarding.getMentor().getAvatar());
-                syncRequest.setMentor(mentor);
-            }
+            syncRequest.setMentor(buildMentorForSync(onboarding, user, preferredTone));
 
             List<OnboardingRequestDTO.Goal> goals = mapGoalsForSync(onboarding);
             syncRequest.setGoals(goals);
-            syncRequest.setAnswers(mapAnswersForSync(onboarding.getPriorities()));
+            List<OnboardingRequestDTO.AnswerDTO> answers = mapAnswersForSync(onboarding.getPriorities());
+            syncRequest.setAnswers(answers);
 
-            if (onboarding.getPlanner() != null && onboarding.getPlanner().getAvailability() != null) {
-                OnboardingRequestDTO.WorkHours workHours = new OnboardingRequestDTO.WorkHours();
-                workHours.setStart(onboarding.getPlanner().getAvailability().getWorkHoursStart());
-                workHours.setEnd(onboarding.getPlanner().getAvailability().getWorkHoursEnd());
+            OnboardingRequestDTO.Planner planner = buildPlannerForSync(onboarding, goals);
+            syncRequest.setPlanner(planner);
+            syncRequest.setSchedule(planner.getAvailability());
 
-                OnboardingRequestDTO.DndHours dndHours = new OnboardingRequestDTO.DndHours();
-                dndHours.setStart(onboarding.getPlanner().getAvailability().getDndHoursStart());
-                dndHours.setEnd(onboarding.getPlanner().getAvailability().getDndHoursEnd());
-
-                OnboardingRequestDTO.CheckIn checkIn = new OnboardingRequestDTO.CheckIn();
-                checkIn.setPreferredTime(onboarding.getPlanner().getAvailability().getCheckInPreferredTime());
-                checkIn.setFrequency(onboarding.getPlanner().getAvailability().getCheckInFrequency());
-
-                OnboardingRequestDTO.Availability availability = new OnboardingRequestDTO.Availability();
-                availability.setWorkHours(workHours);
-                availability.setDndHours(dndHours);
-                availability.setCheckIn(checkIn);
-                availability.setTimezone(onboarding.getPlanner().getAvailability().getTimezone());
-
-                OnboardingRequestDTO.Notifications notifications = new OnboardingRequestDTO.Notifications();
-                notifications.setRemindersEnabled(onboarding.getPlanner().isRemindersEnabled());
-
-                OnboardingRequestDTO.Integrations integrations = new OnboardingRequestDTO.Integrations();
-                integrations.setCalendarSync(onboarding.getPlanner().isCalendarSync());
-                integrations.setTaskManagementSync(onboarding.getPlanner().isTaskManagementSync());
-
-                OnboardingRequestDTO.Planner planner = new OnboardingRequestDTO.Planner();
-                planner.setGoals(goals);
-                planner.setAvailability(availability);
-                planner.setNotifications(notifications);
-                planner.setIntegrations(integrations);
-
-                syncRequest.setSchedule(availability);
-                syncRequest.setPlanner(planner);
-            }
-
-            if (syncRequest.getRole() != null && syncRequest.getMentor() != null && syncRequest.getPlanner() != null) {
-                agenticKnowledgeSyncService.syncOnboarding(syncRequest, user);
-            }
-        } catch (Exception ignored) {
+            agenticKnowledgeSyncService.syncOnboarding(syncRequest, user);
+            logger.debug(
+                "Triggered onboarding snapshot sync for user {} (goals={}, answers={})",
+                user != null ? user.getEmail() : "unknown",
+                goals.size(),
+                answers.size()
+            );
+        } catch (Exception e) {
             // Do not block onboarding reads if best-effort sync fails.
+            logger.warn(
+                "Onboarding snapshot sync failed for user {}: {}",
+                user != null ? user.getEmail() : "unknown",
+                e.getMessage()
+            );
         }
     }
+
+        private OnboardingRequestDTO.Mentor buildMentorForSync(OnboardingEntity onboarding, Users user, String preferredTone) {
+        OnboardingRequestDTO.Mentor mentor = new OnboardingRequestDTO.Mentor();
+        mentor.setArchetype(firstNonBlank(
+            onboarding.getMentor() != null ? onboarding.getMentor().getArchetype() : null,
+            "Guide"
+        ));
+        mentor.setStyle(firstNonBlank(
+            onboarding.getMentor() != null ? onboarding.getMentor().getStyle() : null,
+            preferredTone,
+            "Friendly"
+        ));
+        mentor.setName(firstNonBlank(
+            onboarding.getMentor() != null ? onboarding.getMentor().getName() : null,
+            user != null ? user.getName() : null,
+            "Your Alter Ego"
+        ));
+        mentor.setAvatar(firstNonBlank(
+            onboarding.getCoachAvatar(),
+            onboarding.getMentor() != null ? onboarding.getMentor().getAvatar() : null,
+            "/avatars/default.svg"
+        ));
+        return mentor;
+        }
+
+        private OnboardingRequestDTO.Planner buildPlannerForSync(
+            OnboardingEntity onboarding,
+            List<OnboardingRequestDTO.Goal> goals) {
+        String workHoursStart = firstNonBlank(
+            onboarding.getPlanner() != null && onboarding.getPlanner().getAvailability() != null
+                ? onboarding.getPlanner().getAvailability().getWorkHoursStart()
+                : null,
+            onboarding.getSchedule() != null ? onboarding.getSchedule().getWorkHoursStart() : null,
+            "09:00"
+        );
+        String workHoursEnd = firstNonBlank(
+            onboarding.getPlanner() != null && onboarding.getPlanner().getAvailability() != null
+                ? onboarding.getPlanner().getAvailability().getWorkHoursEnd()
+                : null,
+            onboarding.getSchedule() != null ? onboarding.getSchedule().getWorkHoursEnd() : null,
+            "17:00"
+        );
+        String dndHoursStart = firstNonBlank(
+            onboarding.getPlanner() != null && onboarding.getPlanner().getAvailability() != null
+                ? onboarding.getPlanner().getAvailability().getDndHoursStart()
+                : null,
+            onboarding.getSchedule() != null ? onboarding.getSchedule().getDndHoursStart() : null,
+            "12:00"
+        );
+        String dndHoursEnd = firstNonBlank(
+            onboarding.getPlanner() != null && onboarding.getPlanner().getAvailability() != null
+                ? onboarding.getPlanner().getAvailability().getDndHoursEnd()
+                : null,
+            onboarding.getSchedule() != null ? onboarding.getSchedule().getDndHoursEnd() : null,
+            "13:00"
+        );
+        String checkInPreferredTime = firstNonBlank(
+            onboarding.getPlanner() != null && onboarding.getPlanner().getAvailability() != null
+                ? onboarding.getPlanner().getAvailability().getCheckInPreferredTime()
+                : null,
+            onboarding.getSchedule() != null ? onboarding.getSchedule().getCheckInPreferredTime() : null,
+            "09:00"
+        );
+        String checkInFrequency = firstNonBlank(
+            onboarding.getPlanner() != null && onboarding.getPlanner().getAvailability() != null
+                ? onboarding.getPlanner().getAvailability().getCheckInFrequency()
+                : null,
+            onboarding.getSchedule() != null ? onboarding.getSchedule().getCheckInFrequency() : null,
+            "daily"
+        );
+        String timezone = firstNonBlank(
+            onboarding.getPlanner() != null && onboarding.getPlanner().getAvailability() != null
+                ? onboarding.getPlanner().getAvailability().getTimezone()
+                : null,
+            onboarding.getSchedule() != null ? onboarding.getSchedule().getTimezone() : null,
+            "UTC"
+        );
+
+        OnboardingRequestDTO.WorkHours workHours = new OnboardingRequestDTO.WorkHours();
+        workHours.setStart(workHoursStart);
+        workHours.setEnd(workHoursEnd);
+
+        OnboardingRequestDTO.DndHours dndHours = new OnboardingRequestDTO.DndHours();
+        dndHours.setStart(dndHoursStart);
+        dndHours.setEnd(dndHoursEnd);
+
+        OnboardingRequestDTO.CheckIn checkIn = new OnboardingRequestDTO.CheckIn();
+        checkIn.setPreferredTime(checkInPreferredTime);
+        checkIn.setFrequency(checkInFrequency);
+
+        OnboardingRequestDTO.Availability availability = new OnboardingRequestDTO.Availability();
+        availability.setWorkHours(workHours);
+        availability.setDndHours(dndHours);
+        availability.setCheckIn(checkIn);
+        availability.setTimezone(timezone);
+
+        OnboardingRequestDTO.Notifications notifications = new OnboardingRequestDTO.Notifications();
+        notifications.setRemindersEnabled(onboarding.getPlanner() != null && onboarding.getPlanner().isRemindersEnabled());
+
+        OnboardingRequestDTO.Integrations integrations = new OnboardingRequestDTO.Integrations();
+        integrations.setCalendarSync(onboarding.getPlanner() != null && onboarding.getPlanner().isCalendarSync());
+        integrations.setTaskManagementSync(onboarding.getPlanner() != null && onboarding.getPlanner().isTaskManagementSync());
+
+        OnboardingRequestDTO.Planner planner = new OnboardingRequestDTO.Planner();
+        planner.setGoals(goals != null ? goals : List.of());
+        planner.setAvailability(availability);
+        planner.setNotifications(notifications);
+        planner.setIntegrations(integrations);
+        return planner;
+        }
 
     private List<OnboardingRequestDTO.Goal> mapGoalsForSync(OnboardingEntity onboarding) {
         if (onboarding.getGoals() == null || onboarding.getGoals().isEmpty()) {
@@ -575,20 +683,94 @@ public class OnboardingController {
 
         List<OnboardingRequestDTO.AnswerDTO> answers = new ArrayList<>();
         for (Map<String, Object> parsedAnswer : parsedAnswers) {
-            String answerValue = asString(parsedAnswer.get("answer"));
-            String descriptionValue = asString(parsedAnswer.get("description"));
+            String answerValue = firstNonBlank(
+                    asString(parsedAnswer.get("answer")),
+                    asString(parsedAnswer.get("title")),
+                    asString(parsedAnswer.get("value")),
+                    asString(parsedAnswer.get("priority"))
+            );
+            String descriptionValue = firstNonBlank(
+                    asString(parsedAnswer.get("description")),
+                    asString(parsedAnswer.get("detail")),
+                    asString(parsedAnswer.get("note")),
+                    asString(parsedAnswer.get("context"))
+            );
             if (answerValue.isBlank() && descriptionValue.isBlank()) {
                 continue;
             }
 
             OnboardingRequestDTO.AnswerDTO answer = new OnboardingRequestDTO.AnswerDTO();
-            answer.setId(asString(parsedAnswer.get("id")));
+            answer.setId(firstNonBlank(asString(parsedAnswer.get("id")), "priority_" + answers.size()));
             answer.setAnswer(answerValue);
             answer.setDescription(descriptionValue);
             answers.add(answer);
         }
 
         return answers;
+    }
+
+    private List<Map<String, Object>> normalizePrioritiesPayload(Object payload) {
+        if (payload instanceof List<?> rawAnswers) {
+            List<Map<String, Object>> normalized = new ArrayList<>();
+            for (Object rawAnswer : rawAnswers) {
+                Map<String, Object> answerPayload = normalizeAnswerPayload(rawAnswer, normalized.size());
+                if (!answerPayload.isEmpty()) {
+                    normalized.add(answerPayload);
+                }
+            }
+            return normalized;
+        }
+
+        if (payload instanceof Map<?, ?> rawMap) {
+            Object nestedAnswers = rawMap.get("answers");
+            if (!(nestedAnswers instanceof List<?>)) {
+                nestedAnswers = rawMap.get("priorities");
+            }
+
+            if (nestedAnswers instanceof List<?>) {
+                return normalizePrioritiesPayload(nestedAnswers);
+            }
+        }
+
+        return List.of();
+    }
+
+    private Map<String, Object> normalizeAnswerPayload(Object rawAnswer, int index) {
+        if (rawAnswer instanceof Map<?, ?> rawMap) {
+            Map<String, Object> normalized = new LinkedHashMap<>();
+            String answerValue = firstNonBlank(
+                    asString(rawMap.get("answer")),
+                    asString(rawMap.get("title")),
+                    asString(rawMap.get("value")),
+                    asString(rawMap.get("priority"))
+            );
+            String descriptionValue = firstNonBlank(
+                    asString(rawMap.get("description")),
+                    asString(rawMap.get("detail")),
+                    asString(rawMap.get("note")),
+                    asString(rawMap.get("context"))
+            );
+
+            if (answerValue.isBlank() && descriptionValue.isBlank()) {
+                return Map.of();
+            }
+
+            normalized.put("id", firstNonBlank(asString(rawMap.get("id")), "priority_" + index));
+            normalized.put("answer", answerValue);
+            normalized.put("description", descriptionValue);
+            return normalized;
+        }
+
+        String answerValue = asString(rawAnswer).trim();
+        if (answerValue.isBlank()) {
+            return Map.of();
+        }
+
+        Map<String, Object> normalized = new LinkedHashMap<>();
+        normalized.put("id", "priority_" + index);
+        normalized.put("answer", answerValue);
+        normalized.put("description", "");
+        return normalized;
     }
 
     private String asString(Object value) {

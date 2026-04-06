@@ -187,7 +187,13 @@ public class OnboardingEntity {
     public String getPriorities() { return priorities; }
     public void setPriorities(String priorities) { this.priorities = priorities; }
 
-    public Object getName() {
-        return mentor.getName();
+    public String getName() {
+        if (mentor != null && mentor.getName() != null && !mentor.getName().isBlank()) {
+            return mentor.getName();
+        }
+        if (user != null && user.getName() != null && !user.getName().isBlank()) {
+            return user.getName();
+        }
+        return "Your Alter Ego";
     }
 }
