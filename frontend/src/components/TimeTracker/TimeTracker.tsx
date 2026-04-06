@@ -15,7 +15,7 @@ import { Button } from '../Calendar_updated/components/ui/button';
 import { Input } from '../Calendar_updated/components/ui/input';
 import { Switch } from '../Calendar_updated/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '../Calendar_updated/components/ui/dialog';
-import { Timer, AlarmClock, Coffee, Plus, RefreshCw } from 'lucide-react';
+import { Timer, AlarmClock, Coffee, Plus, RefreshCw, Sunrise, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CurrentTask, Project, Tag, TimeEntry, UserPreferences, TimerStatus, TimerMode, PomodoroState } from './types';
 import { formatTime, getRandomColor } from './utility';
@@ -41,6 +41,37 @@ const toProjectId = (value: CurrentTask['projectId']): number | null => {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+};
+
+type DailyMarkerType = 'wake_up' | 'sign_off';
+
+const DAILY_MARKER_CONFIG: Record<
+  DailyMarkerType,
+  {
+    buttonLabel: string;
+    description: string;
+    category: string;
+    contextNotes: string;
+    recordedTitle: string;
+    updatedTitle: string;
+  }
+> = {
+  wake_up: {
+    buttonLabel: 'Log Wake Up',
+    description: 'Daily Wake Up',
+    category: 'daily_wake_up',
+    contextNotes: 'One-tap wake-up checkpoint from TimeTracker quick actions.',
+    recordedTitle: 'Wake-Up Recorded',
+    updatedTitle: 'Wake-Up Updated',
+  },
+  sign_off: {
+    buttonLabel: 'Log Sign Off',
+    description: 'Daily Sign Off',
+    category: 'daily_sign_off',
+    contextNotes: 'One-tap sign-off checkpoint from TimeTracker quick actions.',
+    recordedTitle: 'Sign-Off Recorded',
+    updatedTitle: 'Sign-Off Updated',
+  },
 };
 
 const QUOTES = [
@@ -141,6 +172,8 @@ export default function TimeTracker() {
   // UI states
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showKeyboardShortcutsDialog, setShowKeyboardShortcutsDialog] = useState(false);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isResetInProgress, setIsResetInProgress] = useState(false);
   const [currentQuote, setCurrentQuote] = useState<{ text: string; author: string }>({
     text: 'Productivity is being able to do things that you were never able to do before.',
     author: 'Franz Kafka',
@@ -148,6 +181,7 @@ export default function TimeTracker() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'duration'>('newest');
   const [descriptionError, setDescriptionError] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
+  const [dailyMarkerLoading, setDailyMarkerLoading] = useState<DailyMarkerType | null>(null);
 
   // User preferences
   const [preferences, setPreferences] = useState<UserPreferences>(() => {
@@ -623,6 +657,21 @@ export default function TimeTracker() {
     }
   };
 
+  const refreshRecentTimeEntries = async (token: string) => {
+    const entryRes = await fetch('/api/timers?limit=5', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!entryRes.ok) {
+      return;
+    }
+
+    const entryData = await entryRes.json().catch(() => null);
+    if (entryData?.success && Array.isArray(entryData.data)) {
+      setTimeEntries(entryData.data.filter((entry: TimeEntry) => entry.endTime !== null));
+    }
+  };
+
   const startTimer = async () => {
     const modeTime =
       timerMode === 'countdown'
@@ -665,6 +714,25 @@ export default function TimeTracker() {
       return;
     }
     setDescriptionError(false);
+
+    // Countdown and Pomodoro sessions are local-only timers.
+    // Keeping them local prevents stale backend active timers when users reset or auto-complete sessions.
+    if (timerMode !== 'stopwatch') {
+      setTimerState(prev => ({
+        ...prev,
+        status: 'running',
+        activeTimerId: null,
+        startTime: undefined,
+      }));
+
+      toast({
+        title: 'Timer Started',
+        description: `Running ${timerMode} for "${currentTask.description}"`,
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
+      return;
+    }
+
     try {
       const token = sessionStorage.getItem('auth_session');
       if (!token) {
@@ -794,6 +862,32 @@ export default function TimeTracker() {
 
   const stopTimer = async (options?: { triggeredByReset?: boolean }) => {
     if (timerMode === 'countdown' || (timerMode === 'pomodoro' && pomodoroState.isBreak)) {
+      // Best-effort cleanup for stale server timers from older sessions.
+      if (timerState.activeTimerId && timerState.startTime) {
+        try {
+          const token = sessionStorage.getItem('auth_session');
+          if (token) {
+            await fetch(`/api/timers/${timerState.activeTimerId}/stop`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                description: currentTask.description?.trim() || `${timerMode} session`,
+                startTime: timerState.startTime,
+                endTime: toLocalDateTimeString(new Date()),
+                projectId: toProjectId(currentTask.projectId),
+                tagIds: currentTask.tags.map(tag => tag.id),
+                billable: currentTask.billable,
+              }),
+            });
+          }
+        } catch (cleanupError) {
+          console.warn('Could not cleanup stale backend timer during local stop:', cleanupError);
+        }
+      }
+
       clearTimerStateLocally({
         showResetToast: true,
         resetDescription: 'Timer has been reset.',
@@ -861,14 +955,7 @@ export default function TimeTracker() {
         });
         throw new Error('Stop failed');
       }
-      const entryRes = await fetch('/api/timers?limit=5', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (entryRes.ok) {
-        const entryData = await entryRes.json();
-        setTimeEntries(entryData.data.filter((entry: TimeEntry) => entry.endTime !== null));
-        console.log('Updated time entries:', entryData.data);
-      }
+      await refreshRecentTimeEntries(token);
       clearTimerStateLocally();
       if (options?.triggeredByReset) {
         toast({
@@ -897,12 +984,33 @@ export default function TimeTracker() {
   };
 
   const resetTimer = () => {
-    if (timerMode === 'stopwatch' && timerState.activeTimerId && timerState.startTime) {
+    if (timerState.status === 'running') {
+      setIsResetConfirmOpen(true);
+      return;
+    }
+
+    if (timerState.activeTimerId && timerState.startTime) {
       void stopTimer({ triggeredByReset: true });
       return;
     }
 
     clearTimerStateLocally({ showResetToast: true });
+  };
+
+  const confirmRunningReset = async () => {
+    setIsResetInProgress(true);
+    setIsResetConfirmOpen(false);
+
+    try {
+      if (timerState.activeTimerId && timerState.startTime) {
+        await stopTimer({ triggeredByReset: true });
+        return;
+      }
+
+      clearTimerStateLocally({ showResetToast: true });
+    } finally {
+      setIsResetInProgress(false);
+    }
   };
 
   const toggleTimer = () => {
@@ -1084,6 +1192,133 @@ export default function TimeTracker() {
     }
   };
 
+  const recordDailyMarker = async (markerType: DailyMarkerType) => {
+    if (dailyMarkerLoading) {
+      return;
+    }
+
+    const markerConfig = DAILY_MARKER_CONFIG[markerType];
+
+    try {
+      setDailyMarkerLoading(markerType);
+      const token = sessionStorage.getItem('auth_session');
+
+      if (!token) {
+        toast({
+          title: 'Authentication Error',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+        });
+        logout();
+        return;
+      }
+
+      const now = new Date();
+      const endDate = new Date(now.getTime() + 1000);
+      const startOfDay = new Date(now);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(now);
+      endOfDay.setHours(23, 59, 59, 0);
+
+      const existingEntriesResponse = await fetch(
+        `/api/timers?start=${encodeURIComponent(toLocalDateTimeString(startOfDay))}&end=${encodeURIComponent(
+          toLocalDateTimeString(endOfDay)
+        )}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (existingEntriesResponse.status === 401) {
+        toast({
+          title: 'Authentication Error',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+        });
+        logout();
+        return;
+      }
+
+      const existingEntriesPayload = await existingEntriesResponse.json().catch(() => null);
+      if (!existingEntriesResponse.ok || !existingEntriesPayload?.success) {
+        throw new Error(existingEntriesPayload?.message || 'Unable to load today\'s entries.');
+      }
+
+      const existingMarker = (existingEntriesPayload.data as TimeEntry[]).find(
+        (entry) => entry.description === markerConfig.description
+      );
+
+      const markerPayload = {
+        description: markerConfig.description,
+        startTime: toLocalDateTimeString(now),
+        endTime: toLocalDateTimeString(endDate),
+        category: markerConfig.category,
+        tagIds: [],
+        projectId: null,
+        billable: false,
+        positionTop: null,
+        positionLeft: null,
+        linkedGoal: null,
+        focusScore: null,
+        energyScore: null,
+        blockers: null,
+        contextNotes: markerConfig.contextNotes,
+        aiDetail: null,
+      };
+
+      const markerResponse = await fetch(
+        existingMarker ? `/api/timers/${existingMarker.id}` : '/api/timers/addTimer',
+        {
+          method: existingMarker ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(markerPayload),
+        }
+      );
+
+      if (markerResponse.status === 401) {
+        toast({
+          title: 'Authentication Error',
+          description: 'Your session has expired. Please log in again.',
+          variant: 'destructive',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+        });
+        logout();
+        return;
+      }
+
+      const markerResult = await markerResponse.json().catch(() => null);
+      if (!markerResponse.ok || !markerResult?.success) {
+        throw new Error(markerResult?.message || 'Failed to save daily marker.');
+      }
+
+      await refreshRecentTimeEntries(token);
+
+      toast({
+        title: existingMarker ? markerConfig.updatedTitle : markerConfig.recordedTitle,
+        description: `${markerConfig.description} saved at ${now.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        })}. This is now synced to your knowledge base.`,
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save daily marker.';
+      toast({
+        title: 'Daily Marker Failed',
+        description: errorMessage,
+        variant: 'destructive',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
+    } finally {
+      setDailyMarkerLoading(null);
+    }
+  };
+
   const QuoteComponent = useMemo(() => {
     return () => (
       <motion.div
@@ -1248,6 +1483,52 @@ export default function TimeTracker() {
         )}
 
         <QuoteComponent />
+
+        <motion.section
+          className="mb-6 rounded-3xl border border-[#D8BFD8]/40 bg-[#FFFFFF]/90 p-4 shadow-[0_14px_35px_rgba(45,55,72,0.1)] backdrop-blur sm:mb-8 sm:p-6 dark:bg-[#1f2b3b]/85"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+        >
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold tracking-wide text-[#2D3748] sm:text-base dark:text-[#E6E6FA]">
+                Daily Checkpoints
+              </p>
+              <p className="text-xs text-[#6B7280] sm:text-sm dark:text-[#B0C4DE]">
+                One tap records today&apos;s wake-up or sign-off and keeps it synced to your knowledge base.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                void recordDailyMarker('wake_up');
+              }}
+              disabled={dailyMarkerLoading !== null}
+              className="h-12 justify-start gap-2 rounded-2xl border-[#D8BFD8]/60 bg-[#F8FAFC] text-[#2D3748] hover:bg-[#D8BFD8]/25 dark:border-[#4b5d77] dark:bg-[#2d3c52] dark:text-[#E6E6FA]"
+            >
+              <Sunrise className="h-4 w-4" />
+              {dailyMarkerLoading === 'wake_up' ? 'Recording Wake Up...' : DAILY_MARKER_CONFIG.wake_up.buttonLabel}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                void recordDailyMarker('sign_off');
+              }}
+              disabled={dailyMarkerLoading !== null}
+              className="h-12 justify-start gap-2 rounded-2xl border-[#D8BFD8]/60 bg-[#F8FAFC] text-[#2D3748] hover:bg-[#D8BFD8]/25 dark:border-[#4b5d77] dark:bg-[#2d3c52] dark:text-[#E6E6FA]"
+            >
+              <Moon className="h-4 w-4" />
+              {dailyMarkerLoading === 'sign_off' ? 'Recording Sign Off...' : DAILY_MARKER_CONFIG.sign_off.buttonLabel}
+            </Button>
+          </div>
+        </motion.section>
 
         <div className="relative mb-8 overflow-hidden rounded-[1.75rem] border border-[#D8BFD8]/35 bg-[#FFFFFF]/95 p-4 shadow-[0_24px_55px_rgba(45,55,72,0.14)] backdrop-blur sm:p-6 md:p-8 dark:bg-[#1f2b3b]/92">
           <div className="pointer-events-none absolute -right-12 -top-14 h-40 w-40 rounded-full bg-[#D8BFD8]/15 blur-2xl" />
@@ -1551,6 +1832,44 @@ export default function TimeTracker() {
         open={showKeyboardShortcutsDialog}
         onOpenChange={setShowKeyboardShortcutsDialog}
       />
+
+      <Dialog open={isResetConfirmOpen} onOpenChange={setIsResetConfirmOpen}>
+        <DialogContent className="max-w-[92vw] sm:max-w-md bg-[#FFFFFF] dark:bg-[#2D3748] border-[#D8BFD8]/30 rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="text-[#2D3748] dark:text-[#E6E6FA] font-serif">
+              Reset Running Timer?
+            </DialogTitle>
+            <DialogDescription className="text-[#6B7280] dark:text-[#B0C4DE]">
+              Are you sure you want to reset the timer?
+            </DialogDescription>
+          </DialogHeader>
+
+          <p className="text-sm text-[#6B7280] dark:text-[#B0C4DE]">
+            {timerState.activeTimerId
+              ? 'Your current run will be stopped, saved, and then reset.'
+              : 'Your current running session will be cleared and set back to its initial state.'}
+          </p>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsResetConfirmOpen(false)}
+              className="rounded-xl border-[#D8BFD8]/50 bg-[#F8FAFC] text-[#6B7280] hover:bg-[#D8BFD8]/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                void confirmRunningReset();
+              }}
+              disabled={isResetInProgress}
+              className="rounded-xl bg-[#D97706] text-white hover:bg-[#B45309]"
+            >
+              {isResetInProgress ? 'Resetting...' : 'Yes, Reset Timer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

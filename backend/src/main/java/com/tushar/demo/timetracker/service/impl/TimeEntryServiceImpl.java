@@ -109,8 +109,12 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         }
 
         if (timeEntry.getEndTime() != null) {
-            logger.warn("Time entry {} for user {} is already stopped", id, user.getEmail());
-            throw new ConflictException("Time entry is already stopped");
+            logger.info("Time entry {} for user {} is already stopped; returning existing entry", id, user.getEmail());
+            if (timeEntry.getIsActive()) {
+                timeEntry.setIsActive(false);
+                return timeEntryRepository.save(timeEntry);
+            }
+            return timeEntry;
         }
 
         LocalDateTime endTime = (manualEnd != null && manualEnd.isAfter(timeEntry.getStartTime())) 

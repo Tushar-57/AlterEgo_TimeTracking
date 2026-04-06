@@ -201,7 +201,7 @@ public class AgenticKnowledgeSyncService {
             context.put("duration_minutes", durationMinutes);
             context.put("project_id", entry.getProject() != null ? entry.getProject().getId() : null);
             context.put("project_name", entry.getProject() != null ? entry.getProject().getName() : null);
-            context.put("tag_ids", entry.getTagIds() != null ? entry.getTagIds() : List.of());
+            context.put("tag_ids", safeTagIds(entry, "sync_time_entry"));
             context.put("billable", entry.isBillable());
             context.put("position_top", entry.getPositionTop());
             context.put("position_left", entry.getPositionLeft());
@@ -456,7 +456,7 @@ public class AgenticKnowledgeSyncService {
             context.put("duration_minutes", durationMinutes);
             context.put("project_id", entry.getProject() != null ? entry.getProject().getId() : null);
             context.put("project_name", entry.getProject() != null ? entry.getProject().getName() : null);
-            context.put("tag_ids", entry.getTagIds() != null ? entry.getTagIds() : List.of());
+            context.put("tag_ids", safeTagIds(entry, "sync_time_entry_deletion"));
             context.put("billable", entry.isBillable());
             context.put("deleted", true);
             context.put("user_id", user != null ? user.getId() : null);
@@ -492,7 +492,7 @@ public class AgenticKnowledgeSyncService {
             context.put("duration_minutes", 0L);
             context.put("project_id", continuedEntry.getProject() != null ? continuedEntry.getProject().getId() : null);
             context.put("project_name", continuedEntry.getProject() != null ? continuedEntry.getProject().getName() : null);
-            context.put("tag_ids", continuedEntry.getTagIds() != null ? continuedEntry.getTagIds() : List.of());
+            context.put("tag_ids", safeTagIds(continuedEntry, "sync_time_entry_continuation"));
             context.put("billable", continuedEntry.isBillable());
             context.put("active", true);
             context.put("continued", true);
@@ -976,5 +976,27 @@ public class AgenticKnowledgeSyncService {
             return preferred;
         }
         return Objects.requireNonNullElse(fallback, "");
+    }
+
+    private List<Long> safeTagIds(TimeEntry entry, String syncAction) {
+        if (entry == null) {
+            return List.of();
+        }
+
+        try {
+            List<Long> tagIds = entry.getTagIds();
+            if (tagIds == null || tagIds.isEmpty()) {
+                return List.of();
+            }
+            return new ArrayList<>(tagIds);
+        } catch (RuntimeException ex) {
+            logger.debug(
+                    "Unable to extract tag_ids for time entry {} during {} sync: {}",
+                    entry.getId(),
+                    syncAction,
+                    ex.getMessage()
+            );
+            return List.of();
+        }
     }
 }

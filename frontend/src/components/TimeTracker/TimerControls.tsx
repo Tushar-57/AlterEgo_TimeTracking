@@ -34,7 +34,7 @@ export function TimerControls({
       ? countdownTime
       : pomodoroTime;
 
-  const canReset = status !== 'running' && (currentTime > 0 || Boolean(timerState.activeTimerId));
+  const canReset = currentTime > 0 || Boolean(timerState.activeTimerId) || status !== 'stopped';
   const isStartBlocked = status === 'stopped' && currentMode !== 'stopwatch' && currentTime <= 0;
   const isStopBlocked = status === 'stopped' && !timerState.activeTimerId && currentTime <= 0;
 
@@ -98,7 +98,7 @@ export function TimerControls({
             onClick={resetTimer}
             className="h-12 w-full rounded-2xl border-[#D8BFD8]/50 bg-[#F7F7F7] px-4 text-sm font-semibold text-[#6B7280] hover:bg-[#D8BFD8]/20 disabled:cursor-not-allowed disabled:opacity-40 sm:h-auto sm:w-auto sm:rounded-full sm:p-6 sm:text-base dark:bg-[#3C4A5E]"
             disabled={!canReset}
-            title={canReset ? 'Reset timer' : 'Reset is available after pausing or after a completed run'}
+            title={canReset ? 'Reset timer' : 'Start the timer to enable reset'}
           >
             <RefreshCw className="mr-2 h-5 w-5 sm:h-6 sm:w-6" />
             Reset

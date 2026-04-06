@@ -127,7 +127,9 @@ public class TimerController {
             Users user = userDetailsService.getCurrentUser(authentication);
             TimeEntry entry = timeEntryService.stopTimer(id, user, request.endTime());
             entry.setDescription(request.getDescription());
-            entry.setTagIds(request.getTagIds() != null ? request.getTagIds() : entry.getTagIds());
+            if (request.getTagIds() != null) {
+                entry.setTagIds(request.getTagIds());
+            }
             if (request.getProjectId() != null) {
                 Project project = projectRepository.findById(request.getProjectId())
                         .orElseThrow(() -> {
@@ -141,6 +143,18 @@ public class TimerController {
             agenticKnowledgeSyncService.syncTimeEntry(updatedEntry, user, "stop_timer");
             logger.info("Timer stopped successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(updatedEntry, "Timer stopped successfully"));
+            } catch (ResourceNotFoundException e) {
+                logger.warn("Stop timer referenced missing resource for user {}: {}", authName(authentication), e.getMessage());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Related resource not found", Map.of("message", e.getMessage(), "code", "RESOURCE_NOT_FOUND")));
+            } catch (IllegalArgumentException e) {
+                logger.warn("Invalid stop timer request for user {}: {}", authName(authentication), e.getMessage());
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Validation failed", Map.of("message", e.getMessage(), "code", "VALIDATION_ERROR")));
+            } catch (ConflictException e) {
+                logger.warn("Stop timer conflict for user {}: {}", authName(authentication), e.getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error("Timer conflict", Map.of("message", e.getMessage(), "code", "TIMER_CONFLICT")));
         } catch (Exception e) {
             logger.error("Failed to stop timer for user: {}", authName(authentication), e);
             return ResponseEntity.internalServerError()
