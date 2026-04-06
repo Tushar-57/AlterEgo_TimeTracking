@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BellRing, CalendarClock, CheckCircle2, Clock3, ListChecks, SkipForward, Target } from 'lucide-react';
+import {
+  BarChart3,
+  BellRing,
+  CalendarClock,
+  CheckCircle2,
+  Clock3,
+  Flame,
+  ListChecks,
+  NotebookText,
+  SkipForward,
+  Target,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTaskStore } from '../../store/taskStore';
 
@@ -41,10 +52,16 @@ type OnboardingSnapshot = {
 type CheckupApiPayload = {
   date?: string;
   checkup_type?: CheckupType;
+  focus_target?: string;
   coach_message?: string;
   generated_with?: string;
   stats?: Record<string, unknown>;
   decision_metrics?: Record<string, unknown>;
+  wins?: string[];
+  blockers?: string[];
+  tomorrow_focus?: string[];
+  journaling?: Record<string, unknown>;
+  reflection_journal?: Record<string, unknown>;
   performance?: {
     score?: number;
     objective_score?: number;
@@ -59,6 +76,9 @@ type RagInsights = {
   topKnowledgeCategory?: string;
   learningVelocity?: number;
   avgDailyInteractions?: number;
+  timeEntryRecords?: number;
+  timeEntryBillableRecords?: number;
+  avgTimeEntryMinutes?: number;
 };
 
 type CheckupRecord = {
@@ -89,6 +109,63 @@ type CheckupConfig = {
   mentorArchetype?: string;
   mentorStyle?: string;
   mentorName?: string;
+};
+
+type FocusTaskSnapshot = {
+  id: string;
+  title: string;
+  priority: string;
+  status: string;
+  deadline: string | null;
+  estimatedDuration: number;
+  timeSpent: number;
+};
+
+type DeadlineSnapshot = {
+  id: string;
+  title: string;
+  dueInDays: number;
+  deadline: string;
+  priority: string;
+  status: string;
+};
+
+type HabitSnapshot = {
+  id: string;
+  title: string;
+  streakTarget: number;
+  currentStreak: number;
+  completedToday: boolean;
+  completionRate7d: number;
+};
+
+type CheckupContext = {
+  date: string;
+  topGoals: string[];
+  priorities: string[];
+  priorityFocus: string;
+  deadlineTasks: {
+    overdue: number;
+    dueToday: number;
+  };
+  completedTasksToday: number;
+  plannedDeepWorkMinutes: number;
+  ragInsights: RagInsights | null;
+  focusTasks: FocusTaskSnapshot[];
+  upcomingDeadlines: DeadlineSnapshot[];
+  habitMetrics: {
+    totalHabits: number;
+    completedToday: number;
+    avgStreak: number;
+    completionRate7d: number;
+  };
+  habits: HabitSnapshot[];
+  timeMetrics: {
+    totalEstimatedMinutes: number;
+    totalTimeSpentMinutes: number;
+    deepWorkTargetMinutes: number;
+    deepWorkCoverageRatio: number;
+  };
 };
 
 const STORAGE_KEY = 'alterego-checkup-prompt-v1';
@@ -410,6 +487,9 @@ const CheckupPrompt = () => {
             top_knowledge_category?: string;
             learning_velocity?: number;
             avg_daily_interactions?: number;
+            time_entry_records?: number;
+            time_entry_billable_records?: number;
+            avg_time_entry_minutes?: number;
           };
         };
 
@@ -422,6 +502,9 @@ const CheckupPrompt = () => {
           topKnowledgeCategory: payload?.insights?.top_knowledge_category,
           learningVelocity: payload?.insights?.learning_velocity,
           avgDailyInteractions: payload?.insights?.avg_daily_interactions,
+          timeEntryRecords: payload?.insights?.time_entry_records,
+          timeEntryBillableRecords: payload?.insights?.time_entry_billable_records,
+          avgTimeEntryMinutes: payload?.insights?.avg_time_entry_minutes,
         });
       } catch {
         // Best-effort insights only.
@@ -522,66 +605,178 @@ const CheckupPrompt = () => {
     };
   }, [activePrompt, config]);
 
-  const checkupContext = useMemo(() => {
+  const checkupContext = useMemo<CheckupContext | null>(() => {
     if (!activePrompt) {
       return null;
     }
 
     const selectedDateKey = activePrompt.dateKey;
     const selectedDateUtc = `${selectedDateKey}T00:00:00.000Z`;
+    const selectedDateUtcBase = new Date(`${selectedDateKey}T00:00:00.000Z`);
+
+    const rollingDateKeys = Array.from({ length: 7 }, (_, index) => {
+      const candidate = new Date(selectedDateUtcBase);
+      candidate.setUTCDate(selectedDateUtcBase.getUTCDate() - index);
+      return candidate.toISOString().slice(0, 10);
+    });
+
+    const priorityScore = (priority: string) => {
+      const normalized = priority.trim().toLowerCase();
+      if (normalized === 'critical') return 4;
+      if (normalized === 'high') return 3;
+      if (normalized === 'medium') return 2;
+      return 1;
+    };
 
     let overdue = 0;
     let dueToday = 0;
     let completedTasksToday = 0;
+    let totalEstimatedMinutes = 0;
+    let totalTimeSpentMinutes = 0;
+    let habitCompletedToday = 0;
+    let habitStreakSum = 0;
+    let habitCompletionPoints = 0;
+    let habitCompletionSlots = 0;
+
+    const focusTaskCandidates: FocusTaskSnapshot[] = [];
+    const deadlineCandidates: DeadlineSnapshot[] = [];
+    const habits: HabitSnapshot[] = [];
 
     tasks.forEach((task) => {
-      const deadlineKey = normalizeDateKey(task.deadline);
+      const normalizedType = task.type === 'habit' ? 'habit' : 'todo';
+      const normalizedStatus = String(task.status || 'todo');
+      const normalizedPriority = String(task.priority || 'medium');
+      const deadlineKey = normalizeDateKey(task.deadline || task.endDate);
+
+      totalEstimatedMinutes += Math.max(0, readNumber(task.estimatedDuration, 0));
+      totalTimeSpentMinutes += Math.max(0, readNumber(task.timeSpent, 0));
+
+      const completedDates = Array.isArray(task.completedDates)
+        ? task.completedDates.filter((value): value is string => typeof value === 'string')
+        : [];
+      const completedOnSelectedDate = completedDates.includes(selectedDateKey);
+
+      if (normalizedType === 'habit') {
+        const completionCount7d = rollingDateKeys.filter((dateKey) => completedDates.includes(dateKey)).length;
+        const completionRate7d = rollingDateKeys.length > 0
+          ? Math.round((completionCount7d / rollingDateKeys.length) * 100)
+          : 0;
+        const completedToday = completedOnSelectedDate || normalizedStatus === 'completed';
+        if (completedToday) {
+          habitCompletedToday += 1;
+        }
+
+        const currentStreak = Math.max(0, readNumber(task.currentStreak, 0));
+        habitStreakSum += currentStreak;
+        habitCompletionPoints += completionCount7d;
+        habitCompletionSlots += rollingDateKeys.length;
+
+        habits.push({
+          id: task.id,
+          title: task.title,
+          streakTarget: Math.max(0, readNumber(task.streakTarget, 0)),
+          currentStreak,
+          completedToday,
+          completionRate7d,
+        });
+      }
+
+      if (normalizedType !== 'habit' && (normalizedStatus === 'completed' || completedOnSelectedDate)) {
+        completedTasksToday += 1;
+      }
+
       if (deadlineKey) {
-        if (deadlineKey < selectedDateKey && task.status !== 'completed') {
+        if (deadlineKey < selectedDateKey && normalizedStatus !== 'completed' && normalizedType !== 'habit') {
           overdue += 1;
-        } else if (deadlineKey === selectedDateKey && task.status !== 'completed') {
+        } else if (deadlineKey === selectedDateKey && normalizedStatus !== 'completed' && normalizedType !== 'habit') {
           dueToday += 1;
+        }
+
+        if (normalizedStatus !== 'completed') {
+          const dueInDays = diffDays(selectedDateKey, deadlineKey);
+          if (dueInDays >= 0 && dueInDays <= 7) {
+            deadlineCandidates.push({
+              id: task.id,
+              title: task.title,
+              dueInDays,
+              deadline: deadlineKey,
+              priority: normalizedPriority,
+              status: normalizedStatus,
+            });
+          }
         }
       }
 
-      if (task.status === 'completed') {
-        completedTasksToday += 1;
-        return;
+      if (normalizedType !== 'habit' && normalizedStatus !== 'completed') {
+        focusTaskCandidates.push({
+          id: task.id,
+          title: task.title,
+          priority: normalizedPriority,
+          status: normalizedStatus,
+          deadline: deadlineKey,
+          estimatedDuration: Math.max(0, readNumber(task.estimatedDuration, 0)),
+          timeSpent: Math.max(0, readNumber(task.timeSpent, 0)),
+        });
+      }
+    });
+
+    focusTaskCandidates.sort((left, right) => {
+      const leftDeadlinePenalty = left.deadline ? diffDays(selectedDateKey, left.deadline) : 99;
+      const rightDeadlinePenalty = right.deadline ? diffDays(selectedDateKey, right.deadline) : 99;
+
+      if (leftDeadlinePenalty !== rightDeadlinePenalty) {
+        return leftDeadlinePenalty - rightDeadlinePenalty;
       }
 
-      if (task.completedDates?.includes(selectedDateKey)) {
-        completedTasksToday += 1;
+      const priorityDiff = priorityScore(right.priority) - priorityScore(left.priority);
+      if (priorityDiff !== 0) {
+        return priorityDiff;
       }
+
+      return left.title.localeCompare(right.title);
+    });
+
+    deadlineCandidates.sort((left, right) => {
+      if (left.dueInDays !== right.dueInDays) {
+        return left.dueInDays - right.dueInDays;
+      }
+      return priorityScore(right.priority) - priorityScore(left.priority);
     });
 
     const sortedGoals = Array.isArray(onboardingSnapshot?.goals)
       ? [...onboardingSnapshot.goals]
           .filter((goal) => Boolean(goal?.title))
           .sort((left, right) => {
-            const leftPriority = String(left.priority || '').toLowerCase();
-            const rightPriority = String(right.priority || '').toLowerCase();
-            const score = (priority: string) => {
-              if (priority === 'critical') return 4;
-              if (priority === 'high') return 3;
-              if (priority === 'medium') return 2;
-              return 1;
-            };
-            return score(rightPriority) - score(leftPriority);
+            const leftPriority = String(left.priority || 'medium');
+            const rightPriority = String(right.priority || 'medium');
+            return priorityScore(rightPriority) - priorityScore(leftPriority);
           })
       : [];
 
-    const topGoals = sortedGoals.map((goal) => String(goal.title)).slice(0, 3);
+    const topGoals = sortedGoals.map((goal) => String(goal.title)).slice(0, 4);
     const priorities = Array.isArray(onboardingSnapshot?.answers)
       ? onboardingSnapshot.answers
           .map((answer) => String(answer.answer || '').trim())
           .filter((answer) => answer.length > 0)
       : [];
 
+    const totalHabits = habits.length;
+    const avgStreak = totalHabits > 0 ? Number((habitStreakSum / totalHabits).toFixed(1)) : 0;
+    const habitCompletionRate7d = habitCompletionSlots > 0
+      ? Math.round((habitCompletionPoints / habitCompletionSlots) * 100)
+      : 0;
+
+    const deepWorkCoverageRatio = plannedDeepWorkMinutes > 0
+      ? Number((totalTimeSpentMinutes / plannedDeepWorkMinutes).toFixed(2))
+      : 0;
+
+    const priorityFocus = priorities[0] || focusTaskCandidates[0]?.title || topGoals[0] || '';
+
     return {
       date: selectedDateUtc,
       topGoals,
       priorities,
-      priorityFocus: priorities[0] || topGoals[0] || '',
+      priorityFocus,
       deadlineTasks: {
         overdue,
         dueToday,
@@ -589,14 +784,66 @@ const CheckupPrompt = () => {
       completedTasksToday,
       plannedDeepWorkMinutes,
       ragInsights,
+      focusTasks: focusTaskCandidates.slice(0, 5),
+      upcomingDeadlines: deadlineCandidates.slice(0, 5),
+      habitMetrics: {
+        totalHabits,
+        completedToday: habitCompletedToday,
+        avgStreak,
+        completionRate7d: habitCompletionRate7d,
+      },
+      habits: habits
+        .sort((left, right) => {
+          if (left.completedToday !== right.completedToday) {
+            return left.completedToday ? -1 : 1;
+          }
+          return right.currentStreak - left.currentStreak;
+        })
+        .slice(0, 5),
+      timeMetrics: {
+        totalEstimatedMinutes: Number(totalEstimatedMinutes.toFixed(1)),
+        totalTimeSpentMinutes: Number(totalTimeSpentMinutes.toFixed(1)),
+        deepWorkTargetMinutes: plannedDeepWorkMinutes,
+        deepWorkCoverageRatio,
+      },
     };
   }, [activePrompt, tasks, onboardingSnapshot, plannedDeepWorkMinutes, ragInsights]);
 
+  const checkupNote = useMemo(() => {
+    const typedNote = perspectiveNotes.trim();
+    if (typedNote.length > 0) {
+      return typedNote;
+    }
+
+    if (!checkupContext) {
+      return '';
+    }
+
+    if (activePrompt?.type === 'morning') {
+      return [
+        checkupContext.priorityFocus ? `Focus: ${checkupContext.priorityFocus}` : null,
+        checkupContext.focusTasks[0]?.title ? `First task: ${checkupContext.focusTasks[0].title}` : null,
+      ]
+        .filter((item): item is string => Boolean(item))
+        .join(' | ');
+    }
+
+    const completed = checkupContext.completedTasksToday;
+    const totalHabits = checkupContext.habitMetrics.totalHabits;
+    const habitsDone = checkupContext.habitMetrics.completedToday;
+
+    return `Completed tasks today: ${completed}; Habits done: ${habitsDone}/${totalHabits}`;
+  }, [activePrompt?.type, checkupContext, perspectiveNotes]);
+
   const perspectivePayload = useMemo(() => {
     const payload: Record<string, unknown> = {
+      checkupType: activePrompt?.type,
       confidence,
       plannedDeepWorkMinutes,
-      note: perspectiveNotes.trim() || null,
+      note: checkupNote || null,
+      focusTasks: checkupContext?.focusTasks ?? [],
+      habitMetrics: checkupContext?.habitMetrics ?? null,
+      timeMetrics: checkupContext?.timeMetrics ?? null,
     };
 
     if (activePrompt?.type === 'evening') {
@@ -605,7 +852,17 @@ const CheckupPrompt = () => {
     }
 
     return payload;
-  }, [activePrompt?.type, confidence, plannedDeepWorkMinutes, perspectiveNotes, selfRating, topPriorityCompleted]);
+  }, [
+    activePrompt?.type,
+    checkupContext?.focusTasks,
+    checkupContext?.habitMetrics,
+    checkupContext?.timeMetrics,
+    confidence,
+    checkupNote,
+    plannedDeepWorkMinutes,
+    selfRating,
+    topPriorityCompleted,
+  ]);
 
   const handlePostpone = () => {
     setErrorMessage(null);
@@ -682,6 +939,7 @@ const CheckupPrompt = () => {
         credentials: 'include',
         body: JSON.stringify({
           date: activePrompt.dateKey,
+          note: checkupNote || null,
           perspective: perspectivePayload,
           contextSnapshot: checkupContext,
         }),
@@ -710,6 +968,17 @@ const CheckupPrompt = () => {
   const promptType = activePrompt.type;
   const headline = promptType === 'morning' ? 'Morning Checkup' : 'Evening Checkup';
   const badgeTone = promptType === 'morning' ? 'from-amber-500 to-orange-500' : 'from-indigo-600 to-violet-600';
+  const focusTasks = checkupContext?.focusTasks ?? [];
+  const upcomingDeadlines = checkupContext?.upcomingDeadlines ?? [];
+  const habits = checkupContext?.habits ?? [];
+  const completedHabits = checkupContext?.habitMetrics.completedToday ?? 0;
+  const totalHabits = checkupContext?.habitMetrics.totalHabits ?? 0;
+  const deepWorkCoverageRatio = checkupContext?.timeMetrics.deepWorkCoverageRatio ?? 0;
+  const deepWorkCoveragePercent = Math.round(deepWorkCoverageRatio * 100);
+  const journalingPrompt =
+    promptType === 'morning'
+      ? 'What one behavior will make today a win, even if everything else changes?'
+      : 'What did you learn about your working style today, and what will you adjust tomorrow?';
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-3 md:bottom-4 md:justify-end md:px-4">
@@ -727,114 +996,223 @@ const CheckupPrompt = () => {
         </div>
 
         <div className="space-y-3 px-4 py-4">
-          <p className="text-sm text-slate-700">
-            Are you ready for your checkup now?
-          </p>
+          <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-100 px-3 py-3">
+            <p className="text-sm font-semibold text-slate-900">
+              {promptType === 'morning' ? 'Plan with intention' : 'Reflect with clarity'}
+            </p>
+            <p className="mt-1 text-xs text-slate-600">
+              {promptType === 'morning'
+                ? 'Shape your day around top goals, real deadlines, and focused effort.'
+                : 'Review what moved, where friction showed up, and what tomorrow needs first.'}
+            </p>
 
-          <div className="grid grid-cols-1 gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div className="rounded-lg bg-slate-100 px-3 py-2">
-              <div className="flex items-center gap-1 font-medium text-slate-700">
-                <Clock3 className="h-3.5 w-3.5" />
-                Scheduled
+            <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-600 sm:grid-cols-2">
+              <div className="rounded-lg bg-white px-3 py-2 shadow-sm">
+                <div className="flex items-center gap-1 font-medium text-slate-700">
+                  <Clock3 className="h-3.5 w-3.5" />
+                  Scheduled
+                </div>
+                <p className="mt-1">{formatTime(config.preferredTime)}</p>
               </div>
-              <p className="mt-1">{formatTime(config.preferredTime)}</p>
-            </div>
-            <div className="rounded-lg bg-slate-100 px-3 py-2">
-              <div className="flex items-center gap-1 font-medium text-slate-700">
-                <CalendarClock className="h-3.5 w-3.5" />
-                Frequency
+              <div className="rounded-lg bg-white px-3 py-2 shadow-sm">
+                <div className="flex items-center gap-1 font-medium text-slate-700">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  Frequency
+                </div>
+                <p className="mt-1 capitalize">{config.frequency}</p>
               </div>
-              <p className="mt-1 capitalize">{config.frequency}</p>
             </div>
+
+            {config.preferredTone || config.mentorArchetype || config.mentorStyle ? (
+              <p className="mt-2 rounded-lg bg-white px-3 py-2 text-xs text-slate-600 shadow-sm">
+                Style: {config.preferredTone || 'Adaptive'}
+                {config.mentorArchetype ? ` | ${config.mentorArchetype}` : ''}
+                {config.mentorStyle ? ` | ${config.mentorStyle}` : ''}
+              </p>
+            ) : null}
           </div>
 
-          {config.preferredTone || config.mentorArchetype || config.mentorStyle ? (
-            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
-              Style: {config.preferredTone || 'Adaptive'}
-              {config.mentorArchetype ? ` | ${config.mentorArchetype}` : ''}
-              {config.mentorStyle ? ` | ${config.mentorStyle}` : ''}
-            </p>
-          ) : null}
-
           {checkupContext ? (
-            <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="inline-flex items-center gap-1 font-medium text-slate-700">
-                  <ListChecks className="h-3.5 w-3.5" />
-                  Due Today
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="inline-flex items-center gap-1 font-medium text-slate-700">
+                    <ListChecks className="h-3.5 w-3.5" />
+                    Due Today
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.deadlineTasks.dueToday}</p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="inline-flex items-center gap-1 font-medium text-slate-700">
+                    <Target className="h-3.5 w-3.5" />
+                    Overdue
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.deadlineTasks.overdue}</p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="font-medium text-slate-700">Completed Today</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.completedTasksToday}</p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="inline-flex items-center gap-1 font-medium text-slate-700">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    Deep Work Coverage
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900">{deepWorkCoveragePercent}%</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-700">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="inline-flex items-center gap-1.5 font-semibold text-slate-900">
+                    <Target className="h-3.5 w-3.5" />
+                    Focus Arc
+                  </p>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                    {checkupContext.priorityFocus || 'Set one focus'}
+                  </span>
+                </div>
+
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="rounded-lg bg-slate-50 px-2.5 py-2">
+                    <p className="font-medium text-slate-800">Top Goals</p>
+                    {checkupContext.topGoals.length > 0 ? (
+                      <ul className="mt-1 space-y-1 text-slate-600">
+                        {checkupContext.topGoals.slice(0, 3).map((goal) => (
+                          <li key={goal} className="truncate">- {goal}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-slate-500">No goals captured yet.</p>
+                    )}
+                  </div>
+
+                  <div className="rounded-lg bg-slate-50 px-2.5 py-2">
+                    <p className="font-medium text-slate-800">Focus Tasks</p>
+                    {focusTasks.length > 0 ? (
+                      <ul className="mt-1 space-y-1 text-slate-600">
+                        {focusTasks.slice(0, 3).map((task) => (
+                          <li key={task.id} className="truncate">
+                            - {task.title}
+                            {task.deadline ? ` (${task.deadline})` : ''}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-slate-500">No active tasks. Set one meaningful task now.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-3 text-xs text-sky-900">
+                <p className="inline-flex items-center gap-1.5 font-semibold">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  Deadlines Next 7 Days
                 </p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.deadlineTasks.dueToday}</p>
+                {upcomingDeadlines.length > 0 ? (
+                  <ul className="mt-2 space-y-1 text-sky-900/90">
+                    {upcomingDeadlines.slice(0, 4).map((item) => (
+                      <li key={item.id} className="truncate">
+                        - {item.title} | {item.deadline} | {item.priority}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sky-900/80">No near-term deadlines detected.</p>
+                )}
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="inline-flex items-center gap-1 font-medium text-slate-700">
-                  <Target className="h-3.5 w-3.5" />
-                  Overdue
+
+              <div className="rounded-xl border border-orange-200 bg-orange-50/70 px-3 py-3 text-xs text-orange-900">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="inline-flex items-center gap-1.5 font-semibold">
+                    <Flame className="h-3.5 w-3.5" />
+                    Habit Consistency
+                  </p>
+                  <span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-medium">
+                    {completedHabits}/{totalHabits} today
+                  </span>
+                </div>
+                <p className="mt-1">
+                  Avg streak: {checkupContext.habitMetrics.avgStreak} days | 7-day completion: {checkupContext.habitMetrics.completionRate7d}%
                 </p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.deadlineTasks.overdue}</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="font-medium text-slate-700">Completed Today</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.completedTasksToday}</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="font-medium text-slate-700">Priority Focus</p>
-                <p className="mt-1 line-clamp-1 font-semibold text-slate-900">{checkupContext.priorityFocus || 'Not set'}</p>
+                {habits.length > 0 ? (
+                  <ul className="mt-2 space-y-1 text-orange-900/90">
+                    {habits.slice(0, 3).map((habit) => (
+                      <li key={habit.id} className="truncate">
+                        - {habit.title} | streak {habit.currentStreak}/{habit.streakTarget || 0}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-orange-900/80">No habits tracked yet.</p>
+                )}
               </div>
             </div>
           ) : null}
 
           {ragInsights ? (
-            <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
-              <p className="font-medium">RAG Snapshot</p>
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+              <p className="font-medium">Knowledge Pulse</p>
               <p className="mt-1">
                 Agent: {ragInsights.mostUsedAgent || 'n/a'} | Category: {ragInsights.topKnowledgeCategory || 'n/a'}
               </p>
               <p>
                 Velocity: {ragInsights.learningVelocity?.toFixed(2) ?? '0.00'}/day | Avg interactions: {ragInsights.avgDailyInteractions?.toFixed(2) ?? '0.00'}
               </p>
+              <p>
+                Time entries: {ragInsights.timeEntryRecords ?? 0} | Billable entries: {ragInsights.timeEntryBillableRecords ?? 0} | Avg session: {ragInsights.avgTimeEntryMinutes?.toFixed(1) ?? '0.0'}m
+              </p>
             </div>
           ) : null}
 
-          <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-            <p className="font-medium text-slate-800">Your Perspective</p>
+          <div className="space-y-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-xs text-slate-700">
+            <p className="inline-flex items-center gap-1.5 font-semibold text-slate-900">
+              <NotebookText className="h-3.5 w-3.5" />
+              Journal Your Perspective
+            </p>
+            <p className="text-[11px] text-slate-600">{journalingPrompt}</p>
 
-            <label className="flex items-center justify-between gap-3">
-              <span>Confidence (1-10)</span>
-              <input
-                type="number"
-                min={1}
-                max={10}
-                value={confidence}
-                onChange={(event) => setConfidence(clamp(Number(event.target.value) || 1, 1, 10))}
-                className="w-16 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
-              />
-            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5">
+                <span>Confidence</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={confidence}
+                  onChange={(event) => setConfidence(clamp(Number(event.target.value) || 1, 1, 10))}
+                  className="w-14 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
+                />
+              </label>
 
-            <label className="flex items-center justify-between gap-3">
-              <span>Planned deep work (minutes)</span>
-              <input
-                type="number"
-                min={0}
-                value={plannedDeepWorkMinutes}
-                onChange={(event) => setPlannedDeepWorkMinutes(Math.max(0, Number(event.target.value) || 0))}
-                className="w-20 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
-              />
-            </label>
+              <label className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5">
+                <span>Deep work (m)</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={plannedDeepWorkMinutes}
+                  onChange={(event) => setPlannedDeepWorkMinutes(Math.max(0, Number(event.target.value) || 0))}
+                  className="w-16 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
+                />
+              </label>
+            </div>
 
             {promptType === 'evening' ? (
-              <>
-                <label className="flex items-center justify-between gap-3">
-                  <span>Self-rating (1-10)</span>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <label className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5">
+                  <span>Self-rating</span>
                   <input
                     type="number"
                     min={1}
                     max={10}
                     value={selfRating}
                     onChange={(event) => setSelfRating(clamp(Number(event.target.value) || 1, 1, 10))}
-                    className="w-16 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
+                    className="w-14 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
                   />
                 </label>
-                <label className="flex items-center gap-2">
+
+                <label className="flex items-center gap-2 rounded-lg bg-white px-2 py-1.5">
                   <input
                     type="checkbox"
                     checked={topPriorityCompleted}
@@ -842,16 +1220,16 @@ const CheckupPrompt = () => {
                   />
                   Top priority completed
                 </label>
-              </>
+              </div>
             ) : null}
 
             <label className="block">
-              <span className="mb-1 block">Notes</span>
+              <span className="mb-1 block font-medium text-slate-800">Journal note</span>
               <textarea
                 value={perspectiveNotes}
                 onChange={(event) => setPerspectiveNotes(event.target.value)}
-                placeholder={promptType === 'morning' ? 'What matters most today?' : 'How did today actually go?'}
-                className="h-16 w-full resize-none rounded border border-slate-300 bg-white px-2 py-1 text-xs"
+                placeholder={journalingPrompt}
+                className="h-20 w-full resize-none rounded border border-slate-300 bg-white px-2 py-1 text-xs"
               />
             </label>
           </div>
@@ -863,17 +1241,30 @@ const CheckupPrompt = () => {
           ) : null}
 
           {successPayload?.coach_message ? (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
               <p className="inline-flex items-center gap-1 font-medium">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Checkup saved
               </p>
-              <p className="mt-1 line-clamp-3 whitespace-pre-wrap">{successPayload.coach_message}</p>
-              {successPayload.performance?.score ? (
-                <p className="mt-1 rounded bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-900">
-                  Evening performance score: {successPayload.performance.score}/10
+              <p className="mt-1 whitespace-pre-wrap">{successPayload.coach_message}</p>
+
+              {Array.isArray(successPayload.wins) && successPayload.wins.length > 0 ? (
+                <div className="mt-2 rounded-lg bg-emerald-100/70 px-2 py-1.5 text-[11px]">
+                  <p className="font-semibold">Wins</p>
+                  <ul className="mt-1 space-y-0.5">
+                    {successPayload.wins.slice(0, 2).map((item) => (
+                      <li key={item}>- {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {successPayload.performance?.score !== undefined && successPayload.performance?.score !== null ? (
+                <p className="mt-2 rounded bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-900">
+                  Performance score: {successPayload.performance.score}/10
                 </p>
               ) : null}
+
               <button
                 type="button"
                 onClick={() => navigate('/coach')}
@@ -920,7 +1311,7 @@ const CheckupPrompt = () => {
                 isSubmitting ? 'cursor-not-allowed bg-slate-500' : 'bg-slate-900 hover:bg-slate-700'
               }`}
             >
-              {isSubmitting ? 'Starting...' : 'Ready for checkup'}
+              {isSubmitting ? 'Starting...' : 'Run checkup'}
             </button>
           </div>
 
