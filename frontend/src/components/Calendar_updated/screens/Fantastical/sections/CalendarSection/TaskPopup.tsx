@@ -477,6 +477,7 @@ interface TaskPopupProps {
   initialEntry?: CalendarEvent | null;
   onSave: () => Promise<void>;
   onDelete?: (entryId: number) => Promise<void> | void;
+  onContinue?: (entryId: number) => Promise<void> | void;
 }
 
 interface Project {
@@ -507,7 +508,7 @@ const roundToNextMinute = (date: Date) => {
   return rounded;
 };
 
-export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onSave, onDelete }: TaskPopupProps) {
+export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onSave, onDelete, onContinue }: TaskPopupProps) {
   const [description, setDescription] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -526,6 +527,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
   const [goalOptions, setGoalOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isContinuing, setIsContinuing] = useState(false);
   const [showAdvancedFields, setShowAdvancedFields] = useState(false);
   const { toast } = useToast();
   const popupRef = useRef<HTMLDivElement>(null);
@@ -854,6 +856,28 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     }
   };
 
+  const handleContinue = async () => {
+    if (!initialEntry || !onContinue) {
+      return;
+    }
+
+    try {
+      setIsContinuing(true);
+      await onContinue(initialEntry.id);
+      onClose();
+    } catch (error) {
+      console.error('Error continuing task as timer:', error);
+      toast({
+        title: 'Continue Failed',
+        description: 'Unable to continue this entry right now.',
+        variant: 'destructive',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
+    } finally {
+      setIsContinuing(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -1114,6 +1138,17 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 {isDeleting ? 'Deleting...' : 'Delete Entry'}
+              </Button>
+            )}
+            {initialEntry && onContinue && (
+              <Button
+                variant="outline"
+                onClick={handleContinue}
+                disabled={loading || isContinuing}
+                className="w-full rounded-xl border-emerald-200 px-4 py-2 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-200 dark:hover:bg-emerald-900/30 sm:w-auto"
+              >
+                <Clock className="mr-2 h-4 w-4" />
+                {isContinuing ? 'Continuing...' : 'Continue As Timer'}
               </Button>
             )}
             <Button

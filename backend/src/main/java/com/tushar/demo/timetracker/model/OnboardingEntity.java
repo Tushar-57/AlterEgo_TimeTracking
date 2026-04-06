@@ -4,6 +4,8 @@ import com.tushar.demo.timetracker.dto.request.OnboardingRequestDTO;
 import com.tushar.demo.timetracker.dto.response.OnboardingResponseDTO;
 import jakarta.persistence.*;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -29,6 +31,12 @@ public class OnboardingEntity {
 
     @Column(name = "coach_avatar")
     private String coachAvatar;
+
+    @Column(name = "coach_preferences", columnDefinition = "TEXT")
+    private String coachPreferences;
+
+    @Column(name = "domain_preferences", columnDefinition = "TEXT")
+    private String domainPreferences;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "onboarding_id")
@@ -56,6 +64,8 @@ public class OnboardingEntity {
         ));
         entity.setPreferredTone(dto.getPreferredTone());
         entity.setCoachAvatar(dto.getCoachAvatar());
+        entity.setCoachPreferences(serializeJson(dto.getCoachPreferences()));
+        entity.setDomainPreferences(serializeJson(dto.getDomainPreferences()));
         entity.setSchedule(new AvailabilityEntity(
                 dto.getSchedule().getWorkHours().getStart(),
                 dto.getSchedule().getWorkHours().getEnd(),
@@ -108,14 +118,43 @@ public class OnboardingEntity {
         entity.setPlanner(plannerEntity);
 
         // Serialize answers to JSON
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            entity.setPriorities(mapper.writeValueAsString(dto.getAnswers()));
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to serialize priorities", e);
-        }
+        entity.setPriorities(serializeJson(dto.getAnswers()));
 
         return entity;
+    }
+
+    private static String serializeJson(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.writeValueAsString(value);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize onboarding payload", e);
+        }
+    }
+
+    private Map<String, Object> parseJsonAsMap(String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return new LinkedHashMap<>();
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.readValue(rawJson, Map.class);
+        } catch (Exception ignored) {
+            return new LinkedHashMap<>();
+        }
+    }
+
+    public Map<String, Object> getCoachPreferencesAsMap() {
+        return parseJsonAsMap(coachPreferences);
+    }
+
+    public Map<String, Object> getDomainPreferencesAsMap() {
+        return parseJsonAsMap(domainPreferences);
     }
 
     public OnboardingResponseDTO toResponseDTO() {
@@ -135,6 +174,10 @@ public class OnboardingEntity {
     public void setPreferredTone(String preferredTone) { this.preferredTone = preferredTone; }
     public String getCoachAvatar() { return coachAvatar; }
     public void setCoachAvatar(String coachAvatar) { this.coachAvatar = coachAvatar; }
+    public String getCoachPreferences() { return coachPreferences; }
+    public void setCoachPreferences(String coachPreferences) { this.coachPreferences = coachPreferences; }
+    public String getDomainPreferences() { return domainPreferences; }
+    public void setDomainPreferences(String domainPreferences) { this.domainPreferences = domainPreferences; }
     public AvailabilityEntity getSchedule() { return schedule; }
     public void setSchedule(AvailabilityEntity schedule) { this.schedule = schedule; }
     public List<GoalEntity> getGoals() { return goals; }

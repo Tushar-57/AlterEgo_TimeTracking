@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 
 @RestController
 @RequestMapping("/api/onboarding")
@@ -84,6 +85,8 @@ public class OnboardingController {
                 payload.put("name", onboarding.getName());
                 payload.put("preferredTone", onboarding.getPreferredTone());
                 payload.put("coachAvatar", onboarding.getCoachAvatar());
+                payload.put("coachPreferences", onboarding.getCoachPreferencesAsMap());
+                payload.put("domainPreferences", onboarding.getDomainPreferencesAsMap());
                 payload.put("role", onboarding.getRole());
                 if (onboarding.getMentor() != null) {
                     Map<String, Object> mentorPayload = new HashMap<>();
@@ -276,7 +279,24 @@ public class OnboardingController {
                     ? String.valueOf(request.get("note"))
                     : null;
 
-                Map<String, Object> checkupPayload = agenticKnowledgeSyncService.runDailyCheckup(user, normalizedType, date, note);
+                Map<String, Object> perspective = request != null
+                    ? toStringObjectMap(request.get("perspective"))
+                    : Map.of();
+                Map<String, Object> contextSnapshot = request != null
+                    ? toStringObjectMap(request.get("contextSnapshot"))
+                    : Map.of();
+                if (contextSnapshot.isEmpty() && request != null) {
+                    contextSnapshot = toStringObjectMap(request.get("context_snapshot"));
+                }
+
+                Map<String, Object> checkupPayload = agenticKnowledgeSyncService.runDailyCheckup(
+                    user,
+                    normalizedType,
+                    date,
+                    note,
+                    perspective,
+                    contextSnapshot
+                );
                 return ResponseEntity.ok(ApiResponse.success(checkupPayload, "Checkup generated successfully"));
             } catch (ResourceNotFoundException e) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -306,10 +326,21 @@ public class OnboardingController {
 
                 OnboardingEntity onboarding = onboardingRepository.findTopByUserOrderByIdDesc(user)
                     .orElseThrow(() -> new ResourceNotFoundException("Onboarding not found for user: " + user.getEmail()));
-            
-            onboarding.setMentor(new MentorEntity(onboarding.getMentor().getArchetype(),style,onboarding.getMentor().getName(),onboarding.getCoachAvatar()));
-//            setStyle(style);
-            onboardingRepository.save(onboarding);
+
+                MentorEntity currentMentor = onboarding.getMentor();
+                String archetype = currentMentor != null ? currentMentor.getArchetype() : "Guide";
+                String mentorName = currentMentor != null ? currentMentor.getName() : user.getName();
+                String avatar = firstNonBlank(
+                    onboarding.getCoachAvatar(),
+                    currentMentor != null ? currentMentor.getAvatar() : null,
+                    "/avatars/default.svg"
+                );
+
+                onboarding.setMentor(new MentorEntity(archetype, style.trim(), mentorName, avatar));
+                onboarding.setPreferredTone(style.trim());
+                onboarding.setCoachAvatar(avatar);
+                OnboardingEntity saved = onboardingRepository.save(onboarding);
+                syncOnboardingSnapshot(saved, user);
 
             return ResponseEntity.ok(Map.of("message", "Style updated successfully"));
         } catch (ResourceNotFoundException e) {
@@ -320,6 +351,100 @@ public class OnboardingController {
                     .body(Map.of("error", "Processing failed", "message", e.getMessage()));
         }
     }
+
+                @PatchMapping("updateTone")
+                public ResponseEntity<?> updateTone(@RequestBody Map<String, String> request, Authentication authentication) {
+                try {
+                    Users user = userRepo.findByEmail(authentication.getName())
+                        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+                    String tone = request.get("tone");
+                    if (tone == null || tone.trim().isEmpty()) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Tone is required"));
+                    }
+
+                    OnboardingEntity onboarding = onboardingRepository.findTopByUserOrderByIdDesc(user)
+                        .orElseThrow(() -> new ResourceNotFoundException("Onboarding not found for user: " + user.getEmail()));
+
+                    onboarding.setPreferredTone(tone.trim());
+                    if (onboarding.getMentor() != null) {
+                    onboarding.setMentor(new MentorEntity(
+                        onboarding.getMentor().getArchetype(),
+                        tone.trim(),
+                        onboarding.getMentor().getName(),
+                        firstNonBlank(onboarding.getMentor().getAvatar(), onboarding.getCoachAvatar(), "/avatars/default.svg")
+                    ));
+                    }
+
+                    OnboardingEntity saved = onboardingRepository.save(onboarding);
+                    syncOnboardingSnapshot(saved, user);
+                    return ResponseEntity.ok(Map.of("message", "Tone updated successfully"));
+                } catch (ResourceNotFoundException e) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Not found", "message", e.getMessage()));
+                } catch (Exception e) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("error", "Processing failed", "message", e.getMessage()));
+                }
+                }
+
+                @PatchMapping("updateMentor")
+                public ResponseEntity<?> updateMentor(@RequestBody Map<String, Object> request, Authentication authentication) {
+                try {
+                    Users user = userRepo.findByEmail(authentication.getName())
+                        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+                    Map<String, Object> mentorPayload = toStringObjectMap(request.get("mentor"));
+                    String coachAvatar = asString(request.get("coachAvatar"));
+
+                    if (mentorPayload.isEmpty() && coachAvatar.isBlank()) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Mentor payload is required"));
+                    }
+
+                    OnboardingEntity onboarding = onboardingRepository.findTopByUserOrderByIdDesc(user)
+                        .orElseThrow(() -> new ResourceNotFoundException("Onboarding not found for user: " + user.getEmail()));
+
+                    MentorEntity existingMentor = onboarding.getMentor();
+                    String nextArchetype = firstNonBlank(
+                        asString(mentorPayload.get("archetype")),
+                        existingMentor != null ? existingMentor.getArchetype() : null,
+                        "Guide"
+                    );
+                    String nextStyle = firstNonBlank(
+                        asString(mentorPayload.get("style")),
+                        onboarding.getPreferredTone(),
+                        existingMentor != null ? existingMentor.getStyle() : null,
+                        "Friendly"
+                    );
+                    String nextName = firstNonBlank(
+                        asString(mentorPayload.get("name")),
+                        existingMentor != null ? existingMentor.getName() : null,
+                        user.getName(),
+                        "Your Alter Ego"
+                    );
+                    String nextAvatar = firstNonBlank(
+                        asString(mentorPayload.get("avatar")),
+                        coachAvatar,
+                        onboarding.getCoachAvatar(),
+                        existingMentor != null ? existingMentor.getAvatar() : null,
+                        "/avatars/default.svg"
+                    );
+
+                    onboarding.setMentor(new MentorEntity(nextArchetype, nextStyle, nextName, nextAvatar));
+                    onboarding.setCoachAvatar(nextAvatar);
+                    onboarding.setPreferredTone(nextStyle);
+
+                    OnboardingEntity saved = onboardingRepository.save(onboarding);
+                    syncOnboardingSnapshot(saved, user);
+                    return ResponseEntity.ok(Map.of("message", "Mentor updated successfully"));
+                } catch (ResourceNotFoundException e) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Not found", "message", e.getMessage()));
+                } catch (Exception e) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("error", "Processing failed", "message", e.getMessage()));
+                }
+                }
 
     private List<Map<String, Object>> parseAnswersFromPriorities(String prioritiesJson) {
         if (prioritiesJson == null || prioritiesJson.isBlank()) {
@@ -340,6 +465,8 @@ public class OnboardingController {
             syncRequest.setRole(onboarding.getRole());
             syncRequest.setPreferredTone(onboarding.getPreferredTone());
             syncRequest.setCoachAvatar(onboarding.getCoachAvatar());
+            syncRequest.setCoachPreferences(onboarding.getCoachPreferencesAsMap());
+            syncRequest.setDomainPreferences(onboarding.getDomainPreferencesAsMap());
 
             if (onboarding.getMentor() != null) {
                 OnboardingRequestDTO.Mentor mentor = new OnboardingRequestDTO.Mentor();
@@ -466,6 +593,29 @@ public class OnboardingController {
 
     private String asString(Object value) {
         return value == null ? "" : String.valueOf(value);
+    }
+
+    private Map<String, Object> toStringObjectMap(Object value) {
+        if (!(value instanceof Map<?, ?> rawMap)) {
+            return new LinkedHashMap<>();
+        }
+
+        Map<String, Object> normalized = new LinkedHashMap<>();
+        rawMap.forEach((key, rawValue) -> normalized.put(String.valueOf(key), rawValue));
+        return normalized;
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
     }
 	
 }

@@ -289,6 +289,51 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         logger.info("Successfully deleted time entry {} for user: {}", timerId, user.getEmail());
     }
 
+    @Override
+    public TimeEntry continueTimeEntry(Long timerId, Users user) {
+        logger.info("Continuing time entry {} for user: {}", timerId, user.getEmail());
+
+        Optional<TimeEntry> activeTimer = timeEntryRepository.findByUserIdAndEndTimeIsNull(user.getId());
+        if (activeTimer.isPresent()) {
+            logger.warn("User {} already has an active timer with ID: {}", user.getEmail(), activeTimer.get().getId());
+            throw new ConflictException("Cannot continue timer. An active timer already exists.");
+        }
+
+        TimeEntry sourceEntry = timeEntryRepository.findByIdAndUser(timerId, user)
+                .orElseThrow(() -> new ResourceNotFoundException("Time entry not found with ID: " + timerId));
+
+        TimeEntry continuedEntry = new TimeEntry();
+        continuedEntry.setUser(user);
+        continuedEntry.setDescription(sourceEntry.getDescription());
+        continuedEntry.setProject(sourceEntry.getProject());
+        continuedEntry.setTagIds(sourceEntry.getTagIds());
+        continuedEntry.setBillable(sourceEntry.isBillable());
+        continuedEntry.setClient(sourceEntry.getClient());
+        continuedEntry.setPositionTop(sourceEntry.getPositionTop());
+        continuedEntry.setPositionLeft(sourceEntry.getPositionLeft());
+        continuedEntry.setStartTime(LocalDateTime.now());
+        continuedEntry.setEndTime(null);
+        continuedEntry.setDuration(0L);
+        continuedEntry.setIsActive(true);
+
+        TimeEntry savedEntry = timeEntryRepository.save(continuedEntry);
+
+        timeEntryDetailRepository.findByTimeEntryId(sourceEntry.getId()).ifPresent(sourceDetail -> {
+            TimeEntryDetail copiedDetail = new TimeEntryDetail();
+            copiedDetail.setTimeEntry(savedEntry);
+            copiedDetail.setLinkedGoal(sourceDetail.getLinkedGoal());
+            copiedDetail.setFocusScore(sourceDetail.getFocusScore());
+            copiedDetail.setEnergyScore(sourceDetail.getEnergyScore());
+            copiedDetail.setBlockers(sourceDetail.getBlockers());
+            copiedDetail.setContextNotes(sourceDetail.getContextNotes());
+            copiedDetail.setAiDetail(sourceDetail.getAiDetail());
+            timeEntryDetailRepository.save(copiedDetail);
+        });
+
+        logger.info("Successfully continued time entry {} as new timer {} for user {}", timerId, savedEntry.getId(), user.getEmail());
+        return savedEntry;
+    }
+
     private void upsertEntryDetail(TimeEntry entry, addTimeEntryRequest request) {
         if (entry == null || entry.getId() == null || !hasDetailPayload(request)) {
             return;

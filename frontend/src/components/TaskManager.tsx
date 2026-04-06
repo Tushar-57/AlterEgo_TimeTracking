@@ -458,8 +458,10 @@ const draftFromTask = (task: Task): DraftTask => ({
 });
 
 const TaskManager = () => {
-  const { tasks, addTask, updateTask, deleteTask, updateTaskStatus, toggleTaskCompletion, seedSampleHabits } = useTaskStore();
+  const { tasks, replaceTasks, addTask, updateTask, deleteTask, updateTaskStatus, toggleTaskCompletion, seedSampleHabits } = useTaskStore();
   const lastHabitSyncSignatureRef = useRef<string>('');
+  const hasHydratedFromServerRef = useRef(false);
+  const skipNextServerPushRef = useRef(false);
 
   const [activeMode, setActiveMode] = useState<TaskType>('todo');
   const [hasUserSelectedMode, setHasUserSelectedMode] = useState(false);
@@ -473,6 +475,84 @@ const TaskManager = () => {
   useEffect(() => {
     seedSampleHabits();
   }, [seedSampleHabits]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrateFromServer = async () => {
+      const token = sessionStorage.getItem('auth_session');
+      if (!token) {
+        hasHydratedFromServerRef.current = true;
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/task-board/state', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          hasHydratedFromServerRef.current = true;
+          return;
+        }
+
+        const payload = (await response.json()) as { tasks?: Task[] };
+        if (!cancelled && Array.isArray(payload.tasks)) {
+          skipNextServerPushRef.current = true;
+          replaceTasks(payload.tasks);
+        }
+      } catch {
+        // Local persistence remains available if server sync is unavailable.
+      } finally {
+        hasHydratedFromServerRef.current = true;
+      }
+    };
+
+    void hydrateFromServer();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [replaceTasks]);
+
+  useEffect(() => {
+    if (!hasHydratedFromServerRef.current) {
+      return;
+    }
+
+    if (skipNextServerPushRef.current) {
+      skipNextServerPushRef.current = false;
+      return;
+    }
+
+    const token = sessionStorage.getItem('auth_session');
+    if (!token) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void fetch('/api/task-board/state', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ tasks }),
+      }).catch(() => {
+        // Keep local storage as fallback even if server sync fails.
+      });
+    }, 700);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [tasks]);
 
   useEffect(() => {
     const todoCount = tasks.filter((task) => normalizeTaskType(task.type) === 'todo').length;

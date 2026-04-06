@@ -334,6 +334,49 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
     [toast]
   );
 
+  const handleContinueEvent = useCallback(
+    async (eventId: number) => {
+      try {
+        const token = sessionStorage.getItem('auth_session');
+        if (!token) {
+          toast({
+            title: 'Authentication Error',
+            description: 'Please log in to continue an entry.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const response = await fetch(`/api/timers/${eventId}/continue`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || payload?.success === false) {
+          throw new Error(payload?.message || 'Failed to continue time entry');
+        }
+
+        toast({
+          title: 'Timer Continued',
+          description: 'A new running timer has started with the same details.',
+        });
+
+        await fetchData();
+      } catch (error) {
+        console.error('Error continuing time entry:', error);
+        toast({
+          title: 'Continue failed',
+          description: 'Unable to continue this entry right now.',
+          variant: 'destructive',
+        });
+      }
+    },
+    [fetchData, toast]
+  );
+
   return (
     <div className="flex h-full min-h-0 w-full flex-row p-2 sm:p-4">
       <div className="flex min-h-0 flex-1 flex-col">
@@ -344,6 +387,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
             onUpdateEventPosition={handleUpdateEventPosition}
             onDuplicateEvent={handleDuplicateEvent}
             onDeleteEvent={handleDeleteEvent}
+            onContinueEvent={handleContinueEvent}
           />
         </div>
       </div>

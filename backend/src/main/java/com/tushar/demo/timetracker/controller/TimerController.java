@@ -302,7 +302,11 @@ public class TimerController {
             }
 
             Users user = userDetailsService.getCurrentUser(authentication);
+                TimeEntry existingEntry = timeEntryRepository.findByIdAndUser(id, user)
+                    .orElseThrow(() -> new ResourceNotFoundException("Time entry not found with ID: " + id));
+
             timeEntryService.deleteTimeEntry(id, user);
+                agenticKnowledgeSyncService.syncTimeEntryDeletion(existingEntry, user, "delete_time_entry");
 
             logger.info("Time entry {} deleted successfully for user: {}", id, user.getName());
             return ResponseEntity.ok(ApiResponse.success(null, "Time entry deleted successfully"));
@@ -314,6 +318,42 @@ public class TimerController {
             logger.error("Failed to delete time entry {} for user: {}", id, authName(authentication), e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Delete failed", Map.of("message", e.getMessage())));
+        }
+    }
+
+    @PostMapping("/{id}/continue")
+    public ResponseEntity<ApiResponse<TimeEntry>> continueTimeEntry(
+            @PathVariable Long id,
+            Authentication authentication) {
+        logger.info("Continuing time entry {} as active timer for user: {}", id, authName(authentication));
+
+        try {
+            if (!isAuthenticatedUser(authentication)) {
+                logger.warn("Unauthorized attempt to continue timer");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
+            }
+
+            Users user = userDetailsService.getCurrentUser(authentication);
+                TimeEntry sourceEntry = timeEntryRepository.findByIdAndUser(id, user)
+                    .orElseThrow(() -> new ResourceNotFoundException("Time entry not found with ID: " + id));
+            TimeEntry continuedEntry = timeEntryService.continueTimeEntry(id, user);
+                agenticKnowledgeSyncService.syncTimeEntryContinuation(sourceEntry, continuedEntry, user, "continue_time_entry");
+
+            logger.info("Time entry {} continued successfully as timer {} for user: {}", id, continuedEntry.getId(), user.getName());
+            return ResponseEntity.ok(ApiResponse.success(continuedEntry, "Time entry continued successfully"));
+        } catch (ConflictException e) {
+            logger.warn("Continue timer conflict for user: {}", authName(authentication));
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error("A timer is already running", Map.of("message", e.getMessage(), "code", "TIMER_CONFLICT")));
+        } catch (ResourceNotFoundException e) {
+            logger.warn("Continue timer target missing for user {}: {}", authName(authentication), e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Resource not found", Map.of("message", e.getMessage(), "code", "RESOURCE_NOT_FOUND")));
+        } catch (Exception e) {
+            logger.error("Failed to continue timer for user: {}", authName(authentication), e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Continue failed", Map.of("message", e.getMessage())));
         }
     }
 

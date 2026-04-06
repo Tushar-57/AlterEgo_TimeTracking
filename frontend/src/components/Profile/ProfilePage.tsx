@@ -52,10 +52,45 @@ type Mentor = {
   avatar: string;
 };
 
+type CoachPreferences = {
+  communicationStyle: string;
+  challengeLevel: number;
+  accountabilityMode: string;
+  decisionStyle: string;
+};
+
+type DomainPreferences = {
+  productivity: {
+    focusStyle: string;
+    deepWorkTargetMinutes: number;
+    planningCadence: string;
+    prioritySystem: string;
+  };
+  health: {
+    sleepTargetHours: number;
+    movementGoalMinutes: number;
+    stressApproach: string;
+    nutritionStyle: string;
+  };
+  finance: {
+    budgetCadence: string;
+    savingsPriority: string;
+    riskProfile: string;
+    spendingGuardrailPercent: number;
+  };
+  journal: {
+    reflectionFrequency: string;
+    reflectionDepth: string;
+    gratitudeMode: string;
+  };
+};
+
 type OnboardingSnapshot = {
   role: string;
   preferredTone: string;
   coachAvatar: string;
+  coachPreferences: CoachPreferences;
+  domainPreferences: DomainPreferences;
   mentor: Mentor;
   goals: Goal[];
   answers: Answer[];
@@ -72,6 +107,25 @@ type FormState = {
   role: string;
   preferredTone: string;
   mentorStyle: string;
+  coachCommunicationStyle: string;
+  coachChallengeLevel: number;
+  coachAccountabilityMode: string;
+  coachDecisionStyle: string;
+  productivityFocusStyle: string;
+  productivityDeepWorkTargetMinutes: number;
+  productivityPlanningCadence: string;
+  productivityPrioritySystem: string;
+  healthSleepTargetHours: number;
+  healthMovementGoalMinutes: number;
+  healthStressApproach: string;
+  healthNutritionStyle: string;
+  financeBudgetCadence: string;
+  financeSavingsPriority: string;
+  financeRiskProfile: string;
+  financeSpendingGuardrailPercent: number;
+  journalReflectionFrequency: string;
+  journalReflectionDepth: string;
+  journalGratitudeMode: string;
   timezone: string;
   workStart: string;
   workEnd: string;
@@ -101,6 +155,39 @@ const defaultAvailability = (): Availability => ({
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
 });
 
+const defaultCoachPreferences = (): CoachPreferences => ({
+  communicationStyle: 'adaptive',
+  challengeLevel: 6,
+  accountabilityMode: 'balanced',
+  decisionStyle: 'data-driven',
+});
+
+const defaultDomainPreferences = (): DomainPreferences => ({
+  productivity: {
+    focusStyle: 'deep-work',
+    deepWorkTargetMinutes: 120,
+    planningCadence: 'daily',
+    prioritySystem: 'impact-first',
+  },
+  health: {
+    sleepTargetHours: 7.5,
+    movementGoalMinutes: 45,
+    stressApproach: 'mindfulness',
+    nutritionStyle: 'balanced',
+  },
+  finance: {
+    budgetCadence: 'weekly',
+    savingsPriority: 'steady',
+    riskProfile: 'moderate',
+    spendingGuardrailPercent: 80,
+  },
+  journal: {
+    reflectionFrequency: 'daily',
+    reflectionDepth: 'balanced',
+    gratitudeMode: '3-things',
+  },
+});
+
 const asObject = (value: unknown): Record<string, unknown> => {
   if (typeof value === 'object' && value !== null) {
     return value as Record<string, unknown>;
@@ -114,6 +201,21 @@ const asString = (value: unknown, fallback = ''): string => {
 
 const asBoolean = (value: unknown, fallback = false): boolean => {
   return typeof value === 'boolean' ? value : fallback;
+};
+
+const asNumber = (value: unknown, fallback = 0): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
 };
 
 const asStringArray = (value: unknown): string[] => {
@@ -174,8 +276,56 @@ const normalizeSnapshot = (value: unknown, fallbackName: string): OnboardingSnap
     : [];
 
   const mentor = asObject(source.mentor);
+  const coachPreferencesSource = asObject(source.coachPreferences);
+  const domainPreferencesSource = asObject(source.domainPreferences);
+  const productivityPrefs = asObject(domainPreferencesSource.productivity);
+  const healthPrefs = asObject(domainPreferencesSource.health);
+  const financePrefs = asObject(domainPreferencesSource.finance);
+  const journalPrefs = asObject(domainPreferencesSource.journal);
   const notifications = asObject(planner.notifications);
   const integrations = asObject(planner.integrations);
+
+  const coachDefaults = defaultCoachPreferences();
+  const domainDefaults = defaultDomainPreferences();
+
+  const normalizedCoachPreferences: CoachPreferences = {
+    communicationStyle: asString(coachPreferencesSource.communicationStyle, coachDefaults.communicationStyle),
+    challengeLevel: asNumber(coachPreferencesSource.challengeLevel, coachDefaults.challengeLevel),
+    accountabilityMode: asString(coachPreferencesSource.accountabilityMode, coachDefaults.accountabilityMode),
+    decisionStyle: asString(coachPreferencesSource.decisionStyle, coachDefaults.decisionStyle),
+  };
+
+  const normalizedDomainPreferences: DomainPreferences = {
+    productivity: {
+      focusStyle: asString(productivityPrefs.focusStyle, domainDefaults.productivity.focusStyle),
+      deepWorkTargetMinutes: asNumber(
+        productivityPrefs.deepWorkTargetMinutes,
+        domainDefaults.productivity.deepWorkTargetMinutes
+      ),
+      planningCadence: asString(productivityPrefs.planningCadence, domainDefaults.productivity.planningCadence),
+      prioritySystem: asString(productivityPrefs.prioritySystem, domainDefaults.productivity.prioritySystem),
+    },
+    health: {
+      sleepTargetHours: asNumber(healthPrefs.sleepTargetHours, domainDefaults.health.sleepTargetHours),
+      movementGoalMinutes: asNumber(healthPrefs.movementGoalMinutes, domainDefaults.health.movementGoalMinutes),
+      stressApproach: asString(healthPrefs.stressApproach, domainDefaults.health.stressApproach),
+      nutritionStyle: asString(healthPrefs.nutritionStyle, domainDefaults.health.nutritionStyle),
+    },
+    finance: {
+      budgetCadence: asString(financePrefs.budgetCadence, domainDefaults.finance.budgetCadence),
+      savingsPriority: asString(financePrefs.savingsPriority, domainDefaults.finance.savingsPriority),
+      riskProfile: asString(financePrefs.riskProfile, domainDefaults.finance.riskProfile),
+      spendingGuardrailPercent: asNumber(
+        financePrefs.spendingGuardrailPercent,
+        domainDefaults.finance.spendingGuardrailPercent
+      ),
+    },
+    journal: {
+      reflectionFrequency: asString(journalPrefs.reflectionFrequency, domainDefaults.journal.reflectionFrequency),
+      reflectionDepth: asString(journalPrefs.reflectionDepth, domainDefaults.journal.reflectionDepth),
+      gratitudeMode: asString(journalPrefs.gratitudeMode, domainDefaults.journal.gratitudeMode),
+    },
+  };
 
   const normalizedAvailability: Availability = {
     workHours: {
@@ -210,6 +360,8 @@ const normalizeSnapshot = (value: unknown, fallbackName: string): OnboardingSnap
     role: asString(source.role, 'Professional'),
     preferredTone: asString(source.preferredTone, 'Friendly'),
     coachAvatar: asString(source.coachAvatar, '/avatars/default.svg'),
+    coachPreferences: normalizedCoachPreferences,
+    domainPreferences: normalizedDomainPreferences,
     mentor: {
       archetype: asString(mentor.archetype, 'Guide'),
       style: asString(mentor.style, 'Friendly'),
@@ -240,6 +392,25 @@ const toFormState = (snapshot: OnboardingSnapshot): FormState => ({
   role: snapshot.role,
   preferredTone: snapshot.preferredTone,
   mentorStyle: snapshot.mentor.style,
+  coachCommunicationStyle: snapshot.coachPreferences.communicationStyle,
+  coachChallengeLevel: snapshot.coachPreferences.challengeLevel,
+  coachAccountabilityMode: snapshot.coachPreferences.accountabilityMode,
+  coachDecisionStyle: snapshot.coachPreferences.decisionStyle,
+  productivityFocusStyle: snapshot.domainPreferences.productivity.focusStyle,
+  productivityDeepWorkTargetMinutes: snapshot.domainPreferences.productivity.deepWorkTargetMinutes,
+  productivityPlanningCadence: snapshot.domainPreferences.productivity.planningCadence,
+  productivityPrioritySystem: snapshot.domainPreferences.productivity.prioritySystem,
+  healthSleepTargetHours: snapshot.domainPreferences.health.sleepTargetHours,
+  healthMovementGoalMinutes: snapshot.domainPreferences.health.movementGoalMinutes,
+  healthStressApproach: snapshot.domainPreferences.health.stressApproach,
+  healthNutritionStyle: snapshot.domainPreferences.health.nutritionStyle,
+  financeBudgetCadence: snapshot.domainPreferences.finance.budgetCadence,
+  financeSavingsPriority: snapshot.domainPreferences.finance.savingsPriority,
+  financeRiskProfile: snapshot.domainPreferences.finance.riskProfile,
+  financeSpendingGuardrailPercent: snapshot.domainPreferences.finance.spendingGuardrailPercent,
+  journalReflectionFrequency: snapshot.domainPreferences.journal.reflectionFrequency,
+  journalReflectionDepth: snapshot.domainPreferences.journal.reflectionDepth,
+  journalGratitudeMode: snapshot.domainPreferences.journal.gratitudeMode,
   timezone: snapshot.schedule.timezone,
   workStart: snapshot.schedule.workHours.start,
   workEnd: snapshot.schedule.workHours.end,
@@ -345,10 +516,45 @@ const ProfilePage = () => {
       avatar: snapshot.mentor.avatar || snapshot.coachAvatar || '/avatars/default.svg',
     };
 
+    const coachPreferences: CoachPreferences = {
+      communicationStyle: formState.coachCommunicationStyle,
+      challengeLevel: Number(formState.coachChallengeLevel) || 0,
+      accountabilityMode: formState.coachAccountabilityMode,
+      decisionStyle: formState.coachDecisionStyle,
+    };
+
+    const domainPreferences: DomainPreferences = {
+      productivity: {
+        focusStyle: formState.productivityFocusStyle,
+        deepWorkTargetMinutes: Number(formState.productivityDeepWorkTargetMinutes) || 0,
+        planningCadence: formState.productivityPlanningCadence,
+        prioritySystem: formState.productivityPrioritySystem,
+      },
+      health: {
+        sleepTargetHours: Number(formState.healthSleepTargetHours) || 0,
+        movementGoalMinutes: Number(formState.healthMovementGoalMinutes) || 0,
+        stressApproach: formState.healthStressApproach,
+        nutritionStyle: formState.healthNutritionStyle,
+      },
+      finance: {
+        budgetCadence: formState.financeBudgetCadence,
+        savingsPriority: formState.financeSavingsPriority,
+        riskProfile: formState.financeRiskProfile,
+        spendingGuardrailPercent: Number(formState.financeSpendingGuardrailPercent) || 0,
+      },
+      journal: {
+        reflectionFrequency: formState.journalReflectionFrequency,
+        reflectionDepth: formState.journalReflectionDepth,
+        gratitudeMode: formState.journalGratitudeMode,
+      },
+    };
+
     const payload: OnboardingSnapshot = {
       role,
       preferredTone: formState.preferredTone,
       coachAvatar: snapshot.coachAvatar || mentor.avatar,
+      coachPreferences,
+      domainPreferences,
       mentor,
       goals: snapshot.goals.map((goal) => ({
         ...goal,
@@ -678,6 +884,323 @@ const ProfilePage = () => {
                   <option value="biweekly">Biweekly</option>
                 </select>
               </label>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-sm font-semibold text-slate-800">Coach Preferences</h3>
+              <p className="mt-1 text-xs text-slate-600">
+                These settings shape how your coach communicates, challenges, and keeps you accountable.
+              </p>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Communication Style</span>
+                  <input
+                    value={formState.coachCommunicationStyle}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, coachCommunicationStyle: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="adaptive"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Challenge Level (1-10)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={formState.coachChallengeLevel}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              coachChallengeLevel: Number(event.target.value) || 1,
+                            }
+                          : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Accountability Mode</span>
+                  <input
+                    value={formState.coachAccountabilityMode}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, coachAccountabilityMode: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="balanced"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Decision Style</span>
+                  <input
+                    value={formState.coachDecisionStyle}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, coachDecisionStyle: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="data-driven"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-sm font-semibold text-slate-800">Domain Preferences</h3>
+              <p className="mt-1 text-xs text-slate-600">
+                Tune productivity, health, finance, and journal preferences so Agentic suggestions stay personalized.
+              </p>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Focus Style</span>
+                  <input
+                    value={formState.productivityFocusStyle}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, productivityFocusStyle: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="deep-work"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Deep Work Target (minutes)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={formState.productivityDeepWorkTargetMinutes}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              productivityDeepWorkTargetMinutes: Number(event.target.value) || 0,
+                            }
+                          : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Planning Cadence</span>
+                  <input
+                    value={formState.productivityPlanningCadence}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, productivityPlanningCadence: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="daily"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Priority System</span>
+                  <input
+                    value={formState.productivityPrioritySystem}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, productivityPrioritySystem: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="impact-first"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Sleep Target (hours)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.5"
+                    value={formState.healthSleepTargetHours}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              healthSleepTargetHours: Number(event.target.value) || 0,
+                            }
+                          : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Movement Goal (minutes)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={formState.healthMovementGoalMinutes}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              healthMovementGoalMinutes: Number(event.target.value) || 0,
+                            }
+                          : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Stress Approach</span>
+                  <input
+                    value={formState.healthStressApproach}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, healthStressApproach: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="mindfulness"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Nutrition Style</span>
+                  <input
+                    value={formState.healthNutritionStyle}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, healthNutritionStyle: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="balanced"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Budget Cadence</span>
+                  <input
+                    value={formState.financeBudgetCadence}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, financeBudgetCadence: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="weekly"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Savings Priority</span>
+                  <input
+                    value={formState.financeSavingsPriority}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, financeSavingsPriority: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="steady"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Risk Profile</span>
+                  <input
+                    value={formState.financeRiskProfile}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, financeRiskProfile: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="moderate"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Spending Guardrail (%)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={formState.financeSpendingGuardrailPercent}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              financeSpendingGuardrailPercent: Number(event.target.value) || 0,
+                            }
+                          : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Reflection Frequency</span>
+                  <input
+                    value={formState.journalReflectionFrequency}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, journalReflectionFrequency: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="daily"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Reflection Depth</span>
+                  <input
+                    value={formState.journalReflectionDepth}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, journalReflectionDepth: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="balanced"
+                  />
+                </label>
+
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-slate-700">Gratitude Mode</span>
+                  <input
+                    value={formState.journalGratitudeMode}
+                    onChange={(event) =>
+                      setFormState((prev) =>
+                        prev ? { ...prev, journalGratitudeMode: event.target.value } : prev
+                      )
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    placeholder="3-things"
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3">

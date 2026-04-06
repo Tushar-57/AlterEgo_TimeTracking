@@ -407,6 +407,7 @@ interface CalendarSectionProps {
   onUpdateEventPosition?: (eventId: number, newPosition: { top: string; left: string }) => Promise<void> | void;
   onDuplicateEvent?: (eventId: number) => Promise<void> | void;
   onDeleteEvent?: (eventId: number) => Promise<void> | void;
+  onContinueEvent?: (eventId: number) => Promise<void> | void;
 }
 
 interface CalendarContextMenuState {
@@ -421,6 +422,7 @@ export const CalendarSection = ({
   onUpdateEventPosition,
   onDuplicateEvent,
   onDeleteEvent,
+  onContinueEvent,
 }: CalendarSectionProps): JSX.Element => {
   const [view, setView] = useState<"day" | "week" | "month" | "year">(
     () => (window.innerWidth < 1024 ? "month" : "day")
@@ -1607,6 +1609,7 @@ export const CalendarSection = ({
           initialEntry={selectedEvent}
           onSave={handleSave}
           onDelete={onDeleteEvent}
+          onContinue={onContinueEvent}
         />
       </div>
     </section>

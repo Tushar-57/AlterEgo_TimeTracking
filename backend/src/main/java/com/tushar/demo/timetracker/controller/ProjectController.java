@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.tushar.demo.timetracker.dto.request.ProjectRequest;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
+import com.tushar.demo.timetracker.integration.AgenticKnowledgeSyncService;
 import com.tushar.demo.timetracker.model.Project;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.ProjectRepository;
@@ -35,11 +36,19 @@ public class ProjectController {
 
  private final ProjectService projectService;
  private final UserRepository userRepository;
+ private final ProjectRepository projectRepository;
+ private final AgenticKnowledgeSyncService agenticKnowledgeSyncService;
 
  @Autowired
- public ProjectController(ProjectService projectService, UserRepository userRepository) {
+ public ProjectController(
+         ProjectService projectService,
+         UserRepository userRepository,
+         ProjectRepository projectRepository,
+         AgenticKnowledgeSyncService agenticKnowledgeSyncService) {
      this.projectService = projectService;
      this.userRepository = userRepository;
+     this.projectRepository = projectRepository;
+     this.agenticKnowledgeSyncService = agenticKnowledgeSyncService;
  }
 
  @GetMapping("/userProjects")
@@ -54,8 +63,9 @@ public class ProjectController {
          Authentication authentication
  ) {
      Users user = getUserFromAuth(authentication);
-     return ResponseEntity.status(HttpStatus.CREATED)
-             .body(projectService.createProject(request, user));
+     Project created = projectService.createProject(request, user);
+     agenticKnowledgeSyncService.syncProject(created, user, "create_project");
+     return ResponseEntity.status(HttpStatus.CREATED).body(created);
  }
 
  @PutMapping("/{id}")
@@ -65,7 +75,9 @@ public class ProjectController {
          Authentication authentication
  ) {
      Users user = getUserFromAuth(authentication);
-     return ResponseEntity.ok(projectService.updateProject(id, request, user));
+     Project updated = projectService.updateProject(id, request, user);
+     agenticKnowledgeSyncService.syncProject(updated, user, "update_project");
+     return ResponseEntity.ok(updated);
  }
 
  @DeleteMapping("/{id}")
@@ -74,7 +86,12 @@ public class ProjectController {
          Authentication authentication
  ) {
      Users user = getUserFromAuth(authentication);
+
+     Project existing = projectRepository.findByIdAndUser(id, user)
+         .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
      projectService.deleteProject(id, user);
+     agenticKnowledgeSyncService.syncProjectDeletion(id, existing.getName(), user, "delete_project");
      return ResponseEntity.noContent().build();
  }
 

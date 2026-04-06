@@ -1,11 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BellRing, CalendarClock, CheckCircle2, Clock3, SkipForward } from 'lucide-react';
+import { BellRing, CalendarClock, CheckCircle2, Clock3, ListChecks, SkipForward, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTaskStore } from '../../store/taskStore';
 
 type CheckupType = 'morning' | 'evening';
 type CheckupFrequency = 'daily' | 'weekly' | 'biweekly';
 
 type OnboardingSnapshot = {
+  role?: string;
+  goals?: Array<{
+    title?: string;
+    priority?: string;
+    endDate?: string;
+    category?: string;
+  }>;
+  answers?: Array<{
+    answer?: string;
+    description?: string;
+  }>;
   schedule?: {
     checkIn?: {
       preferredTime?: string;
@@ -31,6 +43,22 @@ type CheckupApiPayload = {
   checkup_type?: CheckupType;
   coach_message?: string;
   generated_with?: string;
+  stats?: Record<string, unknown>;
+  decision_metrics?: Record<string, unknown>;
+  performance?: {
+    score?: number;
+    objective_score?: number;
+    subjective_score?: number;
+  };
+  context_snapshot?: Record<string, unknown>;
+  perspective?: Record<string, unknown>;
+};
+
+type RagInsights = {
+  mostUsedAgent?: string;
+  topKnowledgeCategory?: string;
+  learningVelocity?: number;
+  avgDailyInteractions?: number;
 };
 
 type CheckupRecord = {
@@ -225,6 +253,47 @@ const formatTime = (value: string): string => {
   return `${twelveHour}:${String(minute).padStart(2, '0')} ${period}`;
 };
 
+const toDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const normalizeDateKey = (value?: string): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return toDateKey(parsed);
+};
+
+const readNumber = (value: unknown, fallback = 0): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+};
+
+const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
 const buildAuthHeaders = (): HeadersInit => {
   const token = sessionStorage.getItem('auth_session');
   if (!token) {
@@ -241,12 +310,20 @@ const buildAuthHeaders = (): HeadersInit => {
 
 const CheckupPrompt = () => {
   const navigate = useNavigate();
+  const { tasks } = useTaskStore();
   const [config, setConfig] = useState<CheckupConfig | null>(null);
+  const [onboardingSnapshot, setOnboardingSnapshot] = useState<OnboardingSnapshot | null>(null);
   const [persistedState, setPersistedState] = useState<PersistedPromptState>(() => readPersistedState());
   const [activePrompt, setActivePrompt] = useState<PendingCheckup | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successPayload, setSuccessPayload] = useState<CheckupApiPayload | null>(null);
+  const [ragInsights, setRagInsights] = useState<RagInsights | null>(null);
+  const [plannedDeepWorkMinutes, setPlannedDeepWorkMinutes] = useState(120);
+  const [confidence, setConfidence] = useState(7);
+  const [selfRating, setSelfRating] = useState(7);
+  const [topPriorityCompleted, setTopPriorityCompleted] = useState(false);
+  const [perspectiveNotes, setPerspectiveNotes] = useState('');
 
   const configRef = useRef<CheckupConfig | null>(null);
   const stateRef = useRef<PersistedPromptState>(persistedState);
@@ -276,10 +353,15 @@ const CheckupPrompt = () => {
         }
 
         const payload = (await response.json()) as OnboardingSnapshot;
+        setOnboardingSnapshot(payload);
         const preferredTime = payload.schedule?.checkIn?.preferredTime || '09:00';
         const timezone = payload.schedule?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
         const frequency = resolveFrequency(payload.schedule?.checkIn?.frequency);
         const remindersEnabled = payload.planner?.notifications?.remindersEnabled ?? true;
+
+        const defaultConfidence = clamp(readNumber(payload.answers?.length ? 7 : 6, 7), 1, 10);
+        setConfidence(defaultConfidence);
+        setSelfRating(defaultConfidence);
 
         if (!isMounted) {
           return;
@@ -304,6 +386,52 @@ const CheckupPrompt = () => {
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadRagInsights = async () => {
+      try {
+        const response = await fetch('/agentic-api/api/knowledge/analytics?time_range=30d', {
+          method: 'GET',
+          headers: buildAuthHeaders(),
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          insights?: {
+            most_used_agent?: string;
+            top_knowledge_category?: string;
+            learning_velocity?: number;
+            avg_daily_interactions?: number;
+          };
+        };
+
+        if (cancelled) {
+          return;
+        }
+
+        setRagInsights({
+          mostUsedAgent: payload?.insights?.most_used_agent,
+          topKnowledgeCategory: payload?.insights?.top_knowledge_category,
+          learningVelocity: payload?.insights?.learning_velocity,
+          avgDailyInteractions: payload?.insights?.avg_daily_interactions,
+        });
+      } catch {
+        // Best-effort insights only.
+      }
+    };
+
+    void loadRagInsights();
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -394,6 +522,91 @@ const CheckupPrompt = () => {
     };
   }, [activePrompt, config]);
 
+  const checkupContext = useMemo(() => {
+    if (!activePrompt) {
+      return null;
+    }
+
+    const selectedDateKey = activePrompt.dateKey;
+    const selectedDateUtc = `${selectedDateKey}T00:00:00.000Z`;
+
+    let overdue = 0;
+    let dueToday = 0;
+    let completedTasksToday = 0;
+
+    tasks.forEach((task) => {
+      const deadlineKey = normalizeDateKey(task.deadline);
+      if (deadlineKey) {
+        if (deadlineKey < selectedDateKey && task.status !== 'completed') {
+          overdue += 1;
+        } else if (deadlineKey === selectedDateKey && task.status !== 'completed') {
+          dueToday += 1;
+        }
+      }
+
+      if (task.status === 'completed') {
+        completedTasksToday += 1;
+        return;
+      }
+
+      if (task.completedDates?.includes(selectedDateKey)) {
+        completedTasksToday += 1;
+      }
+    });
+
+    const sortedGoals = Array.isArray(onboardingSnapshot?.goals)
+      ? [...onboardingSnapshot.goals]
+          .filter((goal) => Boolean(goal?.title))
+          .sort((left, right) => {
+            const leftPriority = String(left.priority || '').toLowerCase();
+            const rightPriority = String(right.priority || '').toLowerCase();
+            const score = (priority: string) => {
+              if (priority === 'critical') return 4;
+              if (priority === 'high') return 3;
+              if (priority === 'medium') return 2;
+              return 1;
+            };
+            return score(rightPriority) - score(leftPriority);
+          })
+      : [];
+
+    const topGoals = sortedGoals.map((goal) => String(goal.title)).slice(0, 3);
+    const priorities = Array.isArray(onboardingSnapshot?.answers)
+      ? onboardingSnapshot.answers
+          .map((answer) => String(answer.answer || '').trim())
+          .filter((answer) => answer.length > 0)
+      : [];
+
+    return {
+      date: selectedDateUtc,
+      topGoals,
+      priorities,
+      priorityFocus: priorities[0] || topGoals[0] || '',
+      deadlineTasks: {
+        overdue,
+        dueToday,
+      },
+      completedTasksToday,
+      plannedDeepWorkMinutes,
+      ragInsights,
+    };
+  }, [activePrompt, tasks, onboardingSnapshot, plannedDeepWorkMinutes, ragInsights]);
+
+  const perspectivePayload = useMemo(() => {
+    const payload: Record<string, unknown> = {
+      confidence,
+      plannedDeepWorkMinutes,
+      note: perspectiveNotes.trim() || null,
+    };
+
+    if (activePrompt?.type === 'evening') {
+      payload.selfRating = selfRating;
+      payload.topPriorityCompleted = topPriorityCompleted;
+    }
+
+    return payload;
+  }, [activePrompt?.type, confidence, plannedDeepWorkMinutes, perspectiveNotes, selfRating, topPriorityCompleted]);
+
   const handlePostpone = () => {
     setErrorMessage(null);
     if (!config || !activePrompt) {
@@ -469,6 +682,8 @@ const CheckupPrompt = () => {
         credentials: 'include',
         body: JSON.stringify({
           date: activePrompt.dateKey,
+          perspective: perspectivePayload,
+          contextSnapshot: checkupContext,
         }),
       });
 
@@ -541,6 +756,106 @@ const CheckupPrompt = () => {
             </p>
           ) : null}
 
+          {checkupContext ? (
+            <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="inline-flex items-center gap-1 font-medium text-slate-700">
+                  <ListChecks className="h-3.5 w-3.5" />
+                  Due Today
+                </p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.deadlineTasks.dueToday}</p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="inline-flex items-center gap-1 font-medium text-slate-700">
+                  <Target className="h-3.5 w-3.5" />
+                  Overdue
+                </p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.deadlineTasks.overdue}</p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="font-medium text-slate-700">Completed Today</p>
+                <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.completedTasksToday}</p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <p className="font-medium text-slate-700">Priority Focus</p>
+                <p className="mt-1 line-clamp-1 font-semibold text-slate-900">{checkupContext.priorityFocus || 'Not set'}</p>
+              </div>
+            </div>
+          ) : null}
+
+          {ragInsights ? (
+            <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
+              <p className="font-medium">RAG Snapshot</p>
+              <p className="mt-1">
+                Agent: {ragInsights.mostUsedAgent || 'n/a'} | Category: {ragInsights.topKnowledgeCategory || 'n/a'}
+              </p>
+              <p>
+                Velocity: {ragInsights.learningVelocity?.toFixed(2) ?? '0.00'}/day | Avg interactions: {ragInsights.avgDailyInteractions?.toFixed(2) ?? '0.00'}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+            <p className="font-medium text-slate-800">Your Perspective</p>
+
+            <label className="flex items-center justify-between gap-3">
+              <span>Confidence (1-10)</span>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={confidence}
+                onChange={(event) => setConfidence(clamp(Number(event.target.value) || 1, 1, 10))}
+                className="w-16 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
+              />
+            </label>
+
+            <label className="flex items-center justify-between gap-3">
+              <span>Planned deep work (minutes)</span>
+              <input
+                type="number"
+                min={0}
+                value={plannedDeepWorkMinutes}
+                onChange={(event) => setPlannedDeepWorkMinutes(Math.max(0, Number(event.target.value) || 0))}
+                className="w-20 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
+              />
+            </label>
+
+            {promptType === 'evening' ? (
+              <>
+                <label className="flex items-center justify-between gap-3">
+                  <span>Self-rating (1-10)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={selfRating}
+                    onChange={(event) => setSelfRating(clamp(Number(event.target.value) || 1, 1, 10))}
+                    className="w-16 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
+                  />
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={topPriorityCompleted}
+                    onChange={(event) => setTopPriorityCompleted(event.target.checked)}
+                  />
+                  Top priority completed
+                </label>
+              </>
+            ) : null}
+
+            <label className="block">
+              <span className="mb-1 block">Notes</span>
+              <textarea
+                value={perspectiveNotes}
+                onChange={(event) => setPerspectiveNotes(event.target.value)}
+                placeholder={promptType === 'morning' ? 'What matters most today?' : 'How did today actually go?'}
+                className="h-16 w-full resize-none rounded border border-slate-300 bg-white px-2 py-1 text-xs"
+              />
+            </label>
+          </div>
+
           {errorMessage ? (
             <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
               {errorMessage}
@@ -554,6 +869,11 @@ const CheckupPrompt = () => {
                 Checkup saved
               </p>
               <p className="mt-1 line-clamp-3 whitespace-pre-wrap">{successPayload.coach_message}</p>
+              {successPayload.performance?.score ? (
+                <p className="mt-1 rounded bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-900">
+                  Evening performance score: {successPayload.performance.score}/10
+                </p>
+              ) : null}
               <button
                 type="button"
                 onClick={() => navigate('/coach')}

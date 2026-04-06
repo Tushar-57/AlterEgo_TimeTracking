@@ -19,10 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.tushar.demo.timetracker.dto.request.TagCreateRequest;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
-import com.tushar.demo.timetracker.model.Project;
+import com.tushar.demo.timetracker.integration.AgenticKnowledgeSyncService;
 import com.tushar.demo.timetracker.model.Tags;
 import com.tushar.demo.timetracker.model.Users;
-import com.tushar.demo.timetracker.repository.ProjectRepository;
 import com.tushar.demo.timetracker.repository.TagsRepository;
 import com.tushar.demo.timetracker.repository.UserRepository;
 
@@ -36,11 +35,16 @@ public class TagsController {
 
 	private final UserRepository userRepository;
 	private final TagsRepository tagsRepository;
+	private final AgenticKnowledgeSyncService agenticKnowledgeSyncService;
 
 	@Autowired
-	public TagsController(UserRepository userRepository, TagsRepository tagsRepository) {
+	public TagsController(
+			UserRepository userRepository,
+			TagsRepository tagsRepository,
+			AgenticKnowledgeSyncService agenticKnowledgeSyncService) {
 		this.userRepository = userRepository;
 		this.tagsRepository = tagsRepository;
+		this.agenticKnowledgeSyncService = agenticKnowledgeSyncService;
 	}
 
 	@GetMapping
@@ -65,6 +69,7 @@ public class TagsController {
 	    tag.setUser(user); // Set user from authentication
 
 	    Tags savedTag = tagsRepository.save(tag);
+		agenticKnowledgeSyncService.syncTag(savedTag, user, "create_tag");
 	    return ResponseEntity.status(HttpStatus.CREATED).body(savedTag);
 	}
 
@@ -80,7 +85,9 @@ public class TagsController {
 		existingTag.setName(tagDetails.getName());
 		existingTag.setColor(tagDetails.getColor());
 
-		return ResponseEntity.ok(tagsRepository.save(existingTag));
+		Tags updatedTag = tagsRepository.save(existingTag);
+		agenticKnowledgeSyncService.syncTag(updatedTag, user, "update_tag");
+		return ResponseEntity.ok(updatedTag);
 	}
 
 	@DeleteMapping("/{id}")
@@ -91,6 +98,7 @@ public class TagsController {
 		Tags tag = tagsRepository.findByIdAndUser(id, user)
 				.orElseThrow(() -> new ResourceNotFoundException("Tag not found"));
 
+		agenticKnowledgeSyncService.syncTagDeletion(tag.getId(), tag.getName(), user, "delete_tag");
 		tagsRepository.delete(tag);
 		return ResponseEntity.noContent().build();
 	}

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tushar.demo.timetracker.config.JwtUtils;
 import com.tushar.demo.timetracker.dto.request.OnboardingRequestDTO;
+import com.tushar.demo.timetracker.model.Project;
+import com.tushar.demo.timetracker.model.Tags;
 import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.TimeEntryRepository;
@@ -128,13 +130,18 @@ public class AgenticKnowledgeSyncService {
         try {
             List<Map<String, Object>> goals = mapGoals(request.getGoals());
             List<String> preferences = mapPreferences(request.getAnswers());
+            Map<String, Object> mentorMap = toMapOrEmpty(request.getMentor());
+            Map<String, Object> coachPreferences = sanitizeMap(request.getCoachPreferences());
+            Map<String, Object> domainPreferences = sanitizeMap(request.getDomainPreferences());
 
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("role", request.getRole());
             payload.put("goals", goals);
             payload.put("preferences", preferences);
-            payload.put("mentor", toMapOrEmpty(request.getMentor()));
+            payload.put("mentor", mentorMap);
             payload.put("preferredTone", request.getPreferredTone());
+            payload.put("coach_preferences", coachPreferences);
+            payload.put("domain_preferences", domainPreferences);
 
             Map<String, Object> plannerMap = toMapOrEmpty(request.getPlanner());
             if (!plannerMap.containsKey("goals")) {
@@ -144,6 +151,19 @@ public class AgenticKnowledgeSyncService {
                 plannerMap.put("availability", toMapOrEmpty(request.getSchedule()));
             }
             payload.put("planner", plannerMap);
+            payload.put(
+                    "preference_profile",
+                    buildPreferenceProfile(
+                            request.getRole(),
+                            request.getPreferredTone(),
+                            preferences,
+                            goals,
+                            plannerMap,
+                            mentorMap,
+                            coachPreferences,
+                            domainPreferences
+                    )
+            );
 
             postJson("/api/knowledge/onboarding", payload, "onboarding", user);
         } catch (Exception e) {
@@ -325,6 +345,168 @@ public class AgenticKnowledgeSyncService {
         }
     }
 
+    public boolean syncProject(Project project, Users user, String sourceAction) {
+        if (!isConfigured() || project == null || project.getId() == null) {
+            return false;
+        }
+
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("source", "alterego_projects");
+        context.put("source_action", sourceAction);
+        context.put("category", "project_catalog");
+        context.put("sync_event_key", "alterego:project:" + project.getId());
+        context.put("project_id", project.getId());
+        context.put("project_name", safeText(project.getName(), "Untitled Project"));
+        context.put("project_color", safeText(project.getColor(), ""));
+        context.put("project_client", safeText(project.getClient(), ""));
+        context.put("project_default", project.isDefault());
+        context.put("deleted", false);
+        context.put("user_id", user != null ? user.getId() : null);
+        context.put("user_email", user != null ? user.getEmail() : null);
+
+        String projectName = safeText(project.getName(), "Untitled Project");
+        String responseText = "Project \"" + projectName + "\" synced.";
+        return syncInteractionEvent("project_catalog", "Project update: " + projectName, responseText, context, user);
+    }
+
+    public boolean syncProjectDeletion(Long projectId, String projectName, Users user, String sourceAction) {
+        if (!isConfigured() || projectId == null) {
+            return false;
+        }
+
+        String safeProjectName = safeText(projectName, "Deleted project");
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("source", "alterego_projects");
+        context.put("source_action", sourceAction);
+        context.put("category", "project_catalog");
+        context.put("sync_event_key", "alterego:project:" + projectId);
+        context.put("project_id", projectId);
+        context.put("project_name", safeProjectName);
+        context.put("deleted", true);
+        context.put("user_id", user != null ? user.getId() : null);
+        context.put("user_email", user != null ? user.getEmail() : null);
+
+        String responseText = "Project \"" + safeProjectName + "\" was deleted.";
+        return syncInteractionEvent("project_catalog", "Delete project: " + safeProjectName, responseText, context, user);
+    }
+
+    public boolean syncTag(Tags tag, Users user, String sourceAction) {
+        if (!isConfigured() || tag == null || tag.getId() == null) {
+            return false;
+        }
+
+        String tagName = safeText(tag.getName(), "Untitled Tag");
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("source", "alterego_tags");
+        context.put("source_action", sourceAction);
+        context.put("category", "tag_catalog");
+        context.put("sync_event_key", "alterego:tag:" + tag.getId());
+        context.put("tag_id", tag.getId());
+        context.put("tag_name", tagName);
+        context.put("tag_color", safeText(tag.getColor(), ""));
+        context.put("deleted", false);
+        context.put("user_id", user != null ? user.getId() : null);
+        context.put("user_email", user != null ? user.getEmail() : null);
+
+        String responseText = "Tag \"" + tagName + "\" synced.";
+        return syncInteractionEvent("tag_catalog", "Tag update: " + tagName, responseText, context, user);
+    }
+
+    public boolean syncTagDeletion(Long tagId, String tagName, Users user, String sourceAction) {
+        if (!isConfigured() || tagId == null) {
+            return false;
+        }
+
+        String safeTagName = safeText(tagName, "Deleted tag");
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("source", "alterego_tags");
+        context.put("source_action", sourceAction);
+        context.put("category", "tag_catalog");
+        context.put("sync_event_key", "alterego:tag:" + tagId);
+        context.put("tag_id", tagId);
+        context.put("tag_name", safeTagName);
+        context.put("deleted", true);
+        context.put("user_id", user != null ? user.getId() : null);
+        context.put("user_email", user != null ? user.getEmail() : null);
+
+        String responseText = "Tag \"" + safeTagName + "\" was deleted.";
+        return syncInteractionEvent("tag_catalog", "Delete tag: " + safeTagName, responseText, context, user);
+    }
+
+    public boolean syncTimeEntryDeletion(TimeEntry entry, Users user, String sourceAction) {
+        if (!isConfigured() || entry == null || entry.getId() == null) {
+            return false;
+        }
+
+        try {
+            String description = safeText(entry.getDescription(), "Untitled task");
+            Long durationSeconds = entry.getDuration() != null ? entry.getDuration() : 0L;
+            long durationMinutes = Math.max(0L, Math.round(durationSeconds / 60.0));
+
+            Map<String, Object> context = new LinkedHashMap<>();
+            context.put("source", "alterego_timetracker");
+            context.put("source_action", sourceAction);
+            context.put("category", "time_entry");
+            context.put("time_entry_id", entry.getId());
+            context.put("sync_event_key", "alterego:time_entry:" + entry.getId());
+            context.put("description", description);
+            context.put("start_time", entry.getStartTime() != null ? entry.getStartTime().toString() : null);
+            context.put("end_time", entry.getEndTime() != null ? entry.getEndTime().toString() : null);
+            context.put("duration_seconds", durationSeconds);
+            context.put("duration_minutes", durationMinutes);
+            context.put("project_id", entry.getProject() != null ? entry.getProject().getId() : null);
+            context.put("project_name", entry.getProject() != null ? entry.getProject().getName() : null);
+            context.put("tag_ids", entry.getTagIds() != null ? entry.getTagIds() : List.of());
+            context.put("billable", entry.isBillable());
+            context.put("deleted", true);
+            context.put("user_id", user != null ? user.getId() : null);
+            context.put("user_email", user != null ? user.getEmail() : null);
+
+            String responseText = "Time entry \"" + description + "\" was deleted.";
+            return syncInteractionEvent("time_entry", "Delete time entry: " + description, responseText, context, user);
+        } catch (Exception e) {
+            logger.warn("Agentic time-entry deletion sync skipped due to payload error: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean syncTimeEntryContinuation(TimeEntry sourceEntry, TimeEntry continuedEntry, Users user, String sourceAction) {
+        if (!isConfigured() || sourceEntry == null || continuedEntry == null || continuedEntry.getId() == null) {
+            return false;
+        }
+
+        try {
+            String description = safeText(continuedEntry.getDescription(), "Untitled task");
+
+            Map<String, Object> context = new LinkedHashMap<>();
+            context.put("source", "alterego_timetracker");
+            context.put("source_action", sourceAction);
+            context.put("category", "time_entry");
+            context.put("time_entry_id", continuedEntry.getId());
+            context.put("sync_event_key", "alterego:time_entry:" + continuedEntry.getId());
+            context.put("continued_from_time_entry_id", sourceEntry.getId());
+            context.put("description", description);
+            context.put("start_time", continuedEntry.getStartTime() != null ? continuedEntry.getStartTime().toString() : null);
+            context.put("end_time", null);
+            context.put("duration_seconds", 0L);
+            context.put("duration_minutes", 0L);
+            context.put("project_id", continuedEntry.getProject() != null ? continuedEntry.getProject().getId() : null);
+            context.put("project_name", continuedEntry.getProject() != null ? continuedEntry.getProject().getName() : null);
+            context.put("tag_ids", continuedEntry.getTagIds() != null ? continuedEntry.getTagIds() : List.of());
+            context.put("billable", continuedEntry.isBillable());
+            context.put("active", true);
+            context.put("continued", true);
+            context.put("user_id", user != null ? user.getId() : null);
+            context.put("user_email", user != null ? user.getEmail() : null);
+
+            String responseText = "Continued timer for \"" + description + "\" as an active session.";
+            return syncInteractionEvent("time_entry", "Continue time entry: " + description, responseText, context, user);
+        } catch (Exception e) {
+            logger.warn("Agentic time-entry continuation sync skipped due to payload error: {}", e.getMessage());
+            return false;
+        }
+    }
+
     private int resolveRequestedEntries(Users user, int maxEntries) {
         if (maxEntries > 0) {
             return maxEntries;
@@ -343,6 +525,16 @@ public class AgenticKnowledgeSyncService {
     }
 
     public Map<String, Object> runDailyCheckup(Users user, String checkupType, String date, String note) {
+        return runDailyCheckup(user, checkupType, date, note, Map.of(), Map.of());
+    }
+
+    public Map<String, Object> runDailyCheckup(
+            Users user,
+            String checkupType,
+            String date,
+            String note,
+            Map<String, Object> perspective,
+            Map<String, Object> contextSnapshot) {
         if (!isConfigured()) {
             throw new IllegalStateException("Agentic sync is not configured");
         }
@@ -361,6 +553,12 @@ public class AgenticKnowledgeSyncService {
         }
         if (note != null && !note.isBlank()) {
             payload.put("note", note.trim());
+        }
+        if (perspective != null && !perspective.isEmpty()) {
+            payload.put("perspective", perspective);
+        }
+        if (contextSnapshot != null && !contextSnapshot.isEmpty()) {
+            payload.put("context_snapshot", contextSnapshot);
         }
 
         return postJsonForResponse(
@@ -627,6 +825,143 @@ public class AgenticKnowledgeSyncService {
                 .map(answer -> safeText(answer.getAnswer(), answer.getDescription()))
                 .filter(value -> value != null && !value.isBlank())
                 .toList();
+    }
+
+    private Map<String, Object> buildPreferenceProfile(
+            String role,
+            String preferredTone,
+            List<String> priorities,
+            List<Map<String, Object>> goals,
+            Map<String, Object> planner,
+            Map<String, Object> mentor,
+            Map<String, Object> coachPreferences,
+            Map<String, Object> domainPreferences) {
+        Map<String, Object> profile = new LinkedHashMap<>();
+
+        Map<String, Object> availability = asMap(planner.get("availability"));
+        Map<String, Object> workHours = asMap(availability.get("workHours"));
+        Map<String, Object> checkIn = asMap(availability.get("checkIn"));
+
+        String workHoursValue = safeText(asString(workHours.get("start")), "09:00")
+                + "-"
+                + safeText(asString(workHours.get("end")), "17:00");
+        String timezone = safeText(asString(availability.get("timezone")), "UTC");
+        String checkInTime = safeText(asString(checkIn.get("preferredTime")), "09:00");
+        String checkInFrequency = safeText(asString(checkIn.get("frequency")), "daily");
+
+        List<String> productivityGoals = filterGoalTitlesByCategory(goals, List.of("career", "work", "productivity"));
+        List<String> healthGoals = filterGoalTitlesByCategory(goals, List.of("health", "wellness"));
+        List<String> financeGoals = filterGoalTitlesByCategory(goals, List.of("finance", "financial", "money"));
+
+        Map<String, Object> productivity = new LinkedHashMap<>();
+        productivity.put("work_hours", workHoursValue);
+        productivity.put("check_in_time", checkInTime);
+        productivity.put("check_in_frequency", checkInFrequency);
+        productivity.put("priority_signals", priorities != null ? priorities : List.of());
+        productivity.put("goals", productivityGoals);
+
+        Map<String, Object> health = new LinkedHashMap<>();
+        health.put("goals", healthGoals);
+        health.put("wellness_focus", coachPreferences.getOrDefault("wellnessFocus", "balanced"));
+
+        Map<String, Object> finance = new LinkedHashMap<>();
+        finance.put("goals", financeGoals);
+        finance.put("planning_priority", coachPreferences.getOrDefault("financialFocus", "budgeting"));
+
+        Map<String, Object> journal = new LinkedHashMap<>();
+        journal.put("reflection_frequency", checkInFrequency);
+        journal.put("check_in_time", checkInTime);
+        journal.put("coach_tone", safeText(preferredTone, "friendly"));
+
+        Map<String, Object> general = new LinkedHashMap<>();
+        general.put("role", safeText(role, "professional"));
+        general.put("timezone", timezone);
+        general.put("priorities", priorities != null ? priorities : List.of());
+        general.put("mentor", mentor);
+        general.put("preferred_tone", safeText(preferredTone, "Friendly"));
+        general.put("coach_preferences", coachPreferences);
+
+        mergeSectionOverrides(productivity, extractNestedMap(domainPreferences, "productivity"));
+        mergeSectionOverrides(health, extractNestedMap(domainPreferences, "health"));
+        mergeSectionOverrides(finance, extractNestedMap(domainPreferences, "finance"));
+        mergeSectionOverrides(journal, extractNestedMap(domainPreferences, "journal"));
+        mergeSectionOverrides(general, extractNestedMap(domainPreferences, "general"));
+
+        profile.put("productivity", productivity);
+        profile.put("health", health);
+        profile.put("finance", finance);
+        profile.put("journal", journal);
+        profile.put("general", general);
+        return profile;
+    }
+
+    private List<String> filterGoalTitlesByCategory(List<Map<String, Object>> goals, List<String> supportedCategories) {
+        if (goals == null || goals.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> normalizedCategories = supportedCategories.stream().map(String::toLowerCase).toList();
+        List<String> selected = new ArrayList<>();
+        for (Map<String, Object> goal : goals) {
+            String category = asString(goal.get("category")).trim().toLowerCase();
+            if (!normalizedCategories.contains(category)) {
+                continue;
+            }
+            String title = asString(goal.get("title")).trim();
+            if (!title.isBlank()) {
+                selected.add(title);
+            }
+        }
+        return selected;
+    }
+
+    private void mergeSectionOverrides(Map<String, Object> target, Map<String, Object> overrides) {
+        if (overrides == null || overrides.isEmpty()) {
+            return;
+        }
+        overrides.forEach((key, value) -> {
+            if (key == null || key.isBlank() || value == null) {
+                return;
+            }
+            target.put(key, value);
+        });
+    }
+
+    private Map<String, Object> extractNestedMap(Map<String, Object> source, String key) {
+        if (source == null || source.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+        return asMap(source.get(key));
+    }
+
+    private Map<String, Object> sanitizeMap(Map<String, Object> rawMap) {
+        if (rawMap == null || rawMap.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+
+        Map<String, Object> sanitized = new LinkedHashMap<>();
+        rawMap.forEach((key, value) -> {
+            if (key == null || key.isBlank() || value == null) {
+                return;
+            }
+            sanitized.put(key, value);
+        });
+        return sanitized;
+    }
+
+    private boolean syncInteractionEvent(
+            String agentType,
+            String userInput,
+            String agentResponse,
+            Map<String, Object> context,
+            Users user) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("agent_type", agentType);
+        payload.put("user_input", userInput);
+        payload.put("agent_response", agentResponse);
+        payload.put("context", context != null ? context : Map.of());
+
+        return postJson("/api/knowledge/interactions", payload, agentType, user);
     }
 
     private Map<String, Object> toMapOrEmpty(Object source) {

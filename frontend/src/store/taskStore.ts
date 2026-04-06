@@ -31,6 +31,7 @@ export interface Task {
 
 interface TaskState {
   tasks: Task[];
+  replaceTasks: (tasks: Task[]) => void;
   addTask: (task: Task) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
@@ -120,6 +121,35 @@ export const useTaskStore = create<TaskState>()(
   persist(
     (set) => ({
       tasks: [],
+      replaceTasks: (tasks) =>
+        set(() => {
+          const nowIso = new Date().toISOString();
+          const normalizedTasks = (Array.isArray(tasks) ? tasks : []).map((task) => {
+            const normalizedType = normalizeTaskType(task.type);
+            const completedDates = Array.isArray(task.completedDates)
+              ? task.completedDates.filter((date): date is string => typeof date === 'string')
+              : [];
+
+            return {
+              ...task,
+              type: normalizedType,
+              status: normalizeTaskStatus(task.status, normalizedType),
+              tags: Array.isArray(task.tags)
+                ? task.tags.filter((tag): tag is string => typeof tag === 'string')
+                : [],
+              completedDates,
+              currentStreak: normalizedType === 'habit'
+                ? calculateCurrentStreak(completedDates)
+                : 0,
+              createdAt: task.createdAt || nowIso,
+              updatedAt: task.updatedAt || nowIso,
+            };
+          });
+
+          return {
+            tasks: normalizedTasks,
+          };
+        }),
       addTask: (task) =>
         set((state) => {
           const nowIso = new Date().toISOString();

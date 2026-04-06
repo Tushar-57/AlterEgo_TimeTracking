@@ -1,12 +1,15 @@
 package com.tushar.demo.timetracker.dto.request;
 
 import java.util.List;
+import java.util.Map;
 
 public class OnboardingRequestDTO {
     private String role;
     private Mentor mentor;
     private String preferredTone;
     private String coachAvatar;
+    private Map<String, Object> coachPreferences;
+    private Map<String, Object> domainPreferences;
     private Availability schedule;
     private List<Goal> goals;
     private Planner planner;
@@ -21,6 +24,10 @@ public class OnboardingRequestDTO {
     public void setPreferredTone(String preferredTone) { this.preferredTone = preferredTone; }
     public String getCoachAvatar() { return coachAvatar; }
     public void setCoachAvatar(String coachAvatar) { this.coachAvatar = coachAvatar; }
+    public Map<String, Object> getCoachPreferences() { return coachPreferences; }
+    public void setCoachPreferences(Map<String, Object> coachPreferences) { this.coachPreferences = coachPreferences; }
+    public Map<String, Object> getDomainPreferences() { return domainPreferences; }
+    public void setDomainPreferences(Map<String, Object> domainPreferences) { this.domainPreferences = domainPreferences; }
     public Availability getSchedule() { return schedule; }
     public void setSchedule(Availability schedule) { this.schedule = schedule; }
     public List<Goal> getGoals() { return goals; }
