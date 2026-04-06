@@ -103,10 +103,10 @@ public class AgenticKnowledgeSyncService {
             @Value("${agentic.sync.enabled:false}") boolean enabled,
             @Value("${agentic.sync.base-url:}") String baseUrl,
             @Value("${agentic.sync.bridge-token-ttl-seconds:180}") long bridgeTokenTtlSeconds,
-            @Value("${agentic.sync.max-attempts:3}") int maxAttempts,
-            @Value("${agentic.sync.retry-backoff-ms:350}") long retryBackoffMs,
+            @Value("${agentic.sync.max-attempts:2}") int maxAttempts,
+            @Value("${agentic.sync.retry-backoff-ms:750}") long retryBackoffMs,
             @Value("${agentic.sync.connect-timeout-ms:5000}") long connectTimeoutMs,
-            @Value("${agentic.sync.request-timeout-ms:8000}") long requestTimeoutMs) {
+            @Value("${agentic.sync.request-timeout-ms:15000}") long requestTimeoutMs) {
         this.timeEntryRepository = timeEntryRepository;
         this.timeEntryDetailRepository = timeEntryDetailRepository;
         this.jwtUtils = jwtUtils;
