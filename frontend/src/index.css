@@ -4,19 +4,114 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    font-feature-settings: "liga" 1, "kern" 1;
-    -webkit-font-smoothing: antialiased;
-  }
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --input: 214.3 31.8% 91.4%;
     --primary: 222.2 47.4% 11.2%;
     --border: 214.3 31.8% 91.4%;
     --radius: 0.5rem;
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    color-scheme: light;
     height: 100%;
     width: 100%;
+  }
+
+  .dark {
+    --background: 220 32% 10%;
+    --foreground: 210 40% 96%;
+    --card: 220 32% 12%;
+    --card-foreground: 210 40% 96%;
+    --input: 217 25% 24%;
+    --border: 217 25% 24%;
+    color-scheme: dark;
+  }
+
+  body {
+    font-feature-settings: "liga" 1, "kern" 1;
+    -webkit-font-smoothing: antialiased;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .dark [class~="bg-white"] {
+    background-color: rgb(15 23 42);
+  }
+
+  .dark [class~="bg-white/95"] {
+    background-color: rgb(15 23 42 / 0.95);
+  }
+
+  .dark [class~="bg-white/90"] {
+    background-color: rgb(15 23 42 / 0.9);
+  }
+
+  .dark [class~="bg-white/80"] {
+    background-color: rgb(15 23 42 / 0.8);
+  }
+
+  .dark [class~="bg-white/70"] {
+    background-color: rgb(15 23 42 / 0.72);
+  }
+
+  .dark [class~="bg-white/50"] {
+    background-color: rgb(30 41 59 / 0.62);
+  }
+
+  .dark [class~="bg-gray-50"],
+  .dark [class~="bg-slate-50"],
+  .dark [class~="bg-gray-100"] {
+    background-color: rgb(30 41 59 / 0.78);
+  }
+
+  .dark [class~="text-gray-900"],
+  .dark [class~="text-slate-900"] {
+    color: rgb(241 245 249);
+  }
+
+  .dark [class~="text-gray-800"],
+  .dark [class~="text-slate-800"] {
+    color: rgb(226 232 240);
+  }
+
+  .dark [class~="text-gray-700"],
+  .dark [class~="text-slate-700"] {
+    color: rgb(203 213 225);
+  }
+
+  .dark [class~="text-gray-600"],
+  .dark [class~="text-slate-600"],
+  .dark [class~="text-gray-500"],
+  .dark [class~="text-slate-500"] {
+    color: rgb(148 163 184);
+  }
+
+  .dark [class~="border-gray-100"],
+  .dark [class~="border-gray-200"],
+  .dark [class~="border-gray-300"],
+  .dark [class~="border-slate-200"],
+  .dark [class~="border-slate-300"] {
+    border-color: rgb(51 65 85 / 0.9);
+  }
+
+  .dark [class~="bg-blue-50"] {
+    background-color: rgb(30 64 175 / 0.25);
+  }
+
+  .dark [class~="text-blue-800"] {
+    color: rgb(191 219 254);
+  }
+
+  .dark [class~="hover:bg-gray-50"]:hover,
+  .dark [class~="hover:bg-gray-200"]:hover,
+  .dark [class~="hover:bg-white"]:hover {
+    background-color: rgb(51 65 85 / 0.78);
+  }
+
+  .dark [class~="hover:text-gray-800"]:hover {
+    color: rgb(226 232 240);
   }
 }
 
@@ -29,6 +124,10 @@
 
 .luxury-gradient {
   background: linear-gradient(135deg, #f6f8fd 0%, #f1f1f6 100%);
+}
+
+.dark .luxury-gradient {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
 
 .calendar-cell {
@@ -62,6 +161,10 @@
   transition: all 0.3s ease;
 }
 
+.dark .glass-morphism {
+  @apply bg-slate-900/50;
+}
+
 .ai-panel-enter {
   opacity: 0;
   transform: translateY(20px);
@@ -79,6 +182,12 @@
     linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
   background-size: 143px 60px;
   min-height: 1440px;
+}
+
+.dark .calendar-grid {
+  background-image:
+    linear-gradient(to right, rgba(71, 85, 105, 0.55) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(71, 85, 105, 0.55) 1px, transparent 1px);
 }
 
 .ml-64 {
@@ -99,6 +208,11 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+.dark .sticky-header {
+  background: rgb(15 23 42 / 0.95);
+  box-shadow: 0 2px 10px rgba(2, 6, 23, 0.55);
+}
+
 .calendar-content {
   height: calc(100vh - 150px);
   overflow-y: auto;
@@ -110,6 +224,10 @@
   min-height: 100vh;
   background: linear-gradient(to bottom, #f5e5ff, #e0f2f7);
   padding: 2rem;
+}
+
+.dark .onboarding-container {
+  background: linear-gradient(to bottom, #0f172a, #0b1f2f);
 }
 
 .chat-container {
@@ -141,10 +259,20 @@
   align-self: flex-end;
 }
 
+.dark .user-bubble {
+  background-color: rgb(22 78 99 / 0.45);
+  color: rgb(226 232 240);
+}
+
 .assistant-bubble {
   background-color: #f0f0f0;
   color: #555;
   align-self: flex-start;
+}
+
+.dark .assistant-bubble {
+  background-color: rgb(30 41 59 / 0.8);
+  color: rgb(203 213 225);
 }
 
 .typing-indicator {
@@ -210,17 +338,29 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(148, 163, 184, 0.18);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(100, 116, 139, 0.4);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(100, 116, 139, 0.55);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.75);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.58);
 }
 
 * {
@@ -264,9 +404,19 @@ html, body, #root {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
+.dark .chat-fullscreen-container {
+  background: linear-gradient(to bottom right, #0f172a, #111827);
+  box-shadow: 0 8px 28px rgba(2, 6, 23, 0.5);
+}
+
 .chat-header {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .chat-header {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.5));
+  border-bottom: 1px solid rgba(71, 85, 105, 0.55);
 }
 
 .chat-input-wrapper {
@@ -275,6 +425,11 @@ html, body, #root {
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   padding: 1rem;
+}
+
+.dark .chat-input-wrapper {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(71, 85, 105, 0.5);
 }
 
 .suggestion-chip {
@@ -286,6 +441,10 @@ html, body, #root {
   transition: all 0.2s ease;
 }
 
+.dark .suggestion-chip {
+  color: #e2e8f0;
+}
+
 .suggestion-chip:hover {
   transform: scale(1.05);
 }
@@ -295,4 +454,9 @@ html, body, #root {
   backdrop-filter: blur(14px);
   border-radius: 24px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+}
+
+.dark .style-picker-modal {
+  background: rgba(15, 23, 42, 0.92);
+  box-shadow: 0 10px 34px rgba(2, 6, 23, 0.58);
 }

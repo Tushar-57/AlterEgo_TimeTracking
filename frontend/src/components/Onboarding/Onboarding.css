@@ -6,6 +6,10 @@
   padding: 2rem;
 }
 
+.dark .onboarding-container {
+  background: linear-gradient(to bottom, #0f172a, #0b1f2f);
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;
@@ -36,10 +40,20 @@
   align-self: flex-end;
 }
 
+.dark .user-bubble {
+  background-color: rgb(22 78 99 / 0.45);
+  color: rgb(226 232 240);
+}
+
 .assistant-bubble {
   background-color: #f0f0f0;
   color: #555;
   align-self: flex-start;
+}
+
+.dark .assistant-bubble {
+  background-color: rgb(30 41 59 / 0.82);
+  color: rgb(203 213 225);
 }
 
 .typing-indicator {
@@ -55,6 +69,10 @@
   border-radius: 50%;
   background-color: #999;
   display: inline-block;
+}
+
+.dark .dot {
+  background-color: rgb(148 163 184 / 0.95);
 }
 
 @media (max-width: 768px) {

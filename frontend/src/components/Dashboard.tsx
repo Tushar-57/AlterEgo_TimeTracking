@@ -354,9 +354,40 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
           },
         });
 
-        const payload = await response.json().catch(() => null);
+        const payload = (await response.json().catch(() => null)) as
+          | {
+              success?: boolean;
+              message?: string;
+              errors?: {
+                code?: string;
+                message?: string;
+              };
+            }
+          | null;
+
+        const errorCode = payload?.errors?.code;
+        const backendMessage = payload?.errors?.message || payload?.message;
+
         if (!response.ok || payload?.success === false) {
-          throw new Error(payload?.message || 'Failed to continue time entry');
+          if (response.status === 409 || errorCode === 'TIMER_CONFLICT') {
+            toast({
+              title: 'Active Timer Already Running',
+              description: 'Stop the running timer from the Timer page, then continue this entry.',
+              variant: 'destructive',
+            });
+            return;
+          }
+
+          if (response.status === 401) {
+            toast({
+              title: 'Session Expired',
+              description: 'Please sign in again to continue this entry.',
+              variant: 'destructive',
+            });
+            return;
+          }
+
+          throw new Error(backendMessage || 'Failed to continue time entry');
         }
 
         toast({
