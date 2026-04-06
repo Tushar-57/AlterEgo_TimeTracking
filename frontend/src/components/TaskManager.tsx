@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays,
   Check,
@@ -12,6 +12,15 @@ import {
   Target,
   Trash2,
 } from 'lucide-react';
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { useTaskStore } from '../store/taskStore';
 import type { Task, TaskPriority, TaskStatus, TaskType } from '../store/taskStore';
 
@@ -27,6 +36,56 @@ type DraftTask = {
   followUpDate: string;
   noteToAI: string;
   streakTarget: number;
+};
+
+type HabitContributionCell = {
+  dateKey: string;
+  label: string;
+  count: number;
+  level: 0 | 1 | 2 | 3;
+  inRange: boolean;
+};
+
+type HabitSeriesPoint = {
+  dateKey: string;
+  label: string;
+  completedHabits: number;
+};
+
+type HabitTrendSnapshot = {
+  contributionWeeks: HabitContributionCell[][];
+  contributionMonthLabels: string[];
+  contributionRangeLabel: string;
+  maxContributionCount: number;
+  dailySeries: HabitSeriesPoint[];
+  currentRun: number;
+  longestRun: number;
+  activeDays: number;
+  totalCompletionEvents: number;
+};
+
+type HabitSyncPayload = {
+  capturedAt: string;
+  summary: {
+    totalHabits: number;
+    completedToday: number;
+    highestStreak: number;
+    totalCompletionEvents: number;
+    activeDays: number;
+    currentRun: number;
+    longestRun: number;
+  };
+  dailyCompletionCounts: Record<string, number>;
+  habits: Array<{
+    id: string;
+    title: string;
+    tags: string[];
+    currentStreak: number;
+    streakTarget: number;
+    completionCount: number;
+    completedDates: string[];
+    updatedAt: string;
+  }>;
 };
 
 const priorityStyles: Record<TaskPriority, string> = {
@@ -55,6 +114,283 @@ const modeThemes: Record<TaskType, { cardBorder: string; title: string; subtitle
     glow: 'from-fuchsia-600 via-purple-600 to-violet-600',
   },
 };
+
+const CONTRIBUTION_WINDOW_DAYS = 140;
+const HABIT_LINE_WINDOW_DAYS = 30;
+
+const toDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const parseDateKey = (dateKey: string) => {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const shiftDays = (date: Date, days: number) => {
+  const shifted = new Date(date);
+  shifted.setDate(shifted.getDate() + days);
+  return shifted;
+};
+
+const sortDateKeysAsc = (left: string, right: string) => left.localeCompare(right);
+
+const buildHabitCompletionMap = (habitTasks: Task[]) => {
+  const completionMap = new Map<string, number>();
+
+  habitTasks.forEach((habit) => {
+    const uniqueDates = Array.from(new Set(habit.completedDates));
+    uniqueDates.forEach((dateKey) => {
+      if (!dateKey || typeof dateKey !== 'string') {
+        return;
+      }
+      completionMap.set(dateKey, (completionMap.get(dateKey) || 0) + 1);
+    });
+  });
+
+  return completionMap;
+};
+
+const resolveContributionLevel = (count: number, maxCount: number): 0 | 1 | 2 | 3 => {
+  if (count <= 0 || maxCount <= 0) {
+    return 0;
+  }
+
+  const lowerThreshold = Math.max(1, Math.ceil(maxCount * 0.34));
+  const midThreshold = Math.max(lowerThreshold + 1, Math.ceil(maxCount * 0.67));
+
+  if (count <= lowerThreshold) {
+    return 1;
+  }
+
+  if (count < midThreshold) {
+    return 2;
+  }
+
+  return 3;
+};
+
+const buildHabitContributionWeeks = (completionMap: Map<string, number>) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const windowStart = shiftDays(today, -(CONTRIBUTION_WINDOW_DAYS - 1));
+  const calendarStart = shiftDays(windowStart, -windowStart.getDay());
+  const calendarEnd = shiftDays(today, 6 - today.getDay());
+
+  const cells: HabitContributionCell[] = [];
+  for (let cursor = new Date(calendarStart); cursor <= calendarEnd; cursor = shiftDays(cursor, 1)) {
+    const dateKey = toDateKey(cursor);
+    const inRange = cursor >= windowStart && cursor <= today;
+    const count = inRange ? completionMap.get(dateKey) || 0 : 0;
+
+    cells.push({
+      dateKey,
+      label: cursor.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      count,
+      level: 0,
+      inRange,
+    });
+  }
+
+  const maxCount = cells.reduce((max, cell) => (cell.inRange ? Math.max(max, cell.count) : max), 0);
+
+  const normalizedCells = cells.map((cell) => ({
+    ...cell,
+    level: cell.inRange ? resolveContributionLevel(cell.count, maxCount) : 0,
+  }));
+
+  const contributionWeeks: HabitContributionCell[][] = [];
+  for (let index = 0; index < normalizedCells.length; index += 7) {
+    contributionWeeks.push(normalizedCells.slice(index, index + 7));
+  }
+
+  const contributionMonthLabels = contributionWeeks.map((week) => {
+    const monthMarker = week.find((cell) => {
+      if (!cell.inRange) {
+        return false;
+      }
+      const date = parseDateKey(cell.dateKey);
+      return date.getDate() === 1;
+    });
+
+    if (!monthMarker) {
+      return '';
+    }
+
+    return parseDateKey(monthMarker.dateKey).toLocaleDateString('en-US', { month: 'short' });
+  });
+
+  const contributionRangeLabel = `${windowStart.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })} - ${today.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })}`;
+
+  return {
+    contributionWeeks,
+    contributionMonthLabels,
+    contributionRangeLabel,
+    maxContributionCount: maxCount,
+  };
+};
+
+const buildDailyHabitSeries = (completionMap: Map<string, number>) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = shiftDays(today, -(HABIT_LINE_WINDOW_DAYS - 1));
+
+  const dailySeries: HabitSeriesPoint[] = [];
+  for (let offset = 0; offset < HABIT_LINE_WINDOW_DAYS; offset += 1) {
+    const date = shiftDays(start, offset);
+    const dateKey = toDateKey(date);
+    dailySeries.push({
+      dateKey,
+      label: date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      }),
+      completedHabits: completionMap.get(dateKey) || 0,
+    });
+  }
+
+  return dailySeries;
+};
+
+const computeHabitRuns = (completionMap: Map<string, number>) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let currentRun = 0;
+  for (let offset = 0; ; offset += 1) {
+    const dateKey = toDateKey(shiftDays(today, -offset));
+    if ((completionMap.get(dateKey) || 0) <= 0) {
+      break;
+    }
+    currentRun += 1;
+  }
+
+  const sortedKeys = Array.from(completionMap.keys()).sort(sortDateKeysAsc);
+  let longestRun = 0;
+  let running = 0;
+  let previousDate: Date | null = null;
+  let activeDays = 0;
+
+  sortedKeys.forEach((key) => {
+    if ((completionMap.get(key) || 0) <= 0) {
+      return;
+    }
+
+    activeDays += 1;
+    const date = parseDateKey(key);
+
+    if (!previousDate) {
+      running = 1;
+      longestRun = Math.max(longestRun, running);
+      previousDate = date;
+      return;
+    }
+
+    const expectedNext = shiftDays(previousDate, 1);
+    if (toDateKey(expectedNext) === key) {
+      running += 1;
+    } else {
+      running = 1;
+    }
+
+    longestRun = Math.max(longestRun, running);
+    previousDate = date;
+  });
+
+  return {
+    currentRun,
+    longestRun,
+    activeDays,
+  };
+};
+
+const buildHabitTrendSnapshot = (habitTasks: Task[]): HabitTrendSnapshot => {
+  const completionMap = buildHabitCompletionMap(habitTasks);
+  const contribution = buildHabitContributionWeeks(completionMap);
+  const dailySeries = buildDailyHabitSeries(completionMap);
+  const runs = computeHabitRuns(completionMap);
+  const totalCompletionEvents = Array.from(completionMap.values()).reduce((sum, value) => sum + value, 0);
+
+  return {
+    contributionWeeks: contribution.contributionWeeks,
+    contributionMonthLabels: contribution.contributionMonthLabels,
+    contributionRangeLabel: contribution.contributionRangeLabel,
+    maxContributionCount: contribution.maxContributionCount,
+    dailySeries,
+    currentRun: runs.currentRun,
+    longestRun: runs.longestRun,
+    activeDays: runs.activeDays,
+    totalCompletionEvents,
+  };
+};
+
+const buildHabitSyncPayload = (habitTasks: Task[], trendSnapshot: HabitTrendSnapshot): HabitSyncPayload => {
+  const completionMap = buildHabitCompletionMap(habitTasks);
+  const todayKey = toDateKey(new Date());
+
+  const sortedDailyKeys = Array.from(completionMap.keys()).sort(sortDateKeysAsc);
+  const dailyCompletionCounts = Object.fromEntries(
+    sortedDailyKeys.map((key) => [key, completionMap.get(key) || 0])
+  );
+
+  const sortedHabits = [...habitTasks]
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((habit) => {
+      const completedDates = Array.from(new Set(habit.completedDates)).sort(sortDateKeysAsc);
+      return {
+        id: habit.id,
+        title: habit.title,
+        tags: [...habit.tags].sort(),
+        currentStreak: habit.currentStreak,
+        streakTarget: habit.streakTarget || 1,
+        completionCount: completedDates.length,
+        completedDates,
+        updatedAt: habit.updatedAt,
+      };
+    });
+
+  const capturedAt =
+    sortedHabits.reduce((latest, habit) => {
+      if (!latest) {
+        return habit.updatedAt;
+      }
+      return habit.updatedAt > latest ? habit.updatedAt : latest;
+    }, '') || 'no-habit-updates';
+
+  const highestStreak = habitTasks.reduce((max, habit) => Math.max(max, habit.currentStreak), 0);
+
+  return {
+    capturedAt,
+    summary: {
+      totalHabits: habitTasks.length,
+      completedToday: completionMap.get(todayKey) || 0,
+      highestStreak,
+      totalCompletionEvents: trendSnapshot.totalCompletionEvents,
+      activeDays: trendSnapshot.activeDays,
+      currentRun: trendSnapshot.currentRun,
+      longestRun: trendSnapshot.longestRun,
+    },
+    dailyCompletionCounts,
+    habits: sortedHabits,
+  };
+};
+
+const formatSeriesTick = (dateKey: string) => parseDateKey(dateKey).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 const normalizeTaskType = (rawType: unknown): TaskType => {
   const normalized = String(rawType || '').trim().toLowerCase();
@@ -123,6 +459,7 @@ const draftFromTask = (task: Task): DraftTask => ({
 
 const TaskManager = () => {
   const { tasks, addTask, updateTask, deleteTask, updateTaskStatus, toggleTaskCompletion, seedSampleHabits } = useTaskStore();
+  const lastHabitSyncSignatureRef = useRef<string>('');
 
   const [activeMode, setActiveMode] = useState<TaskType>('todo');
   const [hasUserSelectedMode, setHasUserSelectedMode] = useState(false);
@@ -150,6 +487,49 @@ const TaskManager = () => {
       .filter((task) => normalizeTaskType(task.type) === activeMode)
       .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
   }, [activeMode, tasks]);
+
+  const allHabitTasks = useMemo(
+    () => tasks.filter((task) => normalizeTaskType(task.type) === 'habit'),
+    [tasks]
+  );
+
+  const habitTrendSnapshot = useMemo(
+    () => buildHabitTrendSnapshot(allHabitTasks),
+    [allHabitTasks]
+  );
+
+  useEffect(() => {
+    const token = sessionStorage.getItem('auth_session');
+    if (!token) {
+      return;
+    }
+
+    const payload = buildHabitSyncPayload(allHabitTasks, habitTrendSnapshot);
+    const signature = JSON.stringify(payload);
+
+    if (signature === lastHabitSyncSignatureRef.current) {
+      return;
+    }
+
+    lastHabitSyncSignatureRef.current = signature;
+
+    const syncHabitsToAgentic = async () => {
+      try {
+        await fetch('/api/agentic/habits/snapshot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      } catch (error) {
+        console.warn('Habit snapshot sync failed:', error);
+      }
+    };
+
+    void syncHabitsToAgentic();
+  }, [allHabitTasks, habitTrendSnapshot]);
 
   const filteredTasks = useMemo(() => {
     return modeTasks
@@ -355,6 +735,140 @@ const TaskManager = () => {
             </div>
           )}
         </div>
+
+        {!isTaskMode && (
+          <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.35fr_1fr]">
+            <div className={`rounded-2xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Habit Contribution Grid</p>
+                  <h2 className="mt-1 text-lg font-semibold text-slate-900">Streak Momentum</h2>
+                  <p className="mt-1 text-sm text-slate-500">{habitTrendSnapshot.contributionRangeLabel}</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-right">
+                  <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-1.5">
+                    <p className="text-[10px] uppercase tracking-wide text-emerald-700">Current Run</p>
+                    <p className="text-sm font-semibold text-emerald-800">{habitTrendSnapshot.currentRun}d</p>
+                  </div>
+                  <div className="rounded-lg border border-violet-100 bg-violet-50 px-2.5 py-1.5">
+                    <p className="text-[10px] uppercase tracking-wide text-violet-700">Longest Run</p>
+                    <p className="text-sm font-semibold text-violet-800">{habitTrendSnapshot.longestRun}d</p>
+                  </div>
+                  <div className="rounded-lg border border-sky-100 bg-sky-50 px-2.5 py-1.5">
+                    <p className="text-[10px] uppercase tracking-wide text-sky-700">Active Days</p>
+                    <p className="text-sm font-semibold text-sky-800">{habitTrendSnapshot.activeDays}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 overflow-x-auto pb-2">
+                <div className="min-w-[700px]">
+                  <div className="mb-2 flex pl-8">
+                    {habitTrendSnapshot.contributionMonthLabels.map((label, index) => (
+                      <div key={`month-${index}`} className="w-[16px] text-[10px] text-slate-500">
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <div className="flex flex-col justify-between py-[1px] text-[10px] text-slate-400">
+                      <span>Sun</span>
+                      <span>Tue</span>
+                      <span>Thu</span>
+                      <span>Sat</span>
+                    </div>
+
+                    <div className="flex gap-1">
+                      {habitTrendSnapshot.contributionWeeks.map((week, weekIndex) => (
+                        <div key={`week-${weekIndex}`} className="flex flex-col gap-1">
+                          {week.map((cell, dayIndex) => {
+                            const levelClass = !cell.inRange
+                              ? 'border-transparent bg-transparent'
+                              : cell.level === 0
+                                ? 'border-emerald-100 bg-emerald-50'
+                                : cell.level === 1
+                                  ? 'border-emerald-200 bg-emerald-200'
+                                  : cell.level === 2
+                                    ? 'border-emerald-400 bg-emerald-400'
+                                    : 'border-emerald-700 bg-emerald-700';
+
+                            const title = cell.inRange
+                              ? `${cell.label}: ${cell.count} habit${cell.count === 1 ? '' : 's'} completed`
+                              : '';
+
+                            return (
+                              <div
+                                key={`${cell.dateKey}-${weekIndex}-${dayIndex}`}
+                                title={title}
+                                className={`h-3.5 w-3.5 rounded-sm border ${levelClass}`}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center gap-1 text-[11px] text-slate-500">
+                <span>Less</span>
+                <span className="h-3 w-3 rounded-sm border border-emerald-100 bg-emerald-50" />
+                <span className="h-3 w-3 rounded-sm border border-emerald-200 bg-emerald-200" />
+                <span className="h-3 w-3 rounded-sm border border-emerald-400 bg-emerald-400" />
+                <span className="h-3 w-3 rounded-sm border border-emerald-700 bg-emerald-700" />
+                <span>More</span>
+                <span className="ml-2 text-slate-400">
+                  Peak day: {habitTrendSnapshot.maxContributionCount} habit{habitTrendSnapshot.maxContributionCount === 1 ? '' : 's'}
+                </span>
+              </div>
+            </div>
+
+            <div className={`rounded-2xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Completion Trend</p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-900">Daily Follow-Through</h2>
+              <p className="mt-1 text-sm text-slate-500">Last {HABIT_LINE_WINDOW_DAYS} days of completed habits</p>
+
+              <div className="mt-3 h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={habitTrendSnapshot.dailySeries} margin={{ top: 12, right: 10, left: -14, bottom: 8 }}>
+                    <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="dateKey"
+                      tick={{ fontSize: 11, fill: '#64748B' }}
+                      tickFormatter={(value: string, index: number) => (index % 5 === 0 ? formatSeriesTick(value) : '')}
+                    />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748B' }} />
+                    <RechartsTooltip
+                      labelFormatter={(value: string) => formatSeriesTick(value)}
+                      formatter={(value: number | string) => [`${value}`, 'Completed Habits']}
+                      contentStyle={{
+                        borderRadius: '10px',
+                        border: '1px solid #D1FAE5',
+                        backgroundColor: 'rgba(255,255,255,0.98)',
+                        fontSize: '12px',
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="completedHabits"
+                      stroke="#047857"
+                      strokeWidth={2.5}
+                      dot={false}
+                      activeDot={{ r: 4, fill: '#047857' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <p className="mt-3 text-xs text-slate-500">
+                Repetition compounds. If yesterday is active, today gets easier to start.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="mb-6 flex flex-col gap-3 rounded-xl border border-[#D8E3F5] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4">
           <div className="flex items-center gap-2 text-slate-500">

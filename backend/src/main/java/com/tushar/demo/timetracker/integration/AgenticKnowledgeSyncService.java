@@ -280,6 +280,51 @@ public class AgenticKnowledgeSyncService {
         return syncHistoricalTimeEntries(user, 0);
     }
 
+    public boolean syncHabitSnapshot(Map<String, Object> habitSnapshot, Users user, String sourceAction) {
+        if (!isConfigured() || habitSnapshot == null || habitSnapshot.isEmpty()) {
+            return false;
+        }
+
+        try {
+            Map<String, Object> summary = asMap(habitSnapshot.get("summary"));
+            Map<String, Object> dailyCompletionCounts = asMap(habitSnapshot.get("dailyCompletionCounts"));
+            List<Object> habits = asList(habitSnapshot.get("habits"));
+
+            Map<String, Object> context = new LinkedHashMap<>();
+            context.put("source", "alterego_task_manager");
+            context.put("source_action", sourceAction);
+            context.put("category", "habit_snapshot");
+            context.put("captured_at", asString(habitSnapshot.get("capturedAt")));
+            context.put("summary", summary);
+            context.put("daily_completion_counts", dailyCompletionCounts);
+            context.put("habits", habits);
+            context.put("user_id", user != null ? user.getId() : null);
+            context.put("user_email", user != null ? user.getEmail() : null);
+            context.put("total_habits", toInt(summary.get("totalHabits")));
+            context.put("total_completion_events", toInt(summary.get("totalCompletionEvents")));
+            context.put("active_days", toInt(summary.get("activeDays")));
+            context.put("current_run", toInt(summary.get("currentRun")));
+            context.put("longest_run", toInt(summary.get("longestRun")));
+
+            String responseText = String.format(
+                    "Captured habit snapshot with %d habits and %d completion events.",
+                    habits.size(),
+                    toInt(summary.get("totalCompletionEvents"))
+            );
+
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("agent_type", "habit_progress");
+            payload.put("user_input", "Habit progress snapshot update");
+            payload.put("agent_response", responseText);
+            payload.put("context", context);
+
+            return postJson("/api/knowledge/interactions", payload, "habit_progress", user);
+        } catch (Exception e) {
+            logger.warn("Agentic habit snapshot sync skipped due to payload error: {}", e.getMessage());
+            return false;
+        }
+    }
+
     private int resolveRequestedEntries(Users user, int maxEntries) {
         if (maxEntries > 0) {
             return maxEntries;
@@ -508,6 +553,43 @@ public class AgenticKnowledgeSyncService {
             return "";
         }
         return rawBaseUrl.trim().replaceAll("/+$", "");
+    }
+
+    private Map<String, Object> asMap(Object value) {
+        if (!(value instanceof Map<?, ?> rawMap)) {
+            return new LinkedHashMap<>();
+        }
+
+        Map<String, Object> normalized = new LinkedHashMap<>();
+        rawMap.forEach((key, mapValue) -> normalized.put(String.valueOf(key), mapValue));
+        return normalized;
+    }
+
+    private List<Object> asList(Object value) {
+        if (!(value instanceof List<?> rawList)) {
+            return List.of();
+        }
+        return new ArrayList<>(rawList);
+    }
+
+    private int toInt(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+
+        if (value instanceof String text) {
+            try {
+                return Integer.parseInt(text.trim());
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+
+        return 0;
+    }
+
+    private String asString(Object value) {
+        return value == null ? "" : String.valueOf(value);
     }
 
     private List<Map<String, Object>> mapGoals(List<OnboardingRequestDTO.Goal> goals) {

@@ -1,161 +1,99 @@
-# AlterEgo Time Tracking Platform
+# AlterEgo Time Tracking
 
-AlterEgo is an AI-assisted productivity platform that combines precise time tracking, guided planning, onboarding-based personalization, and cross-app coaching.
+AlterEgo is a full-stack productivity platform that combines time tracking, onboarding-based coaching, AI-assisted command flows, and knowledge sync into Agentic.
 
-This repository demonstrates full-stack product engineering across React, Spring Boot, secure auth, AI orchestration, and cloud deployment patterns.
+## Product Overview
 
-## Product Walkthrough
+### Core workflows
+- Live timer start/stop.
+- Manual time-entry creation and editing.
+- Project and tag management.
+- Onboarding profile and planner preferences.
+- AI command assistant for guided productivity actions.
 
-Watch the application demo:
+### Habit momentum workspace
+- Habit tracking with streak and completion history.
+- Contribution-style grid and 30-day line trend.
+- Habit snapshot sync to Agentic knowledge APIs.
 
-<a href="https://drive.google.com/file/d/1uSWtXf84HJaQ7-PIMalHH_3yC6s1vLiD/view?usp=sharing">
-  <img src="https://drive.google.com/thumbnail?id=1_GsdkOQ8WqvHbWyzdHYzu6Ht5aliIuwW"
-       alt="AlterEgo demo video"
-       style="width: 460px; height: auto; border-radius: 10px;">
-</a>
-
-## Why This Project Is Portfolio-Ready
-
-- End-to-end architecture: React frontend, Spring Boot backend, JWT security, relational persistence, and AI integrations.
-- Product depth: timers, manual entries, analytics, goals, onboarding, and AI chat in one cohesive UX.
-- Real deployment constraints solved: Render free-tier wake strategy, CORS normalization, Vercel frontend + Render API split.
-- Cross-system integration: AlterEgo UI bridges to Agentic coach UI while syncing operational context to knowledge APIs.
-
-## Core Capabilities
-
-### Time and planning engine
-- Start and stop live timers.
-- Manual entry support for backfilling work.
-- Projects, tags, and billable context.
-- Calendar-driven planning and time blocking.
-
-### AI-first coaching
-- Personalized mentor persona from onboarding.
-- Context-aware chat flows for productivity actions.
-- Agentic knowledge sync hooks on timer events.
-
-### Security and reliability
-- JWT authentication and protected API surface.
-- CORS allow patterns for local and cloud frontends.
-- Health endpoints for uptime checks and keep-alive workflows.
+### Cross-app intelligence bridge
+- AlterEgo backend sends onboarding and selected interaction events to Agentic.
+- Agentic frontend can be embedded in AlterEgo through coach routes.
 
 ## Architecture
 
-### System context
-
 ```mermaid
 flowchart LR
-    U[User] --> FE[AlterEgo Frontend - React + Vite]
-    FE -->|JWT + REST| BE[AlterEgo Backend - Spring Boot]
+    U[User] --> FE[AlterEgo Frontend]
+    FE -->|JWT + REST| BE[AlterEgo Backend]
     BE --> DB[(PostgreSQL or H2)]
-    FE -->|Coach route /coach| CW[Coach Workspace iframe]
-    CW --> AF[Agentic Frontend]
-    BE -->|sync events| AK[Agentic Knowledge APIs]
 
-    subgraph BEStack [Backend Core]
-      AUTH[Spring Security + JWT]
-      TIMER[Time Entry Service]
-      ONB[Onboarding and Persona]
-      AUTH --> TIMER
-      TIMER --> ONB
-    end
-
-    BE --> BEStack
+    FE -->|coach route| AF[Agentic Frontend]
+    FE -->|/agentic-api proxy| AB[Agentic Backend]
+    BE -->|onboarding + interactions sync| AB
 ```
 
-### Manual time entry validation path
+## Current Agentic Sync Coverage
 
-```mermaid
-sequenceDiagram
-    participant UI as Frontend Popup
-    participant API as TimerController
-    participant DTO as addTimeEntryRequest
-    participant SVC as TimeEntryServiceImpl
-    participant DB as TimeEntryRepository
+| Domain | Source | Sync Status | Destination |
+|---|---|---|---|
+| Onboarding role/goals/preferences/mentor/planner | OnboardingController | Synced | Agentic /api/knowledge/onboarding |
+| Time entries (completed or edited) | TimerController | Synced | Agentic /api/knowledge/interactions |
+| Time-entry backfill | TimerController backfill endpoint | Synced | Agentic /api/knowledge/interactions |
+| Habit snapshot summary/trend | TaskManager + AgenticSyncController | Synced | Agentic /api/knowledge/interactions |
+| Daily checkups | OnboardingController checkup endpoint | Synced | Agentic checkup APIs |
 
-    UI->>API: POST /api/timers/addTimer
-    API->>DTO: Bean validation (@Valid)
-    DTO-->>API: endTime must be after startTime
-    API->>SVC: addTimeEntry(request, user)
-    SVC->>SVC: Defensive range guard
-    alt endTime <= startTime
-      SVC-->>API: IllegalArgumentException
-      API-->>UI: 400 Validation failed
-    else valid range
-      SVC->>DB: save(TimeEntry)
-      DB-->>SVC: persisted entry
-      SVC-->>API: TimeEntry
-      API-->>UI: 200 success payload
-    end
-```
+## Known Sync Boundaries
 
-### Production deployment topology
+These data points are currently not independently synced into Agentic knowledge as first-class records:
 
-```mermaid
-graph TB
-    subgraph Browser
-      TT[AlterEgo Frontend - Vercel]
-      CO[Coach Route /coach]
-    end
+- Project catalog CRUD events as standalone knowledge entries.
+- Tag catalog CRUD events as standalone knowledge entries.
+- Local-only todo tasks from task store.
+- Time-entry delete events as explicit remove operations in Agentic knowledge.
+- Active running timer state before endTime is set.
 
-    subgraph Render
-      TTB[AlterEgo Backend API]
-      AKB[Agentic Backend API]
-    end
+## Repository Layout
 
-    subgraph Vercel
-      AF[Agentic Frontend UI]
-    end
-
-    TT -->|/api| TTB
-    CO -->|iframe src from VITE_AGENTIC_COACH_URL| AF
-    TT -->|/agentic-api| AKB
-    TTB -->|health ping workflow| TTB
+```text
+AlterEgo_TimeTracking/
+├── backend/
+│   ├── src/main/java/...          # Spring Boot API, security, domain services
+│   └── src/main/resources/        # environment-specific config
+├── frontend/
+│   ├── src/components/            # timer, habits, onboarding, AI chat UI
+│   ├── src/store/                 # local task/habit state
+│   └── .env.example               # frontend runtime config
+├── POCs/
+└── DEPLOYMENT_RENDER_FRONTEND_GUIDE.md
 ```
 
 ## Technology Stack
 
 | Layer | Technologies |
 |---|---|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Framer Motion |
-| Backend | Spring Boot 3.4, Spring Security, Spring Data JPA, Bean Validation |
-| Auth | JWT (access + refresh token flow) |
-| Data | PostgreSQL (prod), H2 (local dev) |
-| AI integration | LangChain4j + OpenAI model support, Agentic sync endpoints |
-| Deployment | Render (backend), Vercel (frontend), GitHub Actions keepalive |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS |
+| Backend | Spring Boot 3.4, Spring Security, Spring Data JPA |
+| Auth | JWT access/refresh flow |
+| Data | PostgreSQL (production), H2 (local) |
+| AI integration | LangChain4j + Agentic bridge endpoints |
+| Deployment | Render (backend), Vercel (frontend) |
 
-## Repository Layout
-
-```text
-AlterEgo_TimeTracking/
-├── backend/                       # Spring Boot API
-│   ├── src/main/java/...          # domain, controller, service, security
-│   └── src/main/resources/        # application config
-├── frontend/                      # React + Vite client
-│   ├── src/components/            # UI features and coach workspace bridge
-│   └── .env.example               # frontend runtime origin settings
-├── POCs/                          # experimental implementations
-└── DEPLOYMENT_RENDER_FRONTEND_GUIDE.md
-```
-
-## Run Locally
+## Local Development
 
 ### Prerequisites
 - Java 17
-- Maven 3.8+ (or Maven Wrapper)
 - Node.js 18+
 - npm
 
-### 1) Start backend
+### Backend
 
 ```bash
 cd backend
 ./mvnw spring-boot:run
 ```
 
-Default local backend: `http://localhost:8080`
-
-### 2) Start frontend
+### Frontend
 
 ```bash
 cd frontend
@@ -163,62 +101,50 @@ npm install
 npm run dev
 ```
 
-Default local frontend: `http://localhost:5173`
-
-### 3) Optional POC runtime
-
-```bash
-cd POCs
-pip install -r requirements.txt
-python Realtime_Text-To-Speech_Impl.py
-```
+Defaults:
+- Backend: http://localhost:8080
+- Frontend: http://localhost:5173
 
 ## Configuration
 
-### Backend properties
+### Backend
+Set in application properties or environment variables:
 
-`backend/src/main/resources/application.properties` and `application-prod.properties` support:
+- OPENAI_API_KEY
+- JWT_SECRET
+- APP_CORS_ALLOWED_ORIGIN_PATTERNS
+- AGENTIC_SYNC_ENABLED
+- AGENTIC_SYNC_BASE_URL
 
-- `OPENAI_API_KEY`
-- `JWT_SECRET`
-- `APP_CORS_ALLOWED_ORIGIN_PATTERNS`
-- `AGENTIC_SYNC_ENABLED`
-- `AGENTIC_SYNC_BASE_URL`
+### Frontend
+Set using frontend environment files:
 
-### Frontend environment
+- VITE_TIMETRACKER_API_ORIGIN
+- VITE_AGENTIC_API_ORIGIN
+- VITE_AGENTIC_COACH_URL
+- VITE_AGENTIC_API_PREFIX
 
-Use `frontend/.env.example` for standalone deployments:
+## Key API Endpoints
 
-- `VITE_TIMETRACKER_API_ORIGIN`
-- `VITE_AGENTIC_API_ORIGIN`
-- `VITE_AGENTIC_COACH_URL`
-- `VITE_AGENTIC_API_PREFIX`
-
-## API Highlights
-
-- `POST /api/auth/login` and `POST /api/auth/refresh`
-- `POST /api/timers` start timer
-- `PUT /api/timers/{id}/stop` stop timer
-- `POST /api/timers/addTimer` manual add entry
-- `GET /health` and `GET /api/health` service checks
+- POST /api/auth/login
+- POST /api/auth/refresh
+- POST /api/timers/start
+- POST /api/timers/{id}/stop
+- POST /api/timers/addTimer
+- PUT /api/timers/{id}
+- DELETE /api/timers/{id}
+- POST /api/timers/sync/agentic/backfill
+- POST /api/onboarding/onboardNewUser
+- PUT /api/onboarding/updateOnboardingData
+- POST /api/agentic/habits/snapshot
 
 ## Data Integrity Rules
 
-- Active timers are represented with `endTime = null`.
-- Manual entries must provide both `startTime` and `endTime`.
-- Manual entries enforce strict ordering: `endTime > startTime`.
-- Duration is computed from the normalized time window.
+- Active timers are represented with endTime = null.
+- Manual entries require both startTime and endTime.
+- Manual entries must satisfy endTime > startTime.
+- Time-entry sync only occurs for entries with endTime populated.
 
-## Deployment Notes
+## Deployment
 
-Production setup uses Vercel frontends and Render APIs.
-
-For exact deployment steps, keepalive setup, and service mapping, see:
-- `DEPLOYMENT_RENDER_FRONTEND_GUIDE.md`
-
-## What This Project Demonstrates
-
-- Product-minded backend design with clear domain constraints.
-- Resilient cloud deployment patterns under free-tier limits.
-- Pragmatic AI integration with guardrails and interoperability.
-- Ownership from UX and architecture through operations.
+For full deployment and keepalive guidance, see DEPLOYMENT_RENDER_FRONTEND_GUIDE.md.
