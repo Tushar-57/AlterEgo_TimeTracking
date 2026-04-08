@@ -47,6 +47,9 @@ public class AgenticKnowledgeSyncService {
     private final long bridgeTokenTtlSeconds;
     private final int maxAttempts;
     private final long retryBackoffMs;
+    private final long upstreamCooldownMillis;
+
+    private volatile long upstreamCooldownUntilEpochMillis = 0L;
 
     public static final class SyncBackfillResult {
         private final boolean configured;
@@ -105,6 +108,7 @@ public class AgenticKnowledgeSyncService {
             @Value("${agentic.sync.bridge-token-ttl-seconds:180}") long bridgeTokenTtlSeconds,
             @Value("${agentic.sync.max-attempts:2}") int maxAttempts,
             @Value("${agentic.sync.retry-backoff-ms:750}") long retryBackoffMs,
+            @Value("${agentic.sync.upstream-cooldown-seconds:120}") long upstreamCooldownSeconds,
             @Value("${agentic.sync.connect-timeout-ms:5000}") long connectTimeoutMs,
             @Value("${agentic.sync.request-timeout-ms:15000}") long requestTimeoutMs) {
         this.timeEntryRepository = timeEntryRepository;
@@ -115,11 +119,24 @@ public class AgenticKnowledgeSyncService {
         this.bridgeTokenTtlSeconds = bridgeTokenTtlSeconds;
         this.maxAttempts = Math.max(1, maxAttempts);
         this.retryBackoffMs = Math.max(0L, retryBackoffMs);
+        this.upstreamCooldownMillis = Math.max(0L, upstreamCooldownSeconds) * 1000L;
         this.requestTimeout = Duration.ofMillis(requestTimeoutMs);
         this.objectMapper = new ObjectMapper();
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(connectTimeoutMs))
                 .build();
+    }
+
+    public boolean isConfiguredForSync() {
+        return isConfigured();
+    }
+
+    public long getUpstreamCooldownRemainingSeconds() {
+        long remainingMillis = upstreamCooldownUntilEpochMillis - System.currentTimeMillis();
+        if (remainingMillis <= 0) {
+            return 0L;
+        }
+        return (long) Math.ceil(remainingMillis / 1000.0);
     }
 
     public void syncOnboarding(OnboardingRequestDTO request, Users user) {
@@ -654,12 +671,25 @@ public class AgenticKnowledgeSyncService {
     }
 
     private HttpResponse<String> sendWithRetry(HttpRequest request, String syncType) throws Exception {
+        long cooldownRemaining = getUpstreamCooldownRemainingSeconds();
+        if (cooldownRemaining > 0) {
+            throw new IllegalStateException(
+                    "Agentic upstream cooldown active for " + cooldownRemaining + "s"
+            );
+        }
+
         HttpResponse<String> lastResponse = null;
         Exception lastException = null;
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 521) {
+                    activateUpstreamCooldown(syncType, response.statusCode());
+                    return response;
+                }
+
                 if (!isRetryableStatus(response.statusCode()) || attempt == maxAttempts) {
                     return response;
                 }
@@ -708,7 +738,23 @@ public class AgenticKnowledgeSyncService {
     }
 
     private boolean isRetryableStatus(int statusCode) {
-        return statusCode == 408 || statusCode == 429 || statusCode >= 500;
+        return statusCode == 408 || statusCode == 429 || (statusCode >= 500 && statusCode != 521);
+    }
+
+    private void activateUpstreamCooldown(String syncType, int statusCode) {
+        if (upstreamCooldownMillis <= 0) {
+            return;
+        }
+
+        long nextCooldownUntil = System.currentTimeMillis() + upstreamCooldownMillis;
+        upstreamCooldownUntilEpochMillis = Math.max(upstreamCooldownUntilEpochMillis, nextCooldownUntil);
+
+        logger.warn(
+                "Agentic {} received upstream status {}. Activating cooldown for {}s.",
+                syncType,
+                statusCode,
+                getUpstreamCooldownRemainingSeconds()
+        );
     }
 
     private boolean isRetryableException(Exception exception) {

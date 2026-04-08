@@ -15,7 +15,7 @@ import { Button } from '../Calendar_updated/components/ui/button';
 import { Input } from '../Calendar_updated/components/ui/input';
 import { Switch } from '../Calendar_updated/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '../Calendar_updated/components/ui/dialog';
-import { Timer, AlarmClock, Coffee, Plus, RefreshCw, Sunrise, Moon } from 'lucide-react';
+import { Timer, AlarmClock, Coffee, Plus, RefreshCw, Sunrise, Moon, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CurrentTask, Project, Tag, TimeEntry, UserPreferences, TimerStatus, TimerMode, PomodoroState } from './types';
 import { formatTime, getRandomColor } from './utility';
@@ -44,6 +44,19 @@ const toProjectId = (value: CurrentTask['projectId']): number | null => {
 };
 
 type DailyMarkerType = 'wake_up' | 'sign_off';
+
+type AgenticSyncStatus = {
+  enabled: boolean;
+  configured: boolean;
+  pending: number;
+  retry: number;
+  processing: number;
+  failed: number;
+  success: number;
+  cooldownRemainingSeconds: number;
+  nextAttemptAt?: string | null;
+  degraded: boolean;
+};
 
 const DAILY_MARKER_CONFIG: Record<
   DailyMarkerType,
@@ -182,6 +195,7 @@ export default function TimeTracker() {
   const [descriptionError, setDescriptionError] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
   const [dailyMarkerLoading, setDailyMarkerLoading] = useState<DailyMarkerType | null>(null);
+  const [agenticSyncStatus, setAgenticSyncStatus] = useState<AgenticSyncStatus | null>(null);
 
   // User preferences
   const [preferences, setPreferences] = useState<UserPreferences>(() => {
@@ -419,6 +433,54 @@ export default function TimeTracker() {
     };
     if (isAuthenticated) checkActiveTimer();
   }, [isAuthenticated, logout, toast]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setAgenticSyncStatus(null);
+      return;
+    }
+
+    let isActive = true;
+
+    const fetchAgenticSyncStatus = async () => {
+      try {
+        const token = sessionStorage.getItem('auth_session');
+        if (!token) {
+          return;
+        }
+
+        const response = await fetch('/api/agentic/sync/status', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const envelope = await response.json();
+        if (!isActive || !envelope?.success || !envelope?.data) {
+          return;
+        }
+
+        setAgenticSyncStatus(envelope.data as AgenticSyncStatus);
+      } catch {
+        // Non-blocking status panel only.
+      }
+    };
+
+    void fetchAgenticSyncStatus();
+    const timer = window.setInterval(() => {
+      void fetchAgenticSyncStatus();
+    }, 45000);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(timer);
+    };
+  }, [isAuthenticated]);
 
   const clearTimerStateLocally = ({
     showResetToast = false,
@@ -1478,6 +1540,28 @@ export default function TimeTracker() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>{fetchError}</span>
+            </div>
+          </motion.div>
+        )}
+
+        {agenticSyncStatus?.degraded && (
+          <motion.div
+            className="mb-6 rounded-2xl border border-amber-300/60 bg-amber-50/85 p-4 text-amber-900 shadow-sm dark:border-amber-700/60 dark:bg-amber-950/35 dark:text-amber-100"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+              <div className="space-y-1 text-sm">
+                <p className="font-semibold">Agentic sync is degraded</p>
+                <p>
+                  Background sync is delayed. You can keep working locally, then use the refresh/sync action once Agentic is back.
+                </p>
+                <p className="text-xs opacity-90">
+                  Cooldown: {Math.max(0, agenticSyncStatus.cooldownRemainingSeconds || 0)}s | Pending: {agenticSyncStatus.pending + agenticSyncStatus.retry} | Failed: {agenticSyncStatus.failed}
+                </p>
+              </div>
             </div>
           </motion.div>
         )}

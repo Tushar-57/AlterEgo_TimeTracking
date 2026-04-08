@@ -9,6 +9,7 @@ import com.tushar.demo.timetracker.exception.ConflictException;
 import com.tushar.demo.timetracker.exception.NoActiveTimerException;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
 import com.tushar.demo.timetracker.integration.AgenticKnowledgeSyncService;
+import com.tushar.demo.timetracker.integration.AgenticSyncOutboxService;
 import com.tushar.demo.timetracker.model.Project;
 import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
@@ -40,17 +41,20 @@ public class TimerController {
     private final ProjectRepository projectRepository;
     private final TimeEntryRepository timeEntryRepository;
     private final AgenticKnowledgeSyncService agenticKnowledgeSyncService;
+    private final AgenticSyncOutboxService agenticSyncOutboxService;
 
     public TimerController(TimeEntryService timeEntryService, 
                            UserDetailsServiceImpl userDetailsService,
                            ProjectRepository projectRepository,
                            TimeEntryRepository timeEntryRepository,
-                           AgenticKnowledgeSyncService agenticKnowledgeSyncService) {
+                           AgenticKnowledgeSyncService agenticKnowledgeSyncService,
+                           AgenticSyncOutboxService agenticSyncOutboxService) {
         this.timeEntryService = timeEntryService;
         this.userDetailsService = userDetailsService;
         this.projectRepository = projectRepository;
         this.timeEntryRepository = timeEntryRepository;
         this.agenticKnowledgeSyncService = agenticKnowledgeSyncService;
+        this.agenticSyncOutboxService = agenticSyncOutboxService;
     }
 
     @ExceptionHandler(Exception.class)
@@ -140,7 +144,11 @@ public class TimerController {
             }
             entry.setBillable(request.billable());
             TimeEntry updatedEntry = timeEntryRepository.save(entry);
-            agenticKnowledgeSyncService.syncTimeEntry(updatedEntry, user, "stop_timer");
+            AgenticSyncOutboxService.EnqueueResult queueResult =
+                    agenticSyncOutboxService.enqueueTimeEntrySync(updatedEntry, user, "stop_timer");
+            if (!queueResult.accepted()) {
+                logger.warn("Failed to queue stop_timer sync for user {}: {}", user.getEmail(), queueResult.message());
+            }
             logger.info("Timer stopped successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(updatedEntry, "Timer stopped successfully"));
             } catch (ResourceNotFoundException e) {
@@ -232,7 +240,11 @@ public class TimerController {
             }
             Users user = userDetailsService.getCurrentUser(authentication);
             TimeEntry entry = timeEntryService.updateTimerPosition(id, user, position.positionTop(), position.positionLeft());
-            agenticKnowledgeSyncService.syncTimeEntry(entry, user, "move_time_entry");
+            AgenticSyncOutboxService.EnqueueResult queueResult =
+                    agenticSyncOutboxService.enqueueTimeEntrySync(entry, user, "move_time_entry");
+            if (!queueResult.accepted()) {
+                logger.warn("Failed to queue move_time_entry sync for user {}: {}", user.getEmail(), queueResult.message());
+            }
             logger.info("Timer position updated successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(entry, "Timer position updated successfully"));
         } catch (Exception e) {
@@ -255,7 +267,11 @@ public class TimerController {
             }
             Users user = userDetailsService.getCurrentUser(authentication);
             TimeEntry entry = timeEntryService.addTimeEntry(request, user);
-            agenticKnowledgeSyncService.syncTimeEntry(entry, user, "create_time_entry");
+            AgenticSyncOutboxService.EnqueueResult queueResult =
+                    agenticSyncOutboxService.enqueueTimeEntrySync(entry, user, "create_time_entry");
+            if (!queueResult.accepted()) {
+                logger.warn("Failed to queue create_time_entry sync for user {}: {}", user.getEmail(), queueResult.message());
+            }
             logger.info("Popup - Timer added successfully for user: {}", user.getName());
             return ResponseEntity.ok(ApiResponse.success(entry, "Timer started successfully"));
         } catch (IllegalArgumentException e) {
@@ -284,7 +300,11 @@ public class TimerController {
 
             Users user = userDetailsService.getCurrentUser(authentication);
             TimeEntry updatedEntry = timeEntryService.updateTimeEntry(id, request, user);
-            agenticKnowledgeSyncService.syncTimeEntry(updatedEntry, user, "update_time_entry");
+            AgenticSyncOutboxService.EnqueueResult queueResult =
+                    agenticSyncOutboxService.enqueueTimeEntrySync(updatedEntry, user, "update_time_entry");
+            if (!queueResult.accepted()) {
+                logger.warn("Failed to queue update_time_entry sync for user {}: {}", user.getEmail(), queueResult.message());
+            }
 
             logger.info("Time entry {} updated successfully for user: {}", id, user.getName());
             return ResponseEntity.ok(ApiResponse.success(updatedEntry, "Time entry updated successfully"));
@@ -316,11 +336,16 @@ public class TimerController {
             }
 
             Users user = userDetailsService.getCurrentUser(authentication);
-                TimeEntry existingEntry = timeEntryRepository.findByIdAndUser(id, user)
+            TimeEntry existingEntry = timeEntryRepository.findByIdAndUser(id, user)
                     .orElseThrow(() -> new ResourceNotFoundException("Time entry not found with ID: " + id));
 
+            AgenticSyncOutboxService.EnqueueResult queueResult =
+                    agenticSyncOutboxService.enqueueTimeEntryDeletion(existingEntry, user, "delete_time_entry");
+            if (!queueResult.accepted()) {
+                logger.warn("Failed to queue delete_time_entry sync for user {}: {}", user.getEmail(), queueResult.message());
+            }
+
             timeEntryService.deleteTimeEntry(id, user);
-                agenticKnowledgeSyncService.syncTimeEntryDeletion(existingEntry, user, "delete_time_entry");
 
             logger.info("Time entry {} deleted successfully for user: {}", id, user.getName());
             return ResponseEntity.ok(ApiResponse.success(null, "Time entry deleted successfully"));
@@ -349,10 +374,14 @@ public class TimerController {
             }
 
             Users user = userDetailsService.getCurrentUser(authentication);
-                TimeEntry sourceEntry = timeEntryRepository.findByIdAndUser(id, user)
+            TimeEntry sourceEntry = timeEntryRepository.findByIdAndUser(id, user)
                     .orElseThrow(() -> new ResourceNotFoundException("Time entry not found with ID: " + id));
             TimeEntry continuedEntry = timeEntryService.continueTimeEntry(id, user);
-                agenticKnowledgeSyncService.syncTimeEntryContinuation(sourceEntry, continuedEntry, user, "continue_time_entry");
+            AgenticSyncOutboxService.EnqueueResult queueResult =
+                    agenticSyncOutboxService.enqueueTimeEntryContinuation(sourceEntry, continuedEntry, user, "continue_time_entry");
+            if (!queueResult.accepted()) {
+                logger.warn("Failed to queue continue_time_entry sync for user {}: {}", user.getEmail(), queueResult.message());
+            }
 
             logger.info("Time entry {} continued successfully as timer {} for user: {}", id, continuedEntry.getId(), user.getName());
             return ResponseEntity.ok(ApiResponse.success(continuedEntry, "Time entry continued successfully"));
@@ -384,28 +413,40 @@ public class TimerController {
                         .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
             }
 
-                if (limit != null && limit < 1) {
+            if (limit != null && limit < 1) {
                 return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Validation failed", Map.of(
-                        "code", "VALIDATION_FAILED",
-                        "message", "limit must be a positive integer when provided"
-                    )));
-                }
+                        .body(ApiResponse.error("Validation failed", Map.of(
+                                "code", "VALIDATION_FAILED",
+                                "message", "limit must be a positive integer when provided"
+                        )));
+            }
 
-                int requestedLimit = limit != null ? limit : 0;
+            int requestedLimit = limit != null ? limit : 0;
             Users user = userDetailsService.getCurrentUser(authentication);
-            AgenticKnowledgeSyncService.SyncBackfillResult result =
-                    agenticKnowledgeSyncService.syncHistoricalTimeEntries(user, requestedLimit);
+            long cooldownRemainingSeconds = agenticKnowledgeSyncService.getUpstreamCooldownRemainingSeconds();
+            if (cooldownRemainingSeconds > 0) {
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .body(ApiResponse.error(
+                                "Agentic upstream unavailable",
+                                Map.of(
+                                        "code", "AGENTIC_UPSTREAM_UNAVAILABLE",
+                                        "cooldownSeconds", String.valueOf(cooldownRemainingSeconds)
+                                )
+                        ));
+            }
+
+            AgenticSyncOutboxService.BackfillQueueResult result =
+                    agenticSyncOutboxService.enqueueHistoricalTimeEntries(user, requestedLimit);
 
             Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("configured", result.isConfigured());
-            payload.put("requested", result.getRequested());
-            payload.put("scanned", result.getScanned());
-            payload.put("synced", result.getSynced());
-            payload.put("failed", result.getFailed());
-            payload.put("skippedActive", result.getSkippedActive());
+            payload.put("configured", result.configured());
+            payload.put("requested", result.requested());
+            payload.put("scanned", result.scanned());
+            payload.put("queued", result.queued());
+            payload.put("enqueueFailed", result.enqueueFailed());
+            payload.put("skippedActive", result.skippedActive());
 
-            if (!result.isConfigured()) {
+            if (!result.configured()) {
                 return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED)
                         .body(ApiResponse.error(
                                 "Agentic sync is not configured",
@@ -413,7 +454,8 @@ public class TimerController {
                         ));
             }
 
-            return ResponseEntity.ok(ApiResponse.success(payload, "Agentic backfill completed"));
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(ApiResponse.success(payload, "Agentic backfill queued"));
         } catch (Exception e) {
             logger.error("Failed to backfill Agentic time entries for user: {}", authName(authentication), e);
             return ResponseEntity.internalServerError()
