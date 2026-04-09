@@ -95,10 +95,13 @@ export const TimerPopup = ({
   onClose,
   onSave,
   taskName,
+  taskDescription: incomingTaskDescription,
+  tags: incomingTags = [],
+  selectedProjectId: incomingProjectId,
 }: TimerPopupProps) => {
-  const [taskDescription, setTaskDescription] = useState(taskName);
+  const [taskDescription, setTaskDescription] = useState(incomingTaskDescription || taskName);
   const [category, setCategory] = useState('work');
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(() => [...incomingTags]);
   const [newTag, setNewTag] = useState('');
   const [startTime] = useState(() => roundToNextMinute(new Date()));
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -123,8 +126,20 @@ export const TimerPopup = ({
   const [messages, setMessages] = useState<string[]>([]);
   const [draftMessage, setDraftMessage] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(incomingProjectId ?? null);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+
+  useEffect(() => {
+    setTaskDescription(incomingTaskDescription || taskName);
+  }, [incomingTaskDescription, taskName]);
+
+  useEffect(() => {
+    setTags(Array.isArray(incomingTags) ? [...incomingTags] : []);
+  }, [incomingTags]);
+
+  useEffect(() => {
+    setSelectedProjectId(incomingProjectId ?? null);
+  }, [incomingProjectId]);
 
   const fetchProjects = useCallback(async () => {
       setIsLoadingProjects(true);
@@ -135,7 +150,7 @@ export const TimerPopup = ({
           return;
         }
     
-        const res = await fetch('/api/projects', {
+        const res = await fetch('/api/projects/userProjects', {
           headers: { Authorization: `Bearer ${token}` }
         });
     
@@ -147,8 +162,8 @@ export const TimerPopup = ({
     
         if (!res.ok) throw new Error('Failed to fetch projects');
         
-        const data = await res.json();
-        setProjects(data);
+        const data = await res.json().catch(() => [] as Project[]);
+        setProjects(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching projects:', error);
         if (error instanceof Error && error.message.includes('401')) {

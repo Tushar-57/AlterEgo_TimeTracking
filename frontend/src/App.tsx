@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { BarChart2, Brain, Clock, LayoutDashboard, ListChecks, Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import TimeTracker from './components/TimeTracker/TimeTracker';
-import Analytics from './components/Analytics';
 import LoginClassic from './components/LoginFunctionality';
 import SignupClassic from './components/SignupFunctionality';
 import EmailVerificationPage from './components/EmailVerificationPage';
@@ -74,8 +73,8 @@ const ProtectedRoutes = () => {
     { label: 'Timer', to: '/timer', icon: Clock },
     { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
     { label: 'Tasks', to: '/tasks', icon: ListChecks },
-    { label: 'Analytics', to: '/analytics', icon: BarChart2 },
-    { label: 'Coach', to: '/coach', icon: Brain },
+    { label: 'Analytics', to: '/coach/analytics', icon: BarChart2 },
+    { label: 'Coach', to: '/coach/knowledge', icon: Brain },
   ];
 
   const activeMobileTab = useMemo(
@@ -138,7 +137,7 @@ const ProtectedRoutes = () => {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/timer" element={<TimeTracker />} />
             <Route path="/tasks" element={<TaskManager />} />
-            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/analytics" element={<Navigate to="/coach/analytics" replace />} />
             <Route
               path="/reports"
               element={
@@ -290,7 +289,16 @@ const ProtectedRoutes = () => {
               }
             />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/coach" element={<CoachWorkspace />} />
+            <Route path="/coach" element={<Navigate to="/coach/knowledge" replace />} />
+            <Route
+              path="/coach/knowledge"
+              element={<CoachWorkspace autoLaunch targetView="knowledge" returnPath="/dashboard" />}
+            />
+            <Route
+              path="/coach/analytics"
+              element={<CoachWorkspace autoLaunch targetView="analytics" returnPath="/dashboard" />}
+            />
+            <Route path="/coach/launcher" element={<CoachWorkspace />} />
             <Route path="/dashboard" element={<Dashboard isAuthenticated={isAuthenticated} />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

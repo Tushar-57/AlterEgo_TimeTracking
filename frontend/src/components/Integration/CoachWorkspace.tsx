@@ -73,11 +73,20 @@ const resolveCoachSrc = (): string => {
   return '/coach/';
 };
 
-const buildCoachLaunchUrl = (url: string, embedMode: boolean, bridgeToken?: string | null): string => {
+type CoachTargetView = 'chat' | 'knowledge' | 'analytics';
+
+const buildCoachLaunchUrl = (
+  url: string,
+  embedMode: boolean,
+  bridgeToken?: string | null,
+  targetView: CoachTargetView = 'chat',
+  returnPath = '/coach/launcher'
+): string => {
   try {
     const parsed = new URL(url, window.location.origin);
     parsed.searchParams.set('from', 'alterego');
-    parsed.searchParams.set('return_url', `${window.location.origin}/coach`);
+    parsed.searchParams.set('view', targetView);
+    parsed.searchParams.set('return_url', `${window.location.origin}${returnPath}`);
 
     if (bridgeToken) {
       parsed.searchParams.set('bridge_token', bridgeToken);
@@ -161,11 +170,23 @@ const primeCoachKnowledge = async (): Promise<void> => {
   }
 };
 
-const CoachWorkspace = () => {
+type CoachWorkspaceProps = {
+  autoLaunch?: boolean;
+  targetView?: CoachTargetView;
+  returnPath?: string;
+};
+
+const CoachWorkspace = ({
+  autoLaunch = false,
+  targetView = 'chat',
+  returnPath,
+}: CoachWorkspaceProps) => {
   const [showEmbeddedPreview, setShowEmbeddedPreview] = useState(false);
   const [bridgeToken, setBridgeToken] = useState<string | null>(null);
   const [bridgeTokenExpiresAt, setBridgeTokenExpiresAt] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hasAutoLaunchedRef = useRef(false);
+  const resolvedReturnPath = returnPath ?? (autoLaunch ? '/dashboard' : '/coach/launcher');
 
   const ensureBridgeToken = useCallback(async (): Promise<string | null> => {
     if (bridgeToken && Date.now() < bridgeTokenExpiresAt - 15000) {
@@ -224,10 +245,10 @@ const CoachWorkspace = () => {
     if (!coachSrc) {
       return null;
     }
-    return buildCoachLaunchUrl(coachSrc, true, bridgeToken);
-  }, [coachSrc, bridgeToken]);
+    return buildCoachLaunchUrl(coachSrc, true, bridgeToken, targetView, resolvedReturnPath);
+  }, [bridgeToken, coachSrc, resolvedReturnPath, targetView]);
 
-  const openCoach = (newTab: boolean) => {
+  const openCoach = useCallback((newTab: boolean) => {
     if (!coachSrc) {
       return;
     }
@@ -238,7 +259,7 @@ const CoachWorkspace = () => {
     const popup = newTab ? window.open('about:blank', '_blank', 'noopener,noreferrer') : null;
 
     const navigateToCoach = (token: string | null) => {
-      const launchUrl = buildCoachLaunchUrl(coachSrc, false, token);
+      const launchUrl = buildCoachLaunchUrl(coachSrc, false, token, targetView, resolvedReturnPath);
 
       if (newTab) {
         if (popup) {
@@ -259,7 +280,22 @@ const CoachWorkspace = () => {
     void ensureBridgeToken()
       .then((token) => navigateToCoach(token))
       .catch(() => navigateToCoach(null));
-  };
+  }, [coachSrc, ensureBridgeToken, resolvedReturnPath, targetView]);
+
+  useEffect(() => {
+    if (!autoLaunch || !coachSrc || hasAutoLaunchedRef.current) {
+      return;
+    }
+
+    hasAutoLaunchedRef.current = true;
+    openCoach(false);
+  }, [autoLaunch, coachSrc, openCoach]);
+
+  const viewLabel = targetView === 'analytics'
+    ? 'Analytics'
+    : targetView === 'knowledge'
+      ? 'Knowledge Base'
+      : 'Coach';
 
   return (
     <div ref={containerRef} className="flex min-h-screen w-full flex-col bg-gradient-to-b from-slate-50 via-white to-blue-50/40 p-4 sm:p-6">
@@ -267,8 +303,13 @@ const CoachWorkspace = () => {
         <div className="mb-6 flex flex-col gap-2">
           <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">AI Coach Workspace</h1>
           <p className="text-sm text-gray-600">
-            Launch Agentic as an AlterEgo extension with return navigation and background context sync.
+            Launch Agentic {viewLabel} as an AlterEgo extension with return navigation and background context sync.
           </p>
+          {autoLaunch && (
+            <p className="text-xs text-gray-500">
+              Redirecting you to Agentic {viewLabel}...
+            </p>
+          )}
         </div>
 
         {coachSrc ? (

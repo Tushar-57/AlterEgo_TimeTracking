@@ -28,6 +28,7 @@ type DraftTask = {
   type: TaskType;
   title: string;
   description: string;
+  projectId: string;
   priority: TaskPriority;
   status: TaskStatus;
   tagsInput: string;
@@ -36,6 +37,16 @@ type DraftTask = {
   followUpDate: string;
   noteToAI: string;
   streakTarget: number;
+};
+
+type ProjectOption = {
+  id: string;
+  name: string;
+};
+
+type TagOption = {
+  id: string;
+  name: string;
 };
 
 type HabitContributionCell = {
@@ -433,6 +444,7 @@ const defaultDraft = (mode: TaskType): DraftTask => ({
   type: mode,
   title: '',
   description: '',
+  projectId: '',
   priority: 'medium',
   status: mode === 'habit' ? 'in-progress' : 'todo',
   tagsInput: '',
@@ -447,6 +459,7 @@ const draftFromTask = (task: Task): DraftTask => ({
   type: normalizeTaskType(task.type),
   title: task.title,
   description: task.description,
+  projectId: task.projectId ? String(task.projectId) : '',
   priority: task.priority,
   status: task.status,
   tagsInput: task.tags.join(', '),
@@ -471,6 +484,9 @@ const TaskManager = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | TaskStatus>('all');
   const [priorityFilter, setPriorityFilter] = useState<'all' | TaskPriority>('all');
   const [draft, setDraft] = useState<DraftTask>(defaultDraft('todo'));
+  const [availableProjects, setAvailableProjects] = useState<ProjectOption[]>([]);
+  const [availableTags, setAvailableTags] = useState<TagOption[]>([]);
+  const [loadingTaskMeta, setLoadingTaskMeta] = useState(false);
 
   useEffect(() => {
     seedSampleHabits();
@@ -519,6 +535,93 @@ const TaskManager = () => {
       cancelled = true;
     };
   }, [replaceTasks]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTaskMeta = async () => {
+      const token = sessionStorage.getItem('auth_session');
+      if (!token) {
+        setAvailableProjects([]);
+        setAvailableTags([]);
+        return;
+      }
+
+      setLoadingTaskMeta(true);
+
+      try {
+        const [projectsResponse, tagsResponse] = await Promise.all([
+          fetch('/api/projects/userProjects', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: 'include',
+          }),
+          fetch('/api/tags', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: 'include',
+          }),
+        ]);
+
+        const projectsPayload = projectsResponse.ok
+          ? ((await projectsResponse.json().catch(() => [])) as Array<{ id?: number | string; name?: string }>)
+          : [];
+        const tagsPayload = tagsResponse.ok
+          ? ((await tagsResponse.json().catch(() => [])) as Array<{ id?: number | string; name?: string }>)
+          : [];
+
+        if (cancelled) {
+          return;
+        }
+
+        const normalizedProjects = (Array.isArray(projectsPayload) ? projectsPayload : [])
+          .map((project) => {
+            const id = String(project.id ?? '').trim();
+            const name = String(project.name ?? '').trim();
+            if (!id || !name) {
+              return null;
+            }
+            return { id, name };
+          })
+          .filter((project): project is ProjectOption => project !== null);
+
+        const normalizedTags = (Array.isArray(tagsPayload) ? tagsPayload : [])
+          .map((tag) => {
+            const id = String(tag.id ?? '').trim();
+            const name = String(tag.name ?? '').trim();
+            if (!id || !name) {
+              return null;
+            }
+            return { id, name };
+          })
+          .filter((tag): tag is TagOption => tag !== null);
+
+        setAvailableProjects(normalizedProjects);
+        setAvailableTags(normalizedTags);
+      } catch {
+        if (!cancelled) {
+          setAvailableProjects([]);
+          setAvailableTags([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingTaskMeta(false);
+        }
+      }
+    };
+
+    void loadTaskMeta();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!hasHydratedFromServerRef.current) {
@@ -617,6 +720,10 @@ const TaskManager = () => {
       .filter((task) => (priorityFilter === 'all' ? true : task.priority === priorityFilter));
   }, [modeTasks, priorityFilter, statusFilter]);
 
+  const projectNameById = useMemo(() => {
+    return new Map(availableProjects.map((project) => [project.id, project.name]));
+  }, [availableProjects]);
+
   const modeStats = useMemo(() => {
     const total = modeTasks.length;
     const completed = modeTasks.filter((task) => task.status === 'completed').length;
@@ -655,7 +762,7 @@ const TaskManager = () => {
     setHasUserSelectedMode(true);
     setActiveMode(normalizeTaskType(task.type));
     setDraft(draftFromTask(task));
-    setShowAdvanced(Boolean(task.description || task.tags.length || task.followUpDate || task.noteToAI));
+    setShowAdvanced(Boolean(task.description || task.tags.length || task.followUpDate || task.noteToAI || task.projectId));
     setShowEditor(true);
   };
 
@@ -664,6 +771,30 @@ const TaskManager = () => {
     setEditingTaskId(null);
     setShowAdvanced(false);
     setDraft(defaultDraft(activeMode));
+  };
+
+  const appendTagToDraft = (tagName: string) => {
+    const normalized = tagName.trim();
+    if (!normalized) {
+      return;
+    }
+
+    setDraft((prev) => {
+      const existingTags = prev.tagsInput
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
+
+      const existsAlready = existingTags.some((tag) => tag.toLowerCase() === normalized.toLowerCase());
+      if (existsAlready) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        tagsInput: [...existingTags, normalized].join(', '),
+      };
+    });
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -686,6 +817,7 @@ const TaskManager = () => {
         type: normalizedDraftType,
         title: trimmedTitle,
         description: draft.description.trim(),
+        projectId: draft.projectId || undefined,
         priority: draft.priority,
         status: normalizedDraftType === 'habit' ? 'in-progress' : draft.status,
         tags,
@@ -705,6 +837,7 @@ const TaskManager = () => {
       type: normalizedDraftType,
       title: trimmedTitle,
       description: draft.description.trim(),
+      projectId: draft.projectId || undefined,
       tags,
       priority: draft.priority,
       status: normalizedDraftType === 'habit' ? 'in-progress' : draft.status,
@@ -1024,6 +1157,13 @@ const TaskManager = () => {
                           {formatDuration(task.timeSpent)} / {formatDuration(task.estimatedDuration)}
                         </span>
 
+                        {task.projectId && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-1 text-cyan-700">
+                            <Target className="h-3.5 w-3.5" />
+                            Project: {projectNameById.get(task.projectId) || task.projectId}
+                          </span>
+                        )}
+
                         {taskType === 'todo' ? (
                           <>
                             <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
@@ -1131,153 +1271,196 @@ const TaskManager = () => {
         )}
 
         {showEditor && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-0 sm:items-center sm:p-4">
-            <div className="w-full max-h-[90dvh] overflow-y-auto rounded-t-3xl border border-[#D8E3F5] bg-white p-5 shadow-2xl sm:max-w-2xl sm:rounded-2xl sm:p-6">
-              <h2 className="text-xl font-semibold text-slate-900">{editingTaskId ? 'Edit' : 'Create'} {draft.type === 'todo' ? 'Task' : 'Habit'}</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Keep it minimal now, then expand advanced details only if needed.
-              </p>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-0 sm:p-4">
+            <div className="flex h-[100dvh] w-full flex-col overflow-hidden rounded-none border border-[#D8E3F5] bg-white shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:max-w-2xl sm:rounded-2xl">
+              <div className="border-b border-[#E5ECF8] px-5 py-4 sm:px-6">
+                <h2 className="text-xl font-semibold text-slate-900">{editingTaskId ? 'Edit' : 'Create'} {draft.type === 'todo' ? 'Task' : 'Habit'}</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Keep it minimal now, then expand advanced details only if needed.
+                </p>
+              </div>
 
-              <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-                <label className="block space-y-1 text-sm text-slate-700">
-                  <span className="font-medium">Title</span>
-                  <input
-                    type="text"
-                    value={draft.title}
-                    onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
-                    className="w-full rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2"
-                    placeholder={draft.type === 'todo' ? 'Ship onboarding popup UX' : 'Evening reflection check-in'}
-                    required
-                  />
-                </label>
+              <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+                <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
+                  <label className="block space-y-1 text-sm text-slate-700">
+                    <span className="font-medium">Title</span>
+                    <input
+                      type="text"
+                      value={draft.title}
+                      onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
+                      className="w-full rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2"
+                      placeholder={draft.type === 'todo' ? 'Ship onboarding popup UX' : 'Evening reflection check-in'}
+                      required
+                    />
+                  </label>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {draft.type === 'todo' ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {draft.type === 'todo' ? (
+                      <label className="space-y-1 text-sm text-slate-700">
+                        <span className="font-medium">Priority</span>
+                        <select
+                          value={draft.priority}
+                          onChange={(event) => setDraft((prev) => ({ ...prev, priority: event.target.value as TaskPriority }))}
+                          className="w-full rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2"
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </select>
+                      </label>
+                    ) : (
+                      <label className="space-y-1 text-sm text-slate-700">
+                        <span className="font-medium">Streak Target (days)</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={draft.streakTarget}
+                          onChange={(event) => setDraft((prev) => ({ ...prev, streakTarget: Number(event.target.value) || 1 }))}
+                          className="w-full rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2"
+                        />
+                      </label>
+                    )}
+
                     <label className="space-y-1 text-sm text-slate-700">
-                      <span className="font-medium">Priority</span>
-                      <select
-                        value={draft.priority}
-                        onChange={(event) => setDraft((prev) => ({ ...prev, priority: event.target.value as TaskPriority }))}
-                        className="w-full rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2"
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
-                    </label>
-                  ) : (
-                    <label className="space-y-1 text-sm text-slate-700">
-                      <span className="font-medium">Streak Target (days)</span>
+                      <span className="font-medium">Estimated Minutes</span>
                       <input
                         type="number"
-                        min={1}
-                        value={draft.streakTarget}
-                        onChange={(event) => setDraft((prev) => ({ ...prev, streakTarget: Number(event.target.value) || 1 }))}
+                        min={0}
+                        value={draft.estimatedDuration}
+                        onChange={(event) => setDraft((prev) => ({ ...prev, estimatedDuration: Number(event.target.value) || 0 }))}
+                        className="w-full rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2"
+                      />
+                    </label>
+
+                    <label className="space-y-1 text-sm text-slate-700 sm:col-span-2">
+                      <span className="font-medium">Project</span>
+                      <select
+                        value={draft.projectId}
+                        onChange={(event) => setDraft((prev) => ({ ...prev, projectId: event.target.value }))}
+                        className="w-full rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2"
+                      >
+                        <option value="">No project</option>
+                        {availableProjects.map((project) => (
+                          <option key={project.id} value={project.id}>
+                            {project.name}
+                          </option>
+                        ))}
+                      </select>
+                      {loadingTaskMeta && (
+                        <p className="text-xs text-slate-500">Loading projects and tags...</p>
+                      )}
+                    </label>
+                  </div>
+
+                  {draft.type === 'todo' && (
+                    <label className="block space-y-1 text-sm text-slate-700">
+                      <span className="font-medium">Deadline</span>
+                      <input
+                        type="date"
+                        value={draft.deadline}
+                        onChange={(event) => setDraft((prev) => ({ ...prev, deadline: event.target.value }))}
                         className="w-full rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2"
                       />
                     </label>
                   )}
 
-                  <label className="space-y-1 text-sm text-slate-700">
-                    <span className="font-medium">Estimated Minutes</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={draft.estimatedDuration}
-                      onChange={(event) => setDraft((prev) => ({ ...prev, estimatedDuration: Number(event.target.value) || 0 }))}
-                      className="w-full rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2"
-                    />
-                  </label>
-                </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced((prev) => !prev)}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                  >
+                    {showAdvanced ? 'Hide Advanced Fields' : 'Show Advanced Fields'}
+                  </button>
 
-                {draft.type === 'todo' && (
-                  <label className="block space-y-1 text-sm text-slate-700">
-                    <span className="font-medium">Deadline</span>
-                    <input
-                      type="date"
-                      value={draft.deadline}
-                      onChange={(event) => setDraft((prev) => ({ ...prev, deadline: event.target.value }))}
-                      className="w-full rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2"
-                    />
-                  </label>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => setShowAdvanced((prev) => !prev)}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
-                >
-                  {showAdvanced ? 'Hide Advanced Fields' : 'Show Advanced Fields'}
-                </button>
-
-                {showAdvanced && (
-                  <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <label className="block space-y-1 text-sm text-slate-700">
-                      <span className="font-medium">Description</span>
-                      <textarea
-                        value={draft.description}
-                        onChange={(event) => setDraft((prev) => ({ ...prev, description: event.target.value }))}
-                        className="w-full rounded-lg border border-[#DBE6F5] bg-white px-3 py-2"
-                        rows={3}
-                        placeholder="Optional implementation detail"
-                      />
-                    </label>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <label className="space-y-1 text-sm text-slate-700">
-                        <span className="font-medium">Tags</span>
-                        <input
-                          type="text"
-                          value={draft.tagsInput}
-                          onChange={(event) => setDraft((prev) => ({ ...prev, tagsInput: event.target.value }))}
+                  {showAdvanced && (
+                    <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <label className="block space-y-1 text-sm text-slate-700">
+                        <span className="font-medium">Description</span>
+                        <textarea
+                          value={draft.description}
+                          onChange={(event) => setDraft((prev) => ({ ...prev, description: event.target.value }))}
                           className="w-full rounded-lg border border-[#DBE6F5] bg-white px-3 py-2"
-                          placeholder="focus, sprint"
+                          rows={3}
+                          placeholder="Optional implementation detail"
                         />
                       </label>
 
-                      <label className="space-y-1 text-sm text-slate-700">
-                        <span className="font-medium">Follow-up Date</span>
-                        <input
-                          type="date"
-                          value={draft.followUpDate}
-                          onChange={(event) => setDraft((prev) => ({ ...prev, followUpDate: event.target.value }))}
-                          className="w-full rounded-lg border border-[#DBE6F5] bg-white px-3 py-2"
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <label className="space-y-1 text-sm text-slate-700">
+                          <span className="font-medium">Tags</span>
+                          <input
+                            type="text"
+                            value={draft.tagsInput}
+                            onChange={(event) => setDraft((prev) => ({ ...prev, tagsInput: event.target.value }))}
+                            className="w-full rounded-lg border border-[#DBE6F5] bg-white px-3 py-2"
+                            placeholder="focus, sprint"
+                            list="task-tag-suggestions"
+                          />
+                          <datalist id="task-tag-suggestions">
+                            {availableTags.map((tag) => (
+                              <option key={tag.id} value={tag.name} />
+                            ))}
+                          </datalist>
+                          {availableTags.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {availableTags.slice(0, 10).map((tag) => (
+                                <button
+                                  key={tag.id}
+                                  type="button"
+                                  onClick={() => appendTagToDraft(tag.name)}
+                                  className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-600 hover:bg-slate-100"
+                                >
+                                  {tag.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </label>
+
+                        <label className="space-y-1 text-sm text-slate-700">
+                          <span className="font-medium">Follow-up Date</span>
+                          <input
+                            type="date"
+                            value={draft.followUpDate}
+                            onChange={(event) => setDraft((prev) => ({ ...prev, followUpDate: event.target.value }))}
+                            className="w-full rounded-lg border border-[#DBE6F5] bg-white px-3 py-2"
+                          />
+                        </label>
+                      </div>
+
+                      {draft.type === 'todo' && (
+                        <label className="block space-y-1 text-sm text-slate-700">
+                          <span className="font-medium">Status</span>
+                          <select
+                            value={draft.status}
+                            onChange={(event) => setDraft((prev) => ({ ...prev, status: event.target.value as TaskStatus }))}
+                            className="w-full rounded-lg border border-[#DBE6F5] bg-white px-3 py-2"
+                          >
+                            <option value="todo">Todo</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                          </select>
+                        </label>
+                      )}
+
+                      <label className="block space-y-1 text-sm text-slate-700">
+                        <span className="inline-flex items-center gap-1 font-medium">
+                          <Sparkles className="h-4 w-4 text-violet-600" />
+                          Note To AI
+                        </span>
+                        <textarea
+                          value={draft.noteToAI}
+                          onChange={(event) => setDraft((prev) => ({ ...prev, noteToAI: event.target.value }))}
+                          className="w-full rounded-lg border border-[#E6DDFF] bg-[#F7F4FF] px-3 py-2"
+                          rows={3}
+                          placeholder="Optional context to steer AI assistance"
                         />
                       </label>
                     </div>
+                  )}
+                </div>
 
-                    {draft.type === 'todo' && (
-                      <label className="block space-y-1 text-sm text-slate-700">
-                        <span className="font-medium">Status</span>
-                        <select
-                          value={draft.status}
-                          onChange={(event) => setDraft((prev) => ({ ...prev, status: event.target.value as TaskStatus }))}
-                          className="w-full rounded-lg border border-[#DBE6F5] bg-white px-3 py-2"
-                        >
-                          <option value="todo">Todo</option>
-                          <option value="in-progress">In Progress</option>
-                          <option value="completed">Completed</option>
-                        </select>
-                      </label>
-                    )}
-
-                    <label className="block space-y-1 text-sm text-slate-700">
-                      <span className="inline-flex items-center gap-1 font-medium">
-                        <Sparkles className="h-4 w-4 text-violet-600" />
-                        Note To AI
-                      </span>
-                      <textarea
-                        value={draft.noteToAI}
-                        onChange={(event) => setDraft((prev) => ({ ...prev, noteToAI: event.target.value }))}
-                        className="w-full rounded-lg border border-[#E6DDFF] bg-[#F7F4FF] px-3 py-2"
-                        rows={3}
-                        placeholder="Optional context to steer AI assistance"
-                      />
-                    </label>
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-2 pt-2">
+                <div className="flex flex-col-reverse gap-2 border-t border-[#E5ECF8] bg-white px-5 py-3 sm:flex-row sm:justify-end sm:px-6">
                   <button
                     type="button"
                     onClick={closeEditor}

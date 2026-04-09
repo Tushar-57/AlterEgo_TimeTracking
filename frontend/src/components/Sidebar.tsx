@@ -9,7 +9,6 @@ import {
   Settings, 
   Tag,
   Clock,
-  PieChart,
   UserPlus,
   LucideCalendarCheck2,
   WatchIcon,
@@ -107,13 +106,12 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
         <div className="mb-6">
           <div className="mb-3 px-4 text-xs font-medium tracking-[0.14em] text-teal-700 dark:text-cyan-300">PLANNER</div>
           <NavItem icon={LucideCalendarCheck2} label="Tasks" to="/tasks" onNavigate={onMobileClose} />
-          <NavItem icon={Clock} label="AI Coach" to="/coach" onNavigate={onMobileClose} />
+          <NavItem icon={Clock} label="AI Coach" to="/coach/knowledge" onNavigate={onMobileClose} />
         </div>
 
         <div className="mb-6">
           <div className="mb-3 px-4 text-xs font-medium tracking-[0.14em] text-teal-700 dark:text-cyan-300">ANALYZE</div>
-          <NavItem icon={BarChart2} label="Analytics" to="/analytics" onNavigate={onMobileClose} />
-          <NavItem icon={PieChart} label="Reports" to="/reports" onNavigate={onMobileClose} />
+          <NavItem icon={BarChart2} label="Analytics" to="/coach/analytics" onNavigate={onMobileClose} />
         </div>
 
         <div className="mb-6">

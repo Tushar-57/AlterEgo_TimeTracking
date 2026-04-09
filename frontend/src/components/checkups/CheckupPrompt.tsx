@@ -981,8 +981,8 @@ const CheckupPrompt = () => {
       : 'What did you learn about your working style today, and what will you adjust tomorrow?';
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-3 md:bottom-4 md:justify-end md:px-4">
-      <div className="pointer-events-auto w-full max-w-[420px] rounded-2xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-sm">
+    <div className="pointer-events-none fixed inset-0 z-40 flex items-start justify-center px-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-[calc(4.25rem+env(safe-area-inset-top))] md:justify-end md:px-4 md:pb-4 md:pt-4">
+      <div className="pointer-events-auto flex max-h-[min(82vh,760px)] w-full max-w-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-sm">
         <div className={`rounded-t-2xl bg-gradient-to-r ${badgeTone} px-4 py-3 text-white`}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -995,7 +995,7 @@ const CheckupPrompt = () => {
           </div>
         </div>
 
-        <div className="space-y-3 px-4 py-4">
+        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
           <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-100 px-3 py-3">
             <p className="text-sm font-semibold text-slate-900">
               {promptType === 'morning' ? 'Plan with intention' : 'Reflect with clarity'}
@@ -1267,7 +1267,7 @@ const CheckupPrompt = () => {
 
               <button
                 type="button"
-                onClick={() => navigate('/coach')}
+                onClick={() => navigate('/coach/knowledge')}
                 className="mt-2 rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-medium text-white transition hover:bg-emerald-500"
               >
                 Open Coach
@@ -1275,7 +1275,8 @@ const CheckupPrompt = () => {
             </div>
           ) : null}
 
-          <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+          <div className="sticky bottom-0 z-10 -mx-4 mt-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm">
+            <div className="flex flex-wrap items-center justify-end gap-2">
             <button
               type="button"
               onClick={handleSkip}
@@ -1313,13 +1314,14 @@ const CheckupPrompt = () => {
             >
               {isSubmitting ? 'Starting...' : 'Run checkup'}
             </button>
-          </div>
+            </div>
 
-          <p className="text-[11px] text-slate-500">
-            {nowForPrompt?.canPostpone
-              ? `You can postpone up to ${nowForPrompt.remainingPostpone} more minute(s).`
-              : 'Postpone limit reached (1 hour). You can skip for today if needed.'}
-          </p>
+            <p className="mt-2 text-[11px] text-slate-500">
+              {nowForPrompt?.canPostpone
+                ? `You can postpone up to ${nowForPrompt.remainingPostpone} more minute(s).`
+                : 'Postpone limit reached (1 hour). You can skip for today if needed.'}
+            </p>
+          </div>
         </div>
       </div>
     </div>
