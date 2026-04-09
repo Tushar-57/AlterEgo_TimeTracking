@@ -22,7 +22,9 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -90,7 +92,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
 
         TimeEntry savedEntry = timeEntryRepository.save(timeEntry);
         logger.info("Successfully started time entry with ID: {} for user: {}", savedEntry.getId(), user.getEmail());
-        return savedEntry;
+        return enrichWithDetail(savedEntry);
     }
 
     @Override
@@ -134,7 +136,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         timeEntry.setIsActive(false);
         TimeEntry updatedEntry = timeEntryRepository.save(timeEntry);
         logger.info("Successfully stopped time entry with ID: {} for user: {}", id, user.getEmail());
-        return updatedEntry;
+        return enrichWithDetail(updatedEntry);
     }
 
     @Override
@@ -149,7 +151,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         List<TimeEntry> entries = timeEntryRepository.findByUserIdAndStartTimeBetween(user.getId(), start, end);
         logger.info("Found {} time entries for user: {} from {} to {}", 
                     entries.size(), user.getEmail(), start, end);
-        return entries;
+        return enrichWithDetails(entries);
     }
 
     @Override
@@ -163,7 +165,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         }
 
         logger.info("Found active timer with ID: {} for user: {}", activeTimer.get().getId(), user.getEmail());
-        return activeTimer.get();
+        return enrichWithDetail(activeTimer.get());
     }
 
     @Override
@@ -171,7 +173,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         logger.info("Fetching up to {} recent time entries for user: {}", limit, user.getEmail());
         List<TimeEntry> entries = timeEntryRepository.findTopByUserIdOrderByStartTimeDesc(user.getId(), limit);
         logger.info("Found {} recent time entries for user: {}", entries.size(), user.getEmail());
-        return entries;
+        return enrichWithDetails(entries);
     }
 
     @Override
@@ -181,7 +183,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         timeEntry.setPositionTop(positionTop);
         timeEntry.setPositionLeft(positionLeft);
         logger.info("Updating position for timer: {} to top: {}, left: {}", timerId, positionTop, positionLeft);
-        return timeEntryRepository.save(timeEntry);
+        return enrichWithDetail(timeEntryRepository.save(timeEntry));
     }
     
     @Override
@@ -232,7 +234,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         TimeEntry savedEntry = timeEntryRepository.save(timeEntry);
         upsertEntryDetail(savedEntry, request);
         logger.info("Successfully added time entry with ID: {} for user: {}", savedEntry.getId(), user.getEmail());
-        return savedEntry;
+        return enrichWithDetail(savedEntry);
     }
 
     @Override
@@ -276,7 +278,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         TimeEntry updatedEntry = timeEntryRepository.save(timeEntry);
         upsertEntryDetail(updatedEntry, request);
         logger.info("Successfully updated time entry {} for user: {}", timerId, user.getEmail());
-        return updatedEntry;
+        return enrichWithDetail(updatedEntry);
     }
 
     @Override
@@ -335,7 +337,72 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         });
 
         logger.info("Successfully continued time entry {} as new timer {} for user {}", timerId, savedEntry.getId(), user.getEmail());
-        return savedEntry;
+        return enrichWithDetail(savedEntry);
+    }
+
+    private List<TimeEntry> enrichWithDetails(List<TimeEntry> entries) {
+        if (entries == null || entries.isEmpty()) {
+            return entries;
+        }
+
+        List<Long> entryIds = entries.stream()
+                .map(TimeEntry::getId)
+                .filter(id -> id != null)
+                .toList();
+
+        if (entryIds.isEmpty()) {
+            return entries;
+        }
+
+        List<TimeEntryDetail> details = timeEntryDetailRepository.findByTimeEntryIdIn(entryIds);
+        Map<Long, TimeEntryDetail> detailByEntryId = new HashMap<>();
+
+        for (TimeEntryDetail detail : details) {
+            if (detail.getTimeEntry() != null && detail.getTimeEntry().getId() != null) {
+                detailByEntryId.put(detail.getTimeEntry().getId(), detail);
+            }
+        }
+
+        for (TimeEntry entry : entries) {
+            if (entry != null && entry.getId() != null) {
+                applyDetailToEntry(entry, detailByEntryId.get(entry.getId()));
+            }
+        }
+
+        return entries;
+    }
+
+    private TimeEntry enrichWithDetail(TimeEntry entry) {
+        if (entry == null || entry.getId() == null) {
+            return entry;
+        }
+
+        TimeEntryDetail detail = timeEntryDetailRepository.findByTimeEntryId(entry.getId()).orElse(null);
+        applyDetailToEntry(entry, detail);
+        return entry;
+    }
+
+    private void applyDetailToEntry(TimeEntry entry, TimeEntryDetail detail) {
+        if (entry == null) {
+            return;
+        }
+
+        if (detail == null) {
+            entry.setLinkedGoal(null);
+            entry.setFocusScore(null);
+            entry.setEnergyScore(null);
+            entry.setBlockers(null);
+            entry.setContextNotes(null);
+            entry.setAiDetail(null);
+            return;
+        }
+
+        entry.setLinkedGoal(detail.getLinkedGoal());
+        entry.setFocusScore(detail.getFocusScore());
+        entry.setEnergyScore(detail.getEnergyScore());
+        entry.setBlockers(detail.getBlockers());
+        entry.setContextNotes(detail.getContextNotes());
+        entry.setAiDetail(detail.getAiDetail());
     }
 
     private void upsertEntryDetail(TimeEntry entry, addTimeEntryRequest request) {

@@ -980,7 +980,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Deep Work Target (minutes)</span>
+                  <span className="font-medium text-slate-700">Deep Work Target (h + m)</span>
                   <input
                     type="number"
                     min={0}
@@ -1049,7 +1049,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Movement Goal (minutes)</span>
+                  <span className="font-medium text-slate-700">Movement Goal (h + m)</span>
                   <input
                     type="number"
                     min={0}

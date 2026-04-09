@@ -14,6 +14,28 @@ interface TimerEntryResponse {
   billable?: boolean;
   positionTop?: string;
   positionLeft?: string;
+  linkedGoal?: string | null;
+  focusScore?: number | null;
+  energyScore?: number | null;
+  blockers?: string | null;
+  contextNotes?: string | null;
+  aiDetail?: string | null;
+  detail?: {
+    linkedGoal?: string | null;
+    focusScore?: number | null;
+    energyScore?: number | null;
+    blockers?: string | null;
+    contextNotes?: string | null;
+    aiDetail?: string | null;
+  } | null;
+  timeEntryDetail?: {
+    linkedGoal?: string | null;
+    focusScore?: number | null;
+    energyScore?: number | null;
+    blockers?: string | null;
+    contextNotes?: string | null;
+    aiDetail?: string | null;
+  } | null;
 }
 
 interface TimerEntryApiResponse {
@@ -113,9 +135,11 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
         const hours = startDate.getHours();
         const minutes = startDate.getMinutes().toString().padStart(2, "0");
         const projectId = entry.projectId ?? entry.project?.id ?? null;
+        const detail = entry.timeEntryDetail ?? entry.detail ?? null;
         const position = entry.positionTop && entry.positionLeft
           ? { top: entry.positionTop, left: entry.positionLeft }
           : calculatePosition(entry.startTime);
+
         return {
           id: entry.id,
           time: `${hours % 12 || 12}:${minutes}`,
@@ -131,6 +155,12 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
           projectId,
           tagIds: entry.tagIds ?? [],
           billable: entry.billable ?? false,
+          linkedGoal: entry.linkedGoal ?? detail?.linkedGoal ?? null,
+          focusScore: entry.focusScore ?? detail?.focusScore ?? null,
+          energyScore: entry.energyScore ?? detail?.energyScore ?? null,
+          blockers: entry.blockers ?? detail?.blockers ?? null,
+          contextNotes: entry.contextNotes ?? detail?.contextNotes ?? null,
+          aiDetail: entry.aiDetail ?? detail?.aiDetail ?? null,
         };
       });
       console.log("Transformed events:", transformed);

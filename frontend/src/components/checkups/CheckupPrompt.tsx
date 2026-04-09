@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTaskStore } from '../../store/taskStore';
+import { formatMinutesAsHoursMinutes } from '../../utils/utils';
 
 type CheckupType = 'morning' | 'evening';
 type CheckupFrequency = 'daily' | 'weekly' | 'biweekly';
@@ -329,6 +330,9 @@ const formatTime = (value: string): string => {
   const twelveHour = hour % 12 === 0 ? 12 : hour % 12;
   return `${twelveHour}:${String(minute).padStart(2, '0')} ${period}`;
 };
+
+const formatMinutesLabel = (minutes: number): string =>
+  formatMinutesAsHoursMinutes(Math.max(0, Math.floor(Number.isFinite(minutes) ? minutes : 0)));
 
 const toDateKey = (date: Date): string => {
   const year = date.getFullYear();
@@ -1301,7 +1305,7 @@ const CheckupPrompt = () => {
                   : 'cursor-not-allowed bg-slate-100 text-slate-400'
               }`}
             >
-              Postpone {POSTPONE_STEP_MINUTES}m
+              Postpone {formatMinutesLabel(POSTPONE_STEP_MINUTES)}
             </button>
 
             <button
@@ -1318,7 +1322,7 @@ const CheckupPrompt = () => {
 
             <p className="mt-2 text-[11px] text-slate-500">
               {nowForPrompt?.canPostpone
-                ? `You can postpone up to ${nowForPrompt.remainingPostpone} more minute(s).`
+                ? `You can postpone up to ${formatMinutesLabel(nowForPrompt.remainingPostpone)} more.`
                 : 'Postpone limit reached (1 hour). You can skip for today if needed.'}
             </p>
           </div>

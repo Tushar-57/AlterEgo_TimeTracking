@@ -8,6 +8,7 @@ import { Input } from '../Calendar_updated/components/ui/input';
 import { Volume2, X } from 'lucide-react';
 import { UserPreferences } from './types';
 import { motion } from 'framer-motion';
+import { formatMinutesAsHoursMinutes } from '../../utils/utils';
 
 const defaultPreferences: UserPreferences = {
   timerMode: 'stopwatch',
@@ -100,7 +101,7 @@ export const SettingsDialog = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
             >
-              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Countdown Presets (minutes)</h3>
+              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Countdown Presets (h + m)</h3>
               <div className="flex flex-wrap gap-3">
                 {preferences.countdownPresets.map((seconds, index) => (
                   <motion.div
@@ -120,7 +121,7 @@ export const SettingsDialog = ({
                         if (value < 1 || value > 180) {
                           setErrors((prev) => ({
                             ...prev,
-                            preset: 'Value must be between 1 and 180 minutes',
+                            preset: `Value must be between ${formatMinutesAsHoursMinutes(1)} and ${formatMinutesAsHoursMinutes(180)}`,
                           }));
                         } else {
                           setErrors((prev) => ({
@@ -184,7 +185,7 @@ export const SettingsDialog = ({
                   }
                   className="data-[thumb]:bg-[#D8BFD8]"
                 />
-                <span className="w-16 text-[#6B7280] dark:text-[#B0C4DE] font-serif">{preferences.pomodoroSettings.workDuration} min</span>
+                <span className="w-20 text-[#6B7280] dark:text-[#B0C4DE] font-serif">{formatMinutesAsHoursMinutes(preferences.pomodoroSettings.workDuration)}</span>
               </div>
             </motion.div>
             <motion.div
@@ -210,7 +211,7 @@ export const SettingsDialog = ({
                   }
                   className="data-[thumb]:bg-[#D8BFD8]"
                 />
-                <span className="w-16 text-[#6B7280] dark:text-[#B0C4DE] font-serif">{preferences.pomodoroSettings.shortBreakDuration} min</span>
+                <span className="w-20 text-[#6B7280] dark:text-[#B0C4DE] font-serif">{formatMinutesAsHoursMinutes(preferences.pomodoroSettings.shortBreakDuration)}</span>
               </div>
             </motion.div>
             <motion.div
@@ -236,7 +237,7 @@ export const SettingsDialog = ({
                   }
                   className="data-[thumb]:bg-[#D8BFD8]"
                 />
-                <span className="w-16 text-[#6B7280] dark:text-[#B0C4DE] font-serif">{preferences.pomodoroSettings.longBreakDuration} min</span>
+                <span className="w-20 text-[#6B7280] dark:text-[#B0C4DE] font-serif">{formatMinutesAsHoursMinutes(preferences.pomodoroSettings.longBreakDuration)}</span>
               </div>
             </motion.div>
             <motion.div

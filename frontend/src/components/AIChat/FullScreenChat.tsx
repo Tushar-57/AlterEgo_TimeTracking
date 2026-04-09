@@ -7,6 +7,7 @@ import { Message, MentorArchetype, CoachingStyle, AVATARS, RANDOM_NAMES } from '
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../Calendar_updated/components/ui/tooltip';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../ui/toast';
+import { formatMinutesAsHoursMinutes } from '../../utils/utils';
 
 const SUGGESTION_PROMPTS = [
   'Start a timer for coding on Project X',
@@ -64,6 +65,9 @@ const getErrorMessage = (error: unknown): string => {
 
   return 'Unknown error';
 };
+
+const formatActionDuration = (duration?: number | null): string =>
+  formatMinutesAsHoursMinutes(Math.max(0, Math.round(Number(duration ?? 0))));
 
 const FullScreenChat: React.FC = () => {
   const { isChatOpen, toggleChat, messages, addMessage, clearMessages, isTyping, setIsTyping } = useChat();
@@ -364,7 +368,7 @@ const FullScreenChat: React.FC = () => {
           break;
         }
         case 'adjustDuration': {
-          setInput(`Log ${(details.duration ?? 0) / 60} hours for ${actionPrompt?.originalCommand || ''}`);
+          setInput(`Log ${formatActionDuration(details.duration)} for ${actionPrompt?.originalCommand || ''}`);
           setActionPrompt(null);
           return;
         }
@@ -405,7 +409,7 @@ const FullScreenChat: React.FC = () => {
             positionTop: '',
             positionLeft: ''
           };
-          successMessage = `Time entry "${details.description || 'Unnamed Task'}" created for ${details.duration || 0} minutes${projectId ? ` with project "${details.projectName}" (ID: ${projectId})` : ''}${tagIds.length ? ` and tags "${tagNames.join(', ')}"` : ''}.`;
+          successMessage = `Time entry "${details.description || 'Unnamed Task'}" created for ${formatActionDuration(details.duration)}${projectId ? ` with project "${details.projectName}" (ID: ${projectId})` : ''}${tagIds.length ? ` and tags "${tagNames.join(', ')}"` : ''}.`;
           break;
         }
         case 'confirmProjectCreation': {
@@ -748,7 +752,7 @@ const FullScreenChat: React.FC = () => {
                             : actionPrompt.action === 'provideDescription'
                             ? `Please provide a description for the time entry.`
                             : actionPrompt.action === 'confirmTimeEntry'
-                            ? `Confirm time entry: "${actionPrompt.details.description}" from ${actionPrompt.details.startTime}${(actionPrompt.details.duration ?? 0) > 0 ? ` for ${actionPrompt.details.duration} minutes` : ''}${actionPrompt.details.projectName ? ` with project "${actionPrompt.details.projectName}"` : ''}${actionPrompt.details.tagNames?.length ? ` and tags "${actionPrompt.details.tagNames.join(', ')}"` : ''}. Proceed or modify?`
+                            ? `Confirm time entry: "${actionPrompt.details.description}" from ${actionPrompt.details.startTime}${(actionPrompt.details.duration ?? 0) > 0 ? ` for ${formatActionDuration(actionPrompt.details.duration)}` : ''}${actionPrompt.details.projectName ? ` with project "${actionPrompt.details.projectName}"` : ''}${actionPrompt.details.tagNames?.length ? ` and tags "${actionPrompt.details.tagNames.join(', ')}"` : ''}. Proceed or modify?`
                             : actionPrompt.action === 'confirmProjectCreation'
                             ? `Confirm creation of project "${actionPrompt.details.projectName}"${actionPrompt.details.description ? ` (Description: ${actionPrompt.details.description})` : ''}?`
                             : actionPrompt.action === 'confirmProjectUpdate'

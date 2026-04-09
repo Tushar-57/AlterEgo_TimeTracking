@@ -468,6 +468,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Switch } from '../../../../components/ui/switch';
 import { calculatePosition } from '../../../../../Dashboard';
 import type { CalendarEvent } from '../../../../components/DraggableEvent';
+import { formatMinutesAsHoursMinutes } from '../../../../../../utils/utils';
 // import { Label } from '../../../../components/ui/label';
 
 interface TaskPopupProps {
@@ -525,6 +526,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
   const [projects, setProjects] = useState<Project[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [goalOptions, setGoalOptions] = useState<string[]>([]);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
@@ -575,6 +577,12 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     setProjectId(entry.projectId !== null && entry.projectId !== undefined ? entry.projectId.toString() : null);
     setSelectedTagIds((entry.tagIds ?? []).map((id) => id.toString()));
     setBillable(entry.billable ?? false);
+    setLinkedGoal(entry.linkedGoal ?? null);
+    setFocusScore(entry.focusScore !== null && entry.focusScore !== undefined ? String(entry.focusScore) : '');
+    setEnergyScore(entry.energyScore !== null && entry.energyScore !== undefined ? String(entry.energyScore) : '');
+    setBlockers(entry.blockers ?? '');
+    setContextNotes(entry.contextNotes ?? '');
+    setAiDetail(entry.aiDetail ?? '');
   };
 
   const toggleTagSelection = (tagValue: string) => {
@@ -645,6 +653,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
           .map((goal) => goal?.title?.trim())
           .filter((title): title is string => Boolean(title));
         setGoalOptions(goalTitles);
+        setCatalogLoaded(true);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast({
@@ -656,10 +665,10 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
       }
     };
 
-    if (isOpen) {
+    if (isOpen && !catalogLoaded) {
       fetchData();
     }
-  }, [isOpen, toast]);
+  }, [catalogLoaded, isOpen, toast]);
 
   // Calculate duration
   useEffect(() => {
@@ -672,9 +681,8 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
       end.setHours(endHours, endMinutes);
       const diffMs = end.getTime() - start.getTime();
       if (diffMs > 0) {
-        const hours = Math.floor(diffMs / (1000 * 60 * 60));
-        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        setDuration(`${hours}h ${minutes}m`);
+        const totalMinutes = Math.floor(diffMs / (1000 * 60));
+        setDuration(formatMinutesAsHoursMinutes(totalMinutes));
       } else {
         setDuration('');
       }

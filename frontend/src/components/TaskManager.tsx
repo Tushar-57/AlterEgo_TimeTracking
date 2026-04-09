@@ -23,6 +23,7 @@ import {
 } from 'recharts';
 import { useTaskStore } from '../store/taskStore';
 import type { Task, TaskPriority, TaskStatus, TaskType } from '../store/taskStore';
+import { formatMinutesAsHoursMinutes } from '../utils/utils';
 
 type DraftTask = {
   type: TaskType;
@@ -410,9 +411,7 @@ const normalizeTaskType = (rawType: unknown): TaskType => {
 
 const formatDuration = (minutes: number) => {
   const safeMinutes = Math.max(0, Math.floor(Number.isFinite(minutes) ? minutes : 0));
-  const hours = Math.floor(safeMinutes / 60);
-  const mins = safeMinutes % 60;
-  return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  return formatMinutesAsHoursMinutes(safeMinutes);
 };
 
 const formatDate = (value?: string) => {
@@ -740,6 +739,8 @@ const TaskManager = () => {
 
     const completedTodayCount = modeTasks.filter((task) => normalizeTaskType(task.type) === 'habit' && isCompletedToday(task)).length;
     const highestStreak = modeTasks.reduce((max, task) => Math.max(max, task.currentStreak), 0);
+    const averageEstimatedDurationMinutes =
+      total > 0 ? Math.round(modeTasks.reduce((sum, task) => sum + task.estimatedDuration, 0) / total) : 0;
 
     return {
       total,
@@ -747,6 +748,7 @@ const TaskManager = () => {
       dueSoon,
       completedTodayCount,
       highestStreak,
+      averageEstimatedDurationMinutes,
     };
   }, [modeTasks]);
 
@@ -934,12 +936,8 @@ const TaskManager = () => {
           )}
           {isTaskMode ? (
             <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Avg Effort (min)</p>
-              <p className="mt-1 text-2xl font-semibold text-cyan-700">
-                {modeTasks.length > 0
-                  ? Math.round(modeTasks.reduce((sum, task) => sum + task.estimatedDuration, 0) / modeTasks.length)
-                  : 0}
-              </p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Avg Effort</p>
+              <p className="mt-1 text-2xl font-semibold text-cyan-700">{formatDuration(modeStats.averageEstimatedDurationMinutes)}</p>
             </div>
           ) : (
             <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
@@ -1322,7 +1320,7 @@ const TaskManager = () => {
                     )}
 
                     <label className="space-y-1 text-sm text-slate-700">
-                      <span className="font-medium">Estimated Minutes</span>
+                      <span className="font-medium">Estimated Duration (h + m)</span>
                       <input
                         type="number"
                         min={0}
@@ -1330,6 +1328,7 @@ const TaskManager = () => {
                         onChange={(event) => setDraft((prev) => ({ ...prev, estimatedDuration: Number(event.target.value) || 0 }))}
                         className="w-full rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2"
                       />
+                      <p className="text-xs text-slate-500">Preview: {formatDuration(draft.estimatedDuration)}</p>
                     </label>
 
                     <label className="space-y-1 text-sm text-slate-700 sm:col-span-2">

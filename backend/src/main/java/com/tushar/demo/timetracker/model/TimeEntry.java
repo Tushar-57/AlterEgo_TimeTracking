@@ -49,6 +49,24 @@ public class TimeEntry {
     @Column(name = "position_left")
     private String positionLeft;
 
+    @Transient
+    private String linkedGoal;
+
+    @Transient
+    private Integer focusScore;
+
+    @Transient
+    private Integer energyScore;
+
+    @Transient
+    private String blockers;
+
+    @Transient
+    private String contextNotes;
+
+    @Transient
+    private String aiDetail;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private Users user;
@@ -93,6 +111,18 @@ public class TimeEntry {
     public void setPositionTop(String positionTop) { this.positionTop = positionTop; }
     public String getPositionLeft() { return positionLeft; }
     public void setPositionLeft(String positionLeft) { this.positionLeft = positionLeft; }
+    public String getLinkedGoal() { return linkedGoal; }
+    public void setLinkedGoal(String linkedGoal) { this.linkedGoal = linkedGoal; }
+    public Integer getFocusScore() { return focusScore; }
+    public void setFocusScore(Integer focusScore) { this.focusScore = focusScore; }
+    public Integer getEnergyScore() { return energyScore; }
+    public void setEnergyScore(Integer energyScore) { this.energyScore = energyScore; }
+    public String getBlockers() { return blockers; }
+    public void setBlockers(String blockers) { this.blockers = blockers; }
+    public String getContextNotes() { return contextNotes; }
+    public void setContextNotes(String contextNotes) { this.contextNotes = contextNotes; }
+    public String getAiDetail() { return aiDetail; }
+    public void setAiDetail(String aiDetail) { this.aiDetail = aiDetail; }
     public Users getUser() { return user; }
     public void setUser(Users user) { this.user = user; }
 }

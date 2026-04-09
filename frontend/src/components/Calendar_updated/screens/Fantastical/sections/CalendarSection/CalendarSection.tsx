@@ -340,6 +340,7 @@ import { TaskPopup } from "./TaskPopup";
 import { ContextMenu } from "./ContextMenu";
 import { motion } from "framer-motion";
 import Draggable, { DraggableData, DraggableEvent } from "react-draggable";
+import { formatSecondsAsHoursMinutes } from "../../../../../../utils/utils";
 
 const timeSlots = Array.from({ length: 24 }, (_, i) => {
   const hour = i % 12 || 12;
@@ -1015,7 +1016,7 @@ export const CalendarSection = ({
                   </div>
                   <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{event.title}</div>
                   <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
-                    <span>{Math.round(getEventDurationSeconds(event) / 60)} min</span>
+                    <span>{formatSecondsAsHoursMinutes(getEventDurationSeconds(event))}</span>
                     <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
                     <span>{event.billable ? "Billable" : "Non-billable"}</span>
                   </div>
@@ -1129,7 +1130,7 @@ export const CalendarSection = ({
                       </div>
                       <div className="mt-1 text-sm font-semibold text-gray-800">{event.title}</div>
                       <div className="mt-2 flex items-center gap-2 text-[11px] text-gray-500">
-                        <span>{Math.round(getEventDurationSeconds(event) / 60)} min</span>
+                        <span>{formatSecondsAsHoursMinutes(getEventDurationSeconds(event))}</span>
                         <span className="h-1 w-1 rounded-full bg-gray-300" />
                         <span>{event.billable ? 'Billable' : 'Non-billable'}</span>
                       </div>

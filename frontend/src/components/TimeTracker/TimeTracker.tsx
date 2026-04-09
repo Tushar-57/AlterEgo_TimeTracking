@@ -19,6 +19,7 @@ import { Timer, AlarmClock, Coffee, Plus, RefreshCw, Sunrise, Moon, AlertTriangl
 import { motion } from 'framer-motion';
 import { CurrentTask, Project, Tag, TimeEntry, UserPreferences, TimerStatus, TimerMode, PomodoroState } from './types';
 import { formatTime, getRandomColor } from './utility';
+import { formatMinutesAsHoursMinutes, formatSecondsAsHoursMinutes } from '../../utils/utils';
 import 'react-circular-progressbar/dist/styles.css';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -682,7 +683,7 @@ export default function TimeTracker() {
     }));
     toast({
       title: 'Pomodoro Break',
-      description: `Time for a ${isLongBreak ? 'long' : 'short'} break (${breakDuration} minutes)`,
+      description: `Time for a ${isLongBreak ? 'long' : 'short'} break (${formatMinutesAsHoursMinutes(breakDuration)})`,
       className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
     });
   };
@@ -1749,7 +1750,7 @@ export default function TimeTracker() {
                           : 'bg-[#F7F7F7] dark:bg-[#3C4A5E] border-[#D8BFD8]/50 text-[#6B7280] hover:bg-[#D8BFD8]/20'
                       }`}
                     >
-                      {Math.floor(seconds / 60)}m
+                      {formatSecondsAsHoursMinutes(seconds)}
                     </Button>
                   ))}
                   <Dialog open={isCustomCountdownDialogOpen} onOpenChange={setIsCustomCountdownDialogOpen}>
@@ -1793,7 +1794,7 @@ export default function TimeTracker() {
                               type="number"
                               min="1"
                               max="720"
-                              placeholder="Minutes"
+                              placeholder="Total duration"
                               value={customHours > 0 ? customHours * 60 + customMinutes : customMinutes}
                               onChange={(e) => {
                                 const parsed = Number(e.target.value);
@@ -1828,7 +1829,7 @@ export default function TimeTracker() {
                             </div>
                             <div>
                               <label htmlFor="custom-minutes-advanced" className="mb-1 block text-xs font-semibold text-[#6B7280] dark:text-[#B0C4DE]">
-                                Minutes
+                                Minute Remainder
                               </label>
                               <Input
                                 id="custom-minutes-advanced"

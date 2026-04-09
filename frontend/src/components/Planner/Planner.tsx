@@ -292,7 +292,7 @@ export const PlannerForm: React.FC = () => {
                 placeholder="e.g. 25/5"
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <p className="text-sm text-gray-500 mt-1">Minutes of work/Minutes of break</p>
+              <p className="text-sm text-gray-500 mt-1">Work duration / break duration (shown as h + m)</p>
             </div>
           </div>
         </section>
