@@ -875,14 +875,13 @@ export default function TimeTracker() {
     }
 
     try {
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Authentication Error',
           description: 'Please log in to start the timer.',
           variant: 'destructive',
           className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
-      });
+        });
         logout();
         return;
       }
@@ -1289,7 +1288,6 @@ export default function TimeTracker() {
 
     try {
       setDeletingEntryId(entryId);
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Authentication Error',
