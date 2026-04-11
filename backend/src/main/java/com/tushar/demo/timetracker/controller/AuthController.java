@@ -232,13 +232,29 @@ public class AuthController {
 	}
 
 	@GetMapping("/agentic-bridge-token")
-	public ResponseEntity<?> issueAgenticBridgeToken(Authentication authentication) {
-		if (authentication == null || !StringUtils.hasText(authentication.getName())) {
+	public ResponseEntity<?> issueAgenticBridgeToken(
+			Authentication authentication,
+			@RequestHeader(value = "Authorization", required = false) String authHeader) {
+		
+		String email = null;
+		
+		// Try to get user from session first
+		if (authentication != null && StringUtils.hasText(authentication.getName())) {
+			email = normalizeEmail(authentication.getName());
+		}
+		
+		// Fallback to Bearer token from Authorization header
+		if (email == null && authHeader != null && authHeader.startsWith("Bearer ")) {
+			String token = authHeader.substring(7).trim();
+			if (jwtUtils.validateToken(token)) {
+				email = normalizeEmail(jwtUtils.getUsernameFromToken(token));
+			}
+		}
+		
+		if (email == null) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 				.body(Map.of("error", "UNAUTHORIZED", "message", "Authentication required"));
 		}
-
-		String email = normalizeEmail(authentication.getName());
 		Users user = userRepository.findByEmail(email)
 			.orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
