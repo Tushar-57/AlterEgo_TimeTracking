@@ -110,7 +110,7 @@ public class AgenticKnowledgeSyncService {
             @Value("${agentic.sync.retry-backoff-ms:750}") long retryBackoffMs,
             @Value("${agentic.sync.upstream-cooldown-seconds:120}") long upstreamCooldownSeconds,
             @Value("${agentic.sync.connect-timeout-ms:5000}") long connectTimeoutMs,
-            @Value("${agentic.sync.request-timeout-ms:15000}") long requestTimeoutMs) {
+            @Value("${agentic.sync.request-timeout-ms:30000}") long requestTimeoutMs) {
         this.timeEntryRepository = timeEntryRepository;
         this.timeEntryDetailRepository = timeEntryDetailRepository;
         this.jwtUtils = jwtUtils;

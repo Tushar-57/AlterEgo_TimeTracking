@@ -37,7 +37,7 @@ public class OnboardingController {
     private final AgenticKnowledgeSyncService agenticKnowledgeSyncService;
     private final ObjectMapper objectMapper;
 
-    @Value("${agentic.sync.onboarding-read-sync-enabled:true}")
+    @Value("${agentic.sync.onboarding-read-sync-enabled:false}")
     private boolean onboardingReadSyncEnabled;
 
     public OnboardingController(UserRepository userRepo,
