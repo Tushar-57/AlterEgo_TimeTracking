@@ -177,6 +177,7 @@ public class AuthController {
 
 			return ResponseEntity.ok(Map.of(
 					"message", "Login successful",
+					"token", jwt,
 					"user", Map.of(
 						"id", user.getId(),
 						"name", user.getName(),

@@ -36,8 +36,9 @@ const readAuthError = async (response: Response): Promise<string> => {
   return '';
 };
 
-export const markSessionActive = (): void => {
-  sessionStorage.setItem(AUTH_SESSION_KEY, AUTH_SESSION_MARKER);
+export const markSessionActive = (token?: string | null): void => {
+  const normalizedToken = typeof token === 'string' ? token.trim() : '';
+  sessionStorage.setItem(AUTH_SESSION_KEY, normalizedToken || AUTH_SESSION_MARKER);
 };
 
 export const clearSession = (): void => {
@@ -45,7 +46,22 @@ export const clearSession = (): void => {
 };
 
 export const hasActiveSession = (): boolean => {
-  return sessionStorage.getItem(AUTH_SESSION_KEY) === AUTH_SESSION_MARKER;
+  const tokenOrMarker = sessionStorage.getItem(AUTH_SESSION_KEY);
+  return Boolean(tokenOrMarker && tokenOrMarker.trim().length > 0);
+};
+
+export const getStoredAuthToken = (): string | null => {
+  const value = sessionStorage.getItem(AUTH_SESSION_KEY);
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value.trim();
+  if (!normalized || normalized === AUTH_SESSION_MARKER) {
+    return null;
+  }
+
+  return normalized;
 };
 
 export const login = async (credentials: AuthCredentials) => {
@@ -112,8 +128,13 @@ export const fetchWithToken = async <T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  // Cookie-based auth is used; drop stale bearer headers if any caller passes them.
-  headers.delete('Authorization');
+  // Prefer session-stored JWT when present (Safari cookie fallback), otherwise rely on cookies.
+  const storedToken = getStoredAuthToken();
+  if (storedToken) {
+    headers.set('Authorization', `Bearer ${storedToken}`);
+  } else {
+    headers.delete('Authorization');
+  }
 
   try {
     const response = await fetch(url, {

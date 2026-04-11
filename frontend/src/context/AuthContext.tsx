@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { clearSession, markSessionActive } from '../utils/auth';
+import { clearSession, getStoredAuthToken, markSessionActive } from '../utils/auth';
 
 interface User {
   name?: string;
@@ -12,7 +12,7 @@ interface AuthContextType {
   error: { status: number; message: string } | null;
   clearError: () => void;
   isAuthenticated: boolean;
-  login: (userData?: User) => void;
+  login: (userData?: User, token?: string | null) => void;
   logout: () => void;
   loading: boolean;
   user: User | null;
@@ -44,8 +44,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user: null,
   });
 
-  const login = (userData?: User) => {
-    markSessionActive();
+  const login = (userData?: User, token?: string | null) => {
+    markSessionActive(token);
     setState({
       isAuthenticated: true,
       loading: false,
@@ -97,8 +97,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const token = getStoredAuthToken();
+        const headers = new Headers();
+        if (token) {
+          headers.set('Authorization', `Bearer ${token}`);
+        }
+
         const response = await fetch('/api/auth/validate', {
           method: 'GET',
+          headers,
           credentials: 'include',
           signal: controller.signal,
         });

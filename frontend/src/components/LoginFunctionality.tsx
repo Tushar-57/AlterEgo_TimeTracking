@@ -10,6 +10,7 @@ type LoginErrorResponse = {
 };
 
 type LoginSuccessResponse = {
+  token?: string;
   user: {
     email: string;
     name?: string;
@@ -138,7 +139,7 @@ export default function LoginClassic() {
         email: data.user.email,
         name: data.user.name,
         onboardingCompleted: data.user.onboardingCompleted, // Pass onboardingCompleted
-      });
+      }, data.token ?? null);
 
       setFailedAttempts(0);
       setCooldownUntil(null);
