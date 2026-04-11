@@ -112,12 +112,15 @@ export const logout = () => {};
 export const isAuthenticated = () => false;
 
 
-// Deprecated: use fetch with credentials: 'include' and rely on cookie
 export const fetchWithToken = async <T>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> => {
   const headers = new Headers(options.headers || {});
+  const token = getStoredAuthToken();
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
   if (options.method && options.method !== 'GET') {
     headers.set('Content-Type', 'application/json');
   }
