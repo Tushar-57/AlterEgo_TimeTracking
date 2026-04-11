@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +31,9 @@ public class TimeEntry {
     @Column(name = "end_time", nullable = true)
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endTime;
+
+    @Column(name = "entry_date")
+    private LocalDate entryDate;
 
     private Long duration;
     
@@ -79,6 +83,10 @@ public class TimeEntry {
     @PrePersist
     @PreUpdate
     private void calculateDuration() {
+        if (startTime != null) {
+            this.entryDate = startTime.toLocalDate();
+        }
+
         if (startTime != null && endTime != null && endTime.isAfter(startTime)) {
             this.duration = Duration.between(startTime, endTime).getSeconds();
         } else {
@@ -93,6 +101,8 @@ public class TimeEntry {
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
     public LocalDateTime getEndTime() { return endTime; }
     public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+    public LocalDate getEntryDate() { return entryDate; }
+    public void setEntryDate(LocalDate entryDate) { this.entryDate = entryDate; }
     public Long getDuration() { return duration; }
     public void setDuration(Long duration) { this.duration = duration; }
     public Project getProject() { return project; }

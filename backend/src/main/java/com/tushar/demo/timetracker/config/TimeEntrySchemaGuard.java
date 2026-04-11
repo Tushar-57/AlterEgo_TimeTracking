@@ -32,6 +32,7 @@ public class TimeEntrySchemaGuard implements ApplicationRunner {
         }
 
         ensureEndTimeIsNullable();
+        ensureEntryDateBackfilled();
     }
 
     private boolean isPostgres() {
@@ -69,5 +70,40 @@ public class TimeEntrySchemaGuard implements ApplicationRunner {
 
         jdbcTemplate.execute("ALTER TABLE IF EXISTS time_entry ALTER COLUMN end_time DROP NOT NULL");
         logger.info("Adjusted schema: time_entry.end_time is now nullable for active timers.");
+    }
+
+    private void ensureEntryDateBackfilled() {
+        String nullable;
+        try {
+            nullable = jdbcTemplate.queryForObject(
+                    """
+                    SELECT is_nullable
+                    FROM information_schema.columns
+                    WHERE table_schema = current_schema()
+                      AND table_name = 'time_entry'
+                      AND column_name = 'entry_date'
+                    """,
+                    String.class
+            );
+        } catch (EmptyResultDataAccessException e) {
+            return;
+        }
+
+        if (nullable == null) {
+            return;
+        }
+
+        int updated = jdbcTemplate.update(
+                """
+                UPDATE time_entry
+                SET entry_date = DATE(start_time)
+                WHERE entry_date IS NULL
+                  AND start_time IS NOT NULL
+                """
+        );
+
+        if (updated > 0) {
+            logger.info("Backfilled entry_date for {} time_entry rows.", updated);
+        }
     }
 }
