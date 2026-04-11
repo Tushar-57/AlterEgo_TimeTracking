@@ -92,11 +92,20 @@ type HabitSyncPayload = {
   habits: Array<{
     id: string;
     title: string;
+    description: string;
     tags: string[];
+    priority: string;
     currentStreak: number;
     streakTarget: number;
     completionCount: number;
+    completionRate7d: number;
+    completionRate30d: number;
     completedDates: string[];
+    lastCompletedDate: string | null;
+    pattern: string;
+    estimatedDuration?: number;
+    totalTimeSpent?: number;
+    noteToAI?: string;
     updatedAt: string;
   }>;
 };

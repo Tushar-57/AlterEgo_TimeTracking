@@ -355,18 +355,28 @@ public class AgenticKnowledgeSyncService {
             digest.put("recent_total_events", recentCompletionTotal);
             context.put("daily_completion_digest", digest);
 
+            // Build rich habit descriptions using enriched data from frontend
+            List<String> richHabitDescriptions = buildRichHabitDescriptions(habits, 5);
+            String habitsDetailText = richHabitDescriptions.isEmpty()
+                ? "No habits tracked yet."
+                : String.join("\n• ", richHabitDescriptions);
+
             String highlightsText = habitHighlights.isEmpty()
                 ? "No standout habits in this snapshot"
                 : String.join("; ", habitHighlights);
 
             String responseText = String.format(
-                "Habit snapshot %s: %d habits, %d completion events, %d active days, %d-day current run, %d-day longest run. Highlights: %s.",
+                "Habit Snapshot (%s): Tracking %d habits with %d total completions across %d active days. " +
+                "Current momentum: %d-day streak (best: %d days).\n\n" +
+                "Habit Details:\n• %s\n\n" +
+                "Quick Stats: %s",
                 capturedDay,
                 toInt(summary.get("totalHabits")),
                 toInt(summary.get("totalCompletionEvents")),
                 toInt(summary.get("activeDays")),
                 toInt(summary.get("currentRun")),
                 toInt(summary.get("longestRun")),
+                habitsDetailText,
                 highlightsText
             );
 
@@ -904,6 +914,93 @@ public class AgenticKnowledgeSyncService {
         }
 
         return highlights;
+    }
+
+    private List<String> buildRichHabitDescriptions(List<Object> habits, int limit) {
+        if (habits == null || habits.isEmpty()) {
+            return List.of();
+        }
+
+        List<Map<String, Object>> normalizedHabits = new ArrayList<>();
+        for (Object rawHabit : habits) {
+            Map<String, Object> habit = asMap(rawHabit);
+            if (!habit.isEmpty()) {
+                normalizedHabits.add(habit);
+            }
+        }
+
+        List<String> descriptions = new ArrayList<>();
+        for (Map<String, Object> habit : normalizedHabits) {
+            if (descriptions.size() >= Math.max(1, limit)) {
+                break;
+            }
+
+            String title = safeText(asString(habit.get("title")), "").trim();
+            if (title.isBlank()) {
+                title = safeText(asString(habit.get("name")), "Untitled Habit").trim();
+            }
+
+            String description = safeText(asString(habit.get("description")), "").trim();
+            String priority = safeText(asString(habit.get("priority")), "medium").toLowerCase();
+            String pattern = safeText(asString(habit.get("pattern")), "").trim();
+            int completionRate7d = toInt(habit.get("completionRate7d"));
+            int completionRate30d = toInt(habit.get("completionRate30d"));
+            int currentStreak = toInt(habit.get("currentStreak"));
+            int streakTarget = toInt(habit.get("streakTarget"));
+            int completionCount = toInt(habit.get("completionCount"));
+            String noteToAI = safeText(asString(habit.get("noteToAI")), "").trim();
+            Integer estimatedDuration = habit.get("estimatedDuration") instanceof Number
+                ? ((Number) habit.get("estimatedDuration")).intValue()
+                : null;
+
+            StringBuilder habitDesc = new StringBuilder();
+            habitDesc.append(title);
+
+            // Add priority indicator
+            if (!priority.isBlank() && !priority.equals("medium")) {
+                habitDesc.append(" [").append(priority.toUpperCase()).append("]");
+            }
+
+            // Add description if available
+            if (!description.isBlank()) {
+                habitDesc.append(": ").append(description);
+            }
+
+            // Add completion stats
+            List<String> stats = new ArrayList<>();
+            if (completionRate7d > 0) {
+                stats.add(String.format("%d%% this week", completionRate7d));
+            }
+            if (currentStreak > 0) {
+                stats.add(String.format("%d-day streak", currentStreak));
+            }
+            if (completionCount > 0) {
+                stats.add(String.format("%d total completions", completionCount));
+            }
+
+            if (!stats.isEmpty()) {
+                habitDesc.append(" (").append(String.join(", ", stats)).append(")");
+            }
+
+            // Add pattern insight
+            if (!pattern.isBlank() && !pattern.equals("not_started") && !pattern.equals("started")) {
+                habitDesc.append(" — Pattern: ").append(pattern.replace("_", " "));
+            }
+
+            // Add AI note if available
+            if (!noteToAI.isBlank()) {
+                habitDesc.append(" | Note: ").append(noteToAI);
+            }
+
+            // Add duration hint
+            if (estimatedDuration != null && estimatedDuration > 0) {
+                habitDesc.append(String.format(" (~%d min)", estimatedDuration));
+            }
+
+            descriptions.add(habitDesc.toString());
+        }
+
+        return descriptions;
     }
 
     private int sumRecentDailyCompletions(Map<String, Object> dailyCompletionCounts, int limit) {
