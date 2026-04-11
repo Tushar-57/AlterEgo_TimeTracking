@@ -24,6 +24,7 @@ import FullScreenChat from './components/AIChat/FullScreenChat';
 import ChatToggleButton from './components/AIChat/ChatToggleButton';
 import ThemeToggle from './components/ThemeToggle';
 import { ThemeProvider } from './context/ThemeContext';
+import { getStoredAuthToken } from './utils/auth';
 
 const App = () => (
   <Router>
@@ -90,6 +91,38 @@ const ProtectedRoutes = () => {
       navigate('/onboarding', { replace: true });
     }
   }, [isAuthenticated, user, loading, navigate]);
+
+  // Trigger agentic sync on login to populate knowledge base
+  useEffect(() => {
+    if (isAuthenticated && user?.onboardingCompleted) {
+      const token = getStoredAuthToken();
+      if (token) {
+        // Trigger onboarding snapshot sync
+        fetch('/api/onboarding/syncAgenticSnapshot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: 'include',
+        }).catch(() => {
+          // Silent fail - sync is best-effort
+        });
+
+        // Trigger time entries backfill
+        fetch('/api/timers/sync/agentic/backfill?limit=100', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: 'include',
+        }).catch(() => {
+          // Silent fail - backfill is best-effort
+        });
+      }
+    }
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     if (mobileNavOpen) {
@@ -305,7 +338,7 @@ const ProtectedRoutes = () => {
               element={<CoachWorkspace autoLaunch targetView="notifications" returnPath="/dashboard" />}
             />
             <Route path="/coach/launcher" element={<CoachWorkspace />} />
-            <Route path="/dashboard" element={<Dashboard isAuthenticated={isAuthenticated} />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>

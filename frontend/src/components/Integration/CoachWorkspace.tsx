@@ -136,13 +136,24 @@ const requestAgenticBridgeToken = async (): Promise<BridgeTokenResponse | null> 
 const AGENTIC_BACKFILL_MARKER = 'alterego-agentic-backfill-ts';
 const AGENTIC_ONBOARDING_SYNC_MARKER = 'alterego-agentic-onboarding-sync-ts';
 const AGENTIC_TIME_ENTRY_BACKFILL_MARKER = 'alterego-agentic-time-backfill-ts';
+const AGENTIC_BACKFILL_VERSION_MARKER = 'alterego-agentic-backfill-version';
 const AGENTIC_ONBOARDING_SYNC_INTERVAL_MS = 2 * 60 * 1000;
 const AGENTIC_TIME_ENTRY_BACKFILL_INTERVAL_MS = 12 * 60 * 60 * 1000;
 const AGENTIC_INITIAL_BACKFILL_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+const BACKFILL_VERSION = 'v2-jwt-fix'; // Increment to force fresh backfill after auth fixes
 
 const shouldRunFullBackfill = (): boolean => {
   try {
     const now = Date.now();
+
+    // Check if backfill version changed (forces fresh backfill after auth fixes)
+    const lastVersion = window.localStorage.getItem(AGENTIC_BACKFILL_VERSION_MARKER);
+    if (lastVersion !== BACKFILL_VERSION) {
+      window.localStorage.setItem(AGENTIC_BACKFILL_VERSION_MARKER, BACKFILL_VERSION);
+      window.localStorage.setItem(AGENTIC_BACKFILL_MARKER, String(now));
+      return true;
+    }
+
     const raw = window.localStorage.getItem(AGENTIC_BACKFILL_MARKER);
     const lastRun = raw ? Number.parseInt(raw, 10) : 0;
     if (Number.isFinite(lastRun) && lastRun > 0 && now - lastRun < AGENTIC_INITIAL_BACKFILL_INTERVAL_MS) {
