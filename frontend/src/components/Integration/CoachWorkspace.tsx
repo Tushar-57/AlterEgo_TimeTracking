@@ -1,5 +1,6 @@
 import { ArrowUpRight, Eye, ExternalLink } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getStoredAuthToken } from '../../utils/auth';
 
 const BUILTIN_COACH_URL_CANDIDATES = [
   'https://agenticlyf.vercel.app/coach/',
@@ -184,12 +185,18 @@ const primeCoachKnowledge = async (): Promise<void> => {
       ? '/api/timers/sync/agentic/backfill?limit=100'
       : null;
 
+    const token = getStoredAuthToken();
+    const authHeaders: HeadersInit = token
+      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+      : { 'Content-Type': 'application/json' };
+
     const syncTasks: Array<Promise<Response>> = [];
 
     if (onboardingSyncEnabled) {
       syncTasks.push(
         fetch('/api/onboarding/syncAgenticSnapshot', {
           method: 'POST',
+          headers: authHeaders,
           credentials: 'include',
         }),
       );
@@ -199,6 +206,7 @@ const primeCoachKnowledge = async (): Promise<void> => {
       syncTasks.push(
         fetch(backfillEndpoint, {
           method: 'POST',
+          headers: authHeaders,
           credentials: 'include',
         }),
       );
