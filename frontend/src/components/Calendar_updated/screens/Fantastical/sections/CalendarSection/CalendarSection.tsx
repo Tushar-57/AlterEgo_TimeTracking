@@ -781,8 +781,16 @@ export const CalendarSection = ({
     const outOfBoundsLeft =
       weekGridWidth > 0 && (parsedLeft < -weekColumnWidth || parsedLeft > weekGridWidth + weekColumnWidth);
 
-    const normalizedTop = outOfBoundsTop ? fallbackTop : parsedTop;
-    const normalizedLeft = outOfBoundsLeft ? fallbackLeft : parsedLeft;
+    const parsedDayIndex = Math.round(parsedLeft / Math.max(1, weekColumnWidth));
+    const canonicalDayIndex = startDate.getDay();
+    const dayMismatch = Math.abs(parsedDayIndex - canonicalDayIndex) > 0;
+
+    const parsedQuarterHourSlot = Math.round(parsedTop / (HOUR_ROW_HEIGHT / 4));
+    const canonicalQuarterHourSlot = Math.round(fallbackTop / (HOUR_ROW_HEIGHT / 4));
+    const timeMismatch = Math.abs(parsedQuarterHourSlot - canonicalQuarterHourSlot) > 2;
+
+    const normalizedTop = outOfBoundsTop || timeMismatch ? fallbackTop : parsedTop;
+    const normalizedLeft = outOfBoundsLeft || dayMismatch ? fallbackLeft : parsedLeft;
 
     const slotHeight = HOUR_ROW_HEIGHT / 4;
 

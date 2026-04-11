@@ -137,9 +137,9 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
         const minutes = startDate.getMinutes().toString().padStart(2, "0");
         const projectId = entry.projectId ?? entry.project?.id ?? null;
         const detail = entry.timeEntryDetail ?? entry.detail ?? null;
-        const position = entry.positionTop && entry.positionLeft
-          ? { top: entry.positionTop, left: entry.positionLeft }
-          : calculatePosition(entry.startTime);
+        // Use canonical start time for placement so stale saved pixel offsets
+        // from prior viewport sizes do not shift entries to the wrong weekday column.
+        const position = calculatePosition(entry.startTime);
 
         return {
           id: entry.id,
