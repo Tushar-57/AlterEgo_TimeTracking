@@ -134,9 +134,16 @@ const requestAgenticBridgeToken = async (): Promise<BridgeTokenResponse | null> 
 
 const AGENTIC_BACKFILL_MARKER = 'alterego-agentic-backfill-date';
 
+const toLocalDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const shouldRunFullBackfill = (): boolean => {
   try {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toLocalDateKey(new Date());
     const lastBackfillDate = window.localStorage.getItem(AGENTIC_BACKFILL_MARKER);
     if (lastBackfillDate === today) {
       return false;
