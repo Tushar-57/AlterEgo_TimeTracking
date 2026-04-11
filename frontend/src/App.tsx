@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart2, Brain, Clock, LayoutDashboard, ListChecks, Menu } from 'lucide-react';
+import { BarChart2, BellRing, Brain, Clock, LayoutDashboard, ListChecks, Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import TimeTracker from './components/TimeTracker/TimeTracker';
 import LoginClassic from './components/LoginFunctionality';
@@ -74,6 +74,7 @@ const ProtectedRoutes = () => {
     { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
     { label: 'Tasks', to: '/tasks', icon: ListChecks },
     { label: 'Analytics', to: '/coach/analytics', icon: BarChart2 },
+    { label: 'Alerts', to: '/coach/notifications', icon: BellRing },
     { label: 'Coach', to: '/coach/knowledge', icon: Brain },
   ];
 
@@ -138,6 +139,7 @@ const ProtectedRoutes = () => {
             <Route path="/timer" element={<TimeTracker />} />
             <Route path="/tasks" element={<TaskManager />} />
             <Route path="/analytics" element={<Navigate to="/coach/analytics" replace />} />
+            <Route path="/notifications" element={<Navigate to="/coach/notifications" replace />} />
             <Route
               path="/reports"
               element={
@@ -298,13 +300,17 @@ const ProtectedRoutes = () => {
               path="/coach/analytics"
               element={<CoachWorkspace autoLaunch targetView="analytics" returnPath="/dashboard" />}
             />
+            <Route
+              path="/coach/notifications"
+              element={<CoachWorkspace autoLaunch targetView="notifications" returnPath="/dashboard" />}
+            />
             <Route path="/coach/launcher" element={<CoachWorkspace />} />
             <Route path="/dashboard" element={<Dashboard isAuthenticated={isAuthenticated} />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-teal-200/60 bg-white/95 px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur-xl md:hidden dark:border-slate-700 dark:bg-slate-900/95">
+        <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-6 border-t border-teal-200/60 bg-white/95 px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur-xl md:hidden dark:border-slate-700 dark:bg-slate-900/95">
           {mobileTabs.map((tab) => {
             const isActive = location.pathname === tab.to || location.pathname.startsWith(`${tab.to}/`);
             return (

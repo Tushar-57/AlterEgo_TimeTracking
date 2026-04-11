@@ -14,6 +14,7 @@ import {
   WatchIcon,
   LayoutDashboard,
   UserRound,
+  BellRing,
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -112,6 +113,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
         <div className="mb-6">
           <div className="mb-3 px-4 text-xs font-medium tracking-[0.14em] text-teal-700 dark:text-cyan-300">ANALYZE</div>
           <NavItem icon={BarChart2} label="Analytics" to="/coach/analytics" onNavigate={onMobileClose} />
+          <NavItem icon={BellRing} label="AI Notifications" to="/coach/notifications" onNavigate={onMobileClose} />
         </div>
 
         <div className="mb-6">

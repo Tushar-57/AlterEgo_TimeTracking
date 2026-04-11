@@ -73,7 +73,7 @@ const resolveCoachSrc = (): string => {
   return '/coach/';
 };
 
-type CoachTargetView = 'chat' | 'knowledge' | 'analytics';
+type CoachTargetView = 'chat' | 'knowledge' | 'analytics' | 'notifications';
 
 const buildCoachLaunchUrl = (
   url: string,
@@ -335,6 +335,8 @@ const CoachWorkspace = ({
 
   const viewLabel = targetView === 'analytics'
     ? 'Analytics'
+    : targetView === 'notifications'
+      ? 'AI Notifications'
     : targetView === 'knowledge'
       ? 'Knowledge Base'
       : 'Coach';
