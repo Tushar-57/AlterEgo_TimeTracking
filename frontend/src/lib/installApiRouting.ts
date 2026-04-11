@@ -13,7 +13,8 @@ const AGENTIC_API_ORIGIN = (import.meta.env.VITE_AGENTIC_API_ORIGIN as string | 
 const AGENTIC_PREFIX = (import.meta.env.VITE_AGENTIC_API_PREFIX as string) || '/agentic-api';
 
 const AUTH_SESSION_KEY = 'auth_session';
-const AUTH_SESSION_MARKER = 'cookie-session';
+// No marker/fallback allowed
+const AUTH_SESSION_MARKER = '__NO_SESSION__';
 
 let fetchRewriteInstalled = false;
 
@@ -113,17 +114,12 @@ function buildRequestInit(
   const headers = new Headers(init?.headers ?? fallbackHeaders ?? undefined);
 
   if (requiresCookieAuth) {
-    const currentAuth = (headers.get('Authorization') || '').trim();
-    const isPlaceholderAuth =
-      /^Bearer\s+(cookie-session|session|1)$/i.test(currentAuth) ||
-      /^Bearer\s*$/i.test(currentAuth);
-
-    if (!currentAuth || isPlaceholderAuth) {
+    // Only attach Authorization if a real JWT is present
+    const sessionToken = resolveSessionAuthToken();
+    if (sessionToken) {
+      headers.set('Authorization', `Bearer ${sessionToken}`);
+    } else {
       headers.delete('Authorization');
-      const sessionToken = resolveSessionAuthToken();
-      if (sessionToken) {
-        headers.set('Authorization', `Bearer ${sessionToken}`);
-      }
     }
   }
 
@@ -135,21 +131,13 @@ function buildRequestInit(
 }
 
 function resolveSessionAuthToken(): string | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
+  if (typeof window === 'undefined') return null;
   try {
     const raw = window.sessionStorage.getItem(AUTH_SESSION_KEY);
-    if (!raw) {
-      return null;
-    }
-
+    if (!raw) return null;
     const normalized = raw.trim();
-    if (!normalized || normalized === AUTH_SESSION_MARKER) {
-      return null;
-    }
-
+    // Only accept a real JWT (three segments, non-empty)
+    if (!normalized || normalized.split('.').length !== 3) return null;
     return normalized;
   } catch {
     return null;

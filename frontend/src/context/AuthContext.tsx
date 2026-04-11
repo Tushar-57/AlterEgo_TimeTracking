@@ -82,6 +82,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    // On mount, if no valid JWT, immediately redirect to login
+    const token = getStoredAuthToken();
+    if (!token) {
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        isAuthenticated: false,
+        user: null,
+        error: null,
+      }));
+      clearSession();
+      navigate('/login', { replace: true });
+      return;
+    }
+    // Validate token with backend
     const validateAuth = async (): Promise<boolean> => {
       const setUnauthenticatedState = () => {
         setState(prev => ({
@@ -92,17 +107,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           error: null,
         }));
         clearSession();
+        navigate('/login', { replace: true });
       };
-
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
-        const token = getStoredAuthToken();
         const headers = new Headers();
-        if (token) {
-          headers.set('Authorization', `Bearer ${token}`);
-        }
-
+        headers.set('Authorization', `Bearer ${token}`);
         const response = await fetch('/api/auth/validate', {
           method: 'GET',
           headers,
@@ -110,20 +121,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
-
         if (response.status === 401 || response.status === 403) {
           setUnauthenticatedState();
           return false;
         }
-
         if (!response.ok) {
           throw new Error(`Auth validation failed with status ${response.status}`);
         }
-
         const data = await response.json() as { valid: boolean; user: User };
-
         if (data.valid === true) {
-          markSessionActive();
+          markSessionActive(token);
           setState({
             isAuthenticated: true,
             loading: false,
@@ -131,7 +138,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             user: {
               email: data.user.email,
               name: data.user.name,
-              onboardingCompleted: data.user.onboardingCompleted, // Set onboardingCompleted
+              onboardingCompleted: data.user.onboardingCompleted,
             },
           });
           return true;
@@ -140,32 +147,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return false;
         }
       } catch (error: unknown) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          setState(prev => ({
-            ...prev,
-            loading: false,
-            isAuthenticated: false,
-            user: null,
-            error: { status: 408, message: 'Auth validation timed out. Please retry.' },
-          }));
-          clearSession();
-          return false;
-        }
-
-        const message = error instanceof Error ? error.message : 'Session expired. Please log in again.';
-        console.warn('Auth validation failed:', message);
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          isAuthenticated: false,
-          user: null,
-          error: { status: message.includes('401') ? 401 : 500, message: 'Session expired. Please log in again.' },
-        }));
-        clearSession();
+        setUnauthenticatedState();
         return false;
       }
     };
-
     validateAuth();
   }, [navigate]);
 

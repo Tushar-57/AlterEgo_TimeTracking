@@ -1,6 +1,7 @@
 export const API_URL = '/api';
 export const AUTH_SESSION_KEY = 'auth_session';
-export const AUTH_SESSION_MARKER = 'cookie-session';
+// No marker/fallback allowed
+export const AUTH_SESSION_MARKER = '__NO_SESSION__';
 
 type AuthCredentials = {
   email: string;
@@ -38,7 +39,11 @@ const readAuthError = async (response: Response): Promise<string> => {
 
 export const markSessionActive = (token?: string | null): void => {
   const normalizedToken = typeof token === 'string' ? token.trim() : '';
-  sessionStorage.setItem(AUTH_SESSION_KEY, normalizedToken || AUTH_SESSION_MARKER);
+  if (normalizedToken && normalizedToken !== AUTH_SESSION_MARKER) {
+    sessionStorage.setItem(AUTH_SESSION_KEY, normalizedToken);
+  } else {
+    clearSession();
+  }
 };
 
 export const clearSession = (): void => {
@@ -52,15 +57,10 @@ export const hasActiveSession = (): boolean => {
 
 export const getStoredAuthToken = (): string | null => {
   const value = sessionStorage.getItem(AUTH_SESSION_KEY);
-  if (!value) {
-    return null;
-  }
-
+  if (!value) return null;
   const normalized = value.trim();
-  if (!normalized || normalized === AUTH_SESSION_MARKER) {
-    return null;
-  }
-
+  // Only accept a real JWT (three segments, non-empty)
+  if (!normalized || normalized.split('.').length !== 3) return null;
   return normalized;
 };
 
@@ -128,11 +128,12 @@ export const fetchWithToken = async <T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  // Prefer session-stored JWT when present (Safari cookie fallback), otherwise rely on cookies.
+  // Only attach Authorization if a real JWT is present
   const storedToken = getStoredAuthToken();
   if (storedToken) {
     headers.set('Authorization', `Bearer ${storedToken}`);
   } else {
+    // Never attach a marker or empty header
     headers.delete('Authorization');
   }
 
