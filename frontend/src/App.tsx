@@ -92,35 +92,54 @@ const ProtectedRoutes = () => {
     }
   }, [isAuthenticated, user, loading, navigate]);
 
-  // Trigger agentic sync on login to populate knowledge base
+  // Trigger agentic sync on login to populate knowledge base (throttled to prevent duplicates)
   useEffect(() => {
     if (isAuthenticated && user?.onboardingCompleted) {
       const token = getStoredAuthToken();
-      if (token) {
-        // Trigger onboarding snapshot sync
-        fetch('/api/onboarding/syncAgenticSnapshot', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: 'include',
-        }).catch(() => {
-          // Silent fail - sync is best-effort
-        });
+      if (!token) return;
 
-        // Trigger time entries backfill
-        fetch('/api/timers/sync/agentic/backfill?limit=100', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: 'include',
-        }).catch(() => {
-          // Silent fail - backfill is best-effort
-        });
+      // Throttle sync to prevent repeated calls on refresh
+      const APP_SYNC_MARKER = 'alterego-app-sync-ts';
+      const APP_SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes minimum between syncs
+
+      try {
+        const now = Date.now();
+        const lastSync = window.localStorage.getItem(APP_SYNC_MARKER);
+        const lastSyncTime = lastSync ? Number.parseInt(lastSync, 10) : 0;
+
+        if (Number.isFinite(lastSyncTime) && lastSyncTime > 0 && now - lastSyncTime < APP_SYNC_INTERVAL_MS) {
+          // Skip sync - ran too recently
+          return;
+        }
+
+        window.localStorage.setItem(APP_SYNC_MARKER, String(now));
+      } catch {
+        // Continue even if localStorage fails
       }
+
+      // Trigger onboarding snapshot sync
+      fetch('/api/onboarding/syncAgenticSnapshot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include',
+      }).catch(() => {
+        // Silent fail - sync is best-effort
+      });
+
+      // Trigger time entries backfill
+      fetch('/api/timers/sync/agentic/backfill?limit=100', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include',
+      }).catch(() => {
+        // Silent fail - backfill is best-effort
+      });
     }
   }, [isAuthenticated, user]);
 

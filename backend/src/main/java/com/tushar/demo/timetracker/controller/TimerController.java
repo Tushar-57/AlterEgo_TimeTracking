@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,11 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/timers")
 public class TimerController {
     private static final Logger logger = LoggerFactory.getLogger(TimerController.class);
+
+    // Rate limiting for backfill to prevent concurrent requests flooding the outbox
+    private static final long BACKFILL_RATE_LIMIT_MS = 60_000; // 1 minute between backfills per user
+    private static final ConcurrentHashMap<Integer, Long> lastBackfillByUser = new ConcurrentHashMap<>();
+
     private final TimeEntryService timeEntryService;
     private final UserDetailsServiceImpl userDetailsService;
     private final ProjectRepository projectRepository;
@@ -413,6 +419,23 @@ public class TimerController {
                         .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
             }
 
+            Users user = userDetailsService.getCurrentUser(authentication);
+            int userId = user.getId();
+
+            // Rate limiting: prevent concurrent backfill requests from same user
+            long now = System.currentTimeMillis();
+            Long lastBackfill = lastBackfillByUser.get(userId);
+            if (lastBackfill != null && (now - lastBackfill) < BACKFILL_RATE_LIMIT_MS) {
+                long remainingSeconds = (BACKFILL_RATE_LIMIT_MS - (now - lastBackfill)) / 1000;
+                logger.warn("Backfill rate limited for user {} - last request {} seconds ago", userId, remainingSeconds);
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                        .body(ApiResponse.error("Rate limited", Map.of(
+                                "code", "BACKFILL_RATE_LIMITED",
+                                "message", "Backfill already in progress or recently completed. Retry in " + remainingSeconds + " seconds."
+                        )));
+            }
+            lastBackfillByUser.put(userId, now);
+
             if (limit != null && limit < 1) {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error("Validation failed", Map.of(
@@ -422,7 +445,6 @@ public class TimerController {
             }
 
             int requestedLimit = limit != null ? limit : 0;
-            Users user = userDetailsService.getCurrentUser(authentication);
             long cooldownRemainingSeconds = agenticKnowledgeSyncService.getUpstreamCooldownRemainingSeconds();
             if (cooldownRemainingSeconds > 0) {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
