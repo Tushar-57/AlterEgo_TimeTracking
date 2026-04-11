@@ -30,11 +30,35 @@ const readAuthError = async (response: Response): Promise<string> => {
   return '';
 };
 
-// No-op: session is managed by cookie
+const AUTH_TOKEN_KEY = 'auth_token';
+
 export const markSessionActive = (): void => {};
 export const clearSession = (): void => {};
 export const hasActiveSession = (): boolean => false;
-export const getStoredAuthToken = (): string | null => null;
+
+export const getStoredAuthToken = (): string | null => {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+export const setStoredAuthToken = (token: string): void => {
+  try {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+  } catch {
+    console.warn('Failed to store auth token');
+  }
+};
+
+export const clearStoredAuthToken = (): void => {
+  try {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  } catch {
+    console.warn('Failed to clear auth token');
+  }
+};
 
 
 export const login = async (credentials: AuthCredentials) => {

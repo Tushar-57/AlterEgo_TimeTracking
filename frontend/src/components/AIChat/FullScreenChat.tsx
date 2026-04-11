@@ -7,6 +7,7 @@ import { Message, MentorArchetype, CoachingStyle, AVATARS, RANDOM_NAMES } from '
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../Calendar_updated/components/ui/tooltip';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../ui/toast';
+import { useAuth } from '../../context/AuthContext';
 import { formatMinutesAsHoursMinutes } from '../../utils/utils';
 
 const SUGGESTION_PROMPTS = [
@@ -73,6 +74,7 @@ const FullScreenChat: React.FC = () => {
   const { isChatOpen, toggleChat, messages, addMessage, clearMessages, isTyping, setIsTyping } = useChat();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { token } = useAuth();
   const [input, setInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -96,7 +98,6 @@ const FullScreenChat: React.FC = () => {
     const fetchCoachData = async () => {
       if (hasFetchedCoachData.current) return;
       try {
-        const token = sessionStorage.getItem('auth_session');
         if (!token) {
           toast({
             title: 'Session Expired',
@@ -231,7 +232,6 @@ const FullScreenChat: React.FC = () => {
     setShowSuggestions(false);
 
     try {
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Session Expired',
@@ -334,7 +334,6 @@ const FullScreenChat: React.FC = () => {
 
   const handleAction = async (action: string, details: ActionDetails, confirmWithoutChanges: boolean = false) => {
     try {
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Session Expired',
@@ -515,7 +514,6 @@ const FullScreenChat: React.FC = () => {
   const handleToneChange = async (tone: CoachingStyle) => {
     setCoachData((prev) => prev ? { ...prev, tone } : prev);
     try {
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Session Expired',
@@ -554,7 +552,6 @@ const FullScreenChat: React.FC = () => {
   const handleMentorChange = async (name: string, archetype: MentorArchetype, avatar: string) => {
     setCoachData((prev) => prev ? { ...prev, name, archetype, avatar } : prev);
     try {
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Session Expired',

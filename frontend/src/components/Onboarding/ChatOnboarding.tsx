@@ -11,6 +11,7 @@ import { createMessage } from './utils/onboardingUtils';
 import StepMentor from './Mentor/MentorComponent';
 import LoadingScreen from './loading/LoadingScreen';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 interface ChatOnboardingProps {
   onComplete: (data: {
@@ -23,6 +24,7 @@ interface ChatOnboardingProps {
 }
 
 const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
+  const { token } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -217,7 +219,7 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('auth_session')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(onboardingData),
       });

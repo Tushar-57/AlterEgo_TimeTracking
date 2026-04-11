@@ -34,7 +34,7 @@ const initialFormState: ProjectFormState = {
 };
 
 const ProjectPage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, token } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [formState, setFormState] = useState<ProjectFormState>(initialFormState);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -48,7 +48,7 @@ const ProjectPage = () => {
     try {
       const response = await fetch('/api/projects/userProjects', {
         headers: {
-          Authorization: `Bearer ${sessionStorage.getItem('auth_session')}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -119,7 +119,7 @@ const ProjectPage = () => {
         method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionStorage.getItem('auth_session')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: trimmedName,
@@ -150,7 +150,7 @@ const ProjectPage = () => {
     try {
       const response = await fetch(`/api/projects/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${sessionStorage.getItem('auth_session')}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {

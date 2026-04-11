@@ -23,7 +23,7 @@ interface VoiceAIModeProps {
 const FILTERED_WORDS = ['password', 'credit card'];
 const DEBOUNCE_TIME = 1000;
 
-const VoiceAIMode: React.FC<VoiceAIModeProps> = ({ 
+const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
   onProcessingStart,
   onProcessingEnd,
   onActivityLog,
@@ -32,7 +32,7 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
   selectedProjectId
 }) => {
     // const { user } = useAuth();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, token } = useAuth();
     const [aiStatus, setAiStatus] = useState<'idle' | 'processing' | 'success'>('idle');
     const [error, setError] = useState<AIError | null>(null);
     const [voiceFeedback, setVoiceFeedback] = useState('');
@@ -139,7 +139,7 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('auth_session')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           name: projectConfirmation.projectName,
@@ -162,7 +162,7 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('auth_session')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ 
           command: text,

@@ -463,6 +463,7 @@ import {
   SelectValue,
 } from '../../../../../ui/select';
 import { useToast } from '../../../../components/hooks/use-toast';
+import { useAuth } from '../../../../../../context/AuthContext';
 import { X, Clock, ChevronDown, ChevronUp, Sparkles, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Switch } from '../../../../components/ui/switch';
@@ -538,6 +539,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
   const [isContinuing, setIsContinuing] = useState(false);
   const [showAdvancedFields, setShowAdvancedFields] = useState(false);
   const { toast } = useToast();
+  const { token } = useAuth();
   const popupRef = useRef<HTMLDivElement>(null);
 
   const formatTimeInput = (date: Date) =>
@@ -622,7 +624,6 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = sessionStorage.getItem('auth_session');
         if (!token) {
           toast({
             title: 'Authentication Error',
@@ -768,7 +769,6 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
 
     try {
       setLoading(true);
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Authentication Error',

@@ -22,6 +22,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useTaskStore } from '../store/taskStore';
+import { useAuth } from '../context/AuthContext';
 import type { Task, TaskPriority, TaskStatus, TaskType } from '../store/taskStore';
 import { formatMinutesAsHoursMinutes } from '../utils/utils';
 
@@ -486,6 +487,7 @@ const TaskManager = () => {
   const [availableProjects, setAvailableProjects] = useState<ProjectOption[]>([]);
   const [availableTags, setAvailableTags] = useState<TagOption[]>([]);
   const [loadingTaskMeta, setLoadingTaskMeta] = useState(false);
+  const { token } = useAuth();
 
   useEffect(() => {
     seedSampleHabits();
@@ -495,7 +497,6 @@ const TaskManager = () => {
     let cancelled = false;
 
     const hydrateFromServer = async () => {
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         hasHydratedFromServerRef.current = true;
         return;
@@ -539,7 +540,6 @@ const TaskManager = () => {
     let cancelled = false;
 
     const loadTaskMeta = async () => {
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         setAvailableProjects([]);
         setAvailableTags([]);
@@ -632,12 +632,11 @@ const TaskManager = () => {
       return;
     }
 
-    const token = sessionStorage.getItem('auth_session');
-    if (!token) {
-      return;
-    }
-
     const timeout = window.setTimeout(() => {
+      if (!token) {
+        return;
+      }
+
       void fetch('/api/task-board/state', {
         method: 'PUT',
         headers: {
@@ -681,7 +680,6 @@ const TaskManager = () => {
   );
 
   useEffect(() => {
-    const token = sessionStorage.getItem('auth_session');
     if (!token) {
       return;
     }

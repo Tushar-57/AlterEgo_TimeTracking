@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { clearSession, markSessionActive } from '../utils/auth';
+import { clearSession, markSessionActive, setStoredAuthToken, getStoredAuthToken, clearStoredAuthToken } from '../utils/auth';
 
 interface User {
   name?: string;
@@ -16,7 +16,8 @@ interface AuthContextType {
   logout: () => void;
   loading: boolean;
   user: User | null;
-  setOnboardingCompleted: (completed: boolean) => void; // Added setOnboardingCompleted
+  setOnboardingCompleted: (completed: boolean) => void;
+  token: string | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   user: null,
   setOnboardingCompleted: () => {},
+  token: null,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -45,8 +47,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
 
-  const login = (userData?: User) => {
+  const login = (userData?: User, token?: string | null) => {
     markSessionActive();
+    if (token) {
+      setStoredAuthToken(token);
+    }
     setState({
       isAuthenticated: true,
       loading: false,
@@ -57,6 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     clearSession();
+    clearStoredAuthToken();
     fetch('/api/auth/logout', {
       method: 'POST',
       credentials: 'include',
@@ -136,7 +142,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     validateAuth();
   }, [navigate]);
 
-  const value = { ...state, login, logout, clearError, setOnboardingCompleted };
+  const token = getStoredAuthToken();
+  const value = { ...state, login, logout, clearError, setOnboardingCompleted, token };
 
   return (
     <AuthContext.Provider value={value}>

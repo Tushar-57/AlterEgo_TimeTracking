@@ -22,7 +22,7 @@ const initialFormState: TagFormState = {
 };
 
 export const UserTagPage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, token } = useAuth();
   const [tags, setTags] = useState<UserTag[]>([]);
   const [formState, setFormState] = useState<TagFormState>(initialFormState);
   const [editingTag, setEditingTag] = useState<UserTag | null>(null);
@@ -35,7 +35,7 @@ export const UserTagPage = () => {
     try {
       const response = await fetch('/api/tags', {
         headers: {
-          Authorization: `Bearer ${sessionStorage.getItem('auth_session')}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -97,7 +97,7 @@ export const UserTagPage = () => {
         method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionStorage.getItem('auth_session')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: trimmedName,
@@ -127,7 +127,7 @@ export const UserTagPage = () => {
     try {
       const response = await fetch(`/api/tags/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${sessionStorage.getItem('auth_session')}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {

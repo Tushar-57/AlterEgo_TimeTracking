@@ -12,6 +12,7 @@ import {
   Target,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { useTaskStore } from '../../store/taskStore';
 import { formatMinutesAsHoursMinutes } from '../../utils/utils';
 
@@ -375,8 +376,7 @@ const readNumber = (value: unknown, fallback = 0): number => {
 
 const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
 
-const buildAuthHeaders = (): HeadersInit => {
-  const token = sessionStorage.getItem('auth_session');
+const buildAuthHeaders = (token: string | null): HeadersInit => {
   if (!token) {
     return {
       'Content-Type': 'application/json',
@@ -391,6 +391,7 @@ const buildAuthHeaders = (): HeadersInit => {
 
 const CheckupPrompt = () => {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const { tasks } = useTaskStore();
   const [config, setConfig] = useState<CheckupConfig | null>(null);
   const [onboardingSnapshot, setOnboardingSnapshot] = useState<OnboardingSnapshot | null>(null);
@@ -425,7 +426,7 @@ const CheckupPrompt = () => {
       try {
         const response = await fetch('/api/onboarding/getOnboardingData', {
           method: 'GET',
-          headers: buildAuthHeaders(),
+          headers: buildAuthHeaders(token),
           credentials: 'include',
         });
 
@@ -477,7 +478,7 @@ const CheckupPrompt = () => {
       try {
         const response = await fetch('/agentic-api/api/knowledge/analytics?time_range=30d', {
           method: 'GET',
-          headers: buildAuthHeaders(),
+          headers: buildAuthHeaders(token),
           credentials: 'include',
         });
 
@@ -939,7 +940,7 @@ const CheckupPrompt = () => {
     try {
       const response = await fetch(`/api/onboarding/checkups/${activePrompt.type}`, {
         method: 'POST',
-        headers: buildAuthHeaders(),
+        headers: buildAuthHeaders(token),
         credentials: 'include',
         body: JSON.stringify({
           date: activePrompt.dateKey,

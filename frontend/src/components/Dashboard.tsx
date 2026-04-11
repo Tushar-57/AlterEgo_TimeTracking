@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "./Calendar_updated/components/hooks/use-toast";
+import { useAuth } from "../context/AuthContext";
 import { CalendarSection } from "./Calendar_updated/screens/Fantastical/sections/CalendarSection/CalendarSection";
 import { CalendarEvent } from "./Calendar_updated/components/DraggableEvent";
 import { parseDateTimeAsLocal } from "../utils/utils";
@@ -80,20 +81,20 @@ export const getColorForProject = (projectId: number | null): string => {
   return palette[index];
 };
 
-export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
+export const Dashboard = () => {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const { toast } = useToast();
+  const { token, isAuthenticated } = useAuth();
 
   const fetchTimeEntriesDirect = useCallback(async (start: Date, end: Date) => {
     try {
-      const token = sessionStorage.getItem("auth_session");
       if (!token) {
         toast({
           title: "Authentication Error",
-          description: "Please log in to view time entries.",
+          description: "Please log in to view entries.",
           variant: "destructive",
         });
-        return [];
+        return;
       }
 
       const res = await fetch(
@@ -111,8 +112,6 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        sessionStorage.removeItem("auth_session");
-        window.location.href = "/login";
         return [];
       }
 
@@ -176,7 +175,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
       });
       return [];
     }
-  }, [toast]);
+  }, [toast, token]);
 
   const fetchData = useCallback(async (range?: CalendarRange) => {
     if (!isAuthenticated) {
@@ -206,11 +205,10 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
   const handleUpdateEventPosition = useCallback(
     async (eventId: number, newPosition: { top: string; left: string }) => {
       try {
-        const token = sessionStorage.getItem("auth_session");
         if (!token) {
           toast({
             title: "Authentication Error",
-            description: "Please log in to update event position.",
+            description: "Please log in to save position.",
             variant: "destructive",
           });
           return;
@@ -246,7 +244,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
         });
       }
     },
-    [toast]
+    [toast, token]
   );
 
   const handleDuplicateEvent = useCallback(
@@ -257,11 +255,10 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
       }
 
       try {
-        const token = sessionStorage.getItem("auth_session");
         if (!token) {
           toast({
             title: "Authentication Error",
-            description: "Please log in to duplicate entries.",
+            description: "Please log in to save position.",
             variant: "destructive",
           });
           return;
@@ -320,13 +317,12 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
         });
       }
     },
-    [calendarEvents, fetchData, toast]
+    [calendarEvents, fetchData, toast, token]
   );
 
   const handleDeleteEvent = useCallback(
     async (eventId: number) => {
       try {
-        const token = sessionStorage.getItem('auth_session');
         if (!token) {
           toast({
             title: 'Authentication Error',
@@ -362,17 +358,16 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
         });
       }
     },
-    [toast]
+    [toast, token]
   );
 
   const handleContinueEvent = useCallback(
     async (eventId: number) => {
       try {
-        const token = sessionStorage.getItem('auth_session');
         if (!token) {
           toast({
             title: 'Authentication Error',
-            description: 'Please log in to continue an entry.',
+            description: 'Please log in to continue entries.',
             variant: 'destructive',
           });
           return;

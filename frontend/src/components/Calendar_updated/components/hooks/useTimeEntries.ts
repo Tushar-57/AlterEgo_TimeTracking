@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from './use-toast';
+import { useAuth } from '../../../../context/AuthContext';
 import { calculatePosition, getColorForProject } from '../../../Dashboard';
 import { CalendarEvent } from '../../screens/Fantastical/Fantastical';
 
@@ -16,11 +17,11 @@ export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { token } = useAuth();
 
   const fetchTimeEntries = useCallback(async (start: Date, end: Date) => {
     setLoading(true);
     try {
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: "Authentication Error",
@@ -40,7 +41,6 @@ export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        sessionStorage.removeItem('auth_session');
         window.location.href = '/login';
         return;
       }
@@ -77,7 +77,7 @@ export const useTimeEntries = (currentDate: Date, isAuthenticated: boolean) => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, token]);
 
   useEffect(() => {
     if (isAuthenticated) {

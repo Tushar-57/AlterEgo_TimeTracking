@@ -1,5 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { Loader2, Check } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 type FormData = {
   objectiveTitle: string;
@@ -16,6 +17,7 @@ type FormData = {
 };
 
 export const PlannerForm: React.FC = () => {
+  const { token } = useAuth();
   const [data, setData] = useState<FormData>({
     objectiveTitle: '',
     whyItMatters: '',
@@ -79,7 +81,6 @@ export const PlannerForm: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      const token = sessionStorage.getItem('auth_session');
       const response = await fetch('/api/plans', {
         method: 'POST',
         headers: {

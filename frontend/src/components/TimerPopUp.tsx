@@ -2,6 +2,7 @@
 import { X, Play, Pause, RotateCcw, Edit2, MessageCircle, Mic, Plus } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { useAuth } from '../context/AuthContext';
 import type { Project } from '../store/projectStore'; 
 
 export interface TimeEntry {
@@ -99,6 +100,7 @@ export const TimerPopup = ({
   tags: incomingTags = [],
   selectedProjectId: incomingProjectId,
 }: TimerPopupProps) => {
+  const { token } = useAuth();
   const [taskDescription, setTaskDescription] = useState(incomingTaskDescription || taskName);
   const [category, setCategory] = useState('work');
   const [tags, setTags] = useState<string[]>(() => [...incomingTags]);
@@ -144,7 +146,6 @@ export const TimerPopup = ({
   const fetchProjects = useCallback(async () => {
       setIsLoadingProjects(true);
       try {
-        const token = sessionStorage.getItem('auth_session');
         if (!token) {
           window.location.href = '/login';
           return;
@@ -155,7 +156,6 @@ export const TimerPopup = ({
         });
     
         if (res.status === 401) {
-          sessionStorage.removeItem('auth_session');
           window.location.href = '/login';
           return;
         }
@@ -167,13 +167,12 @@ export const TimerPopup = ({
       } catch (error) {
         console.error('Error fetching projects:', error);
         if (error instanceof Error && error.message.includes('401')) {
-          sessionStorage.removeItem('auth_session');
           window.location.href = '/login';
         }
       } finally {
         setIsLoadingProjects(false);
       }
-    }, []);
+    }, [token]);
 
   useEffect(() => {
     void fetchProjects();

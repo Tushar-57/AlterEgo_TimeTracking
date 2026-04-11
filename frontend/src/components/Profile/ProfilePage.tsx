@@ -435,8 +435,9 @@ const ProfilePage = () => {
   const [redoing, setRedoing] = useState(false);
   const [endingAllSessions, setEndingAllSessions] = useState(false);
 
+  const { token } = useAuth();
+
   const loadProfile = useCallback(async () => {
-    const token = sessionStorage.getItem('auth_session');
     if (!token) {
       toast({
         title: 'Authentication required',
@@ -493,7 +494,6 @@ const ProfilePage = () => {
       return;
     }
 
-    const token = sessionStorage.getItem('auth_session');
     if (!token) {
       navigate('/login', { replace: true });
       return;
@@ -612,7 +612,6 @@ const ProfilePage = () => {
       return;
     }
 
-    const token = sessionStorage.getItem('auth_session');
     if (!token) {
       navigate('/login', { replace: true });
       return;

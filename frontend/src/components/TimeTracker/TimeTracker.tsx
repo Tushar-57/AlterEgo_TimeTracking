@@ -105,7 +105,7 @@ const QUOTES = [
 ];
 
 export default function TimeTracker() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, token } = useAuth();
   const { toast } = useToast();
   const { isDark, setThemeMode } = useTheme();
 
@@ -414,7 +414,6 @@ export default function TimeTracker() {
   useEffect(() => {
     const checkActiveTimer = async () => {
       try {
-        const token = sessionStorage.getItem('auth_session');
         if (!token) return;
 
         const resp = await fetch('/api/timers/active', {
@@ -433,7 +432,6 @@ export default function TimeTracker() {
         }
 
         if (resp.status === 401) {
-          sessionStorage.removeItem('auth_session');
           logout();
           toast({
             title: 'Session Expired',
@@ -1003,7 +1001,6 @@ export default function TimeTracker() {
       // Best-effort cleanup for stale server timers from older sessions.
       if (timerState.activeTimerId && timerState.startTime) {
         try {
-          const token = sessionStorage.getItem('auth_session');
           if (token) {
             await fetch(`/api/timers/${timerState.activeTimerId}/stop`, {
               method: 'POST',
@@ -1043,7 +1040,6 @@ export default function TimeTracker() {
     }
 
     try {
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Authentication Error',
@@ -1209,7 +1205,6 @@ export default function TimeTracker() {
   const handleAddTag = async () => {
     if (!currentTask.newTag.trim()) return;
     try {
-      const token = sessionStorage.getItem('auth_session');
       if (!token) {
         toast({
           title: 'Authentication Error',
@@ -1357,7 +1352,6 @@ export default function TimeTracker() {
 
     try {
       setDailyMarkerLoading(markerType);
-      const token = sessionStorage.getItem('auth_session');
 
       if (!token) {
         toast({
