@@ -110,8 +110,13 @@ type BridgeTokenResponse = {
 
 const requestAgenticBridgeToken = async (): Promise<BridgeTokenResponse | null> => {
   try {
+    const token = getStoredAuthToken();
+    const headers: HeadersInit = token
+      ? { Authorization: `Bearer ${token}` }
+      : {};
     const response = await fetch('/api/auth/agentic-bridge-token', {
       method: 'GET',
+      headers,
       credentials: 'include',
     });
 
