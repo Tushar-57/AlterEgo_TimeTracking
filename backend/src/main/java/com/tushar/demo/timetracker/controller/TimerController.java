@@ -40,7 +40,7 @@ public class TimerController {
 
     // Rate limiting for backfill to prevent concurrent requests flooding the outbox
     private static final long BACKFILL_RATE_LIMIT_MS = 60_000; // 1 minute between backfills per user
-    private static final ConcurrentHashMap<Integer, Long> lastBackfillByUser = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Long, Long> lastBackfillByUser = new ConcurrentHashMap<>();
 
     private final TimeEntryService timeEntryService;
     private final UserDetailsServiceImpl userDetailsService;
@@ -420,7 +420,7 @@ public class TimerController {
             }
 
             Users user = userDetailsService.getCurrentUser(authentication);
-            int userId = user.getId();
+            Long userId = user.getId();
 
             // Rate limiting: prevent concurrent backfill requests from same user
             long now = System.currentTimeMillis();
