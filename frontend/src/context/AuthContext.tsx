@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { clearSession, getStoredAuthToken, markSessionActive } from '../utils/auth';
+import { clearSession, markSessionActive } from '../utils/auth';
 
 interface User {
   name?: string;
@@ -44,8 +44,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user: null,
   });
 
-  const login = (userData?: User, token?: string | null) => {
-    markSessionActive(token);
+
+  const login = (userData?: User) => {
+    markSessionActive();
     setState({
       isAuthenticated: true,
       loading: false,
@@ -62,7 +63,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }).catch((error) => {
       console.warn('Logout request failed:', error);
     });
-
     setState({
       isAuthenticated: false,
       loading: false,
@@ -82,21 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    // On mount, if no valid JWT, immediately redirect to login
-    const token = getStoredAuthToken();
-    if (!token) {
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        isAuthenticated: false,
-        user: null,
-        error: null,
-      }));
-      clearSession();
-      navigate('/login', { replace: true });
-      return;
-    }
-    // Validate token with backend
+    // On mount, validate session via cookie only
     const validateAuth = async (): Promise<boolean> => {
       const setUnauthenticatedState = () => {
         setState(prev => ({
@@ -112,11 +98,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
-        const headers = new Headers();
-        headers.set('Authorization', `Bearer ${token}`);
         const response = await fetch('/api/auth/validate', {
           method: 'GET',
-          headers,
           credentials: 'include',
           signal: controller.signal,
         });
@@ -130,7 +113,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         const data = await response.json() as { valid: boolean; user: User };
         if (data.valid === true) {
-          markSessionActive(token);
           setState({
             isAuthenticated: true,
             loading: false,

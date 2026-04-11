@@ -12,9 +12,6 @@ const TIMETRACKER_API_ORIGIN = (import.meta.env.VITE_TIMETRACKER_API_ORIGIN as s
 const AGENTIC_API_ORIGIN = (import.meta.env.VITE_AGENTIC_API_ORIGIN as string | undefined)?.trim();
 const AGENTIC_PREFIX = (import.meta.env.VITE_AGENTIC_API_PREFIX as string) || '/agentic-api';
 
-const AUTH_SESSION_KEY = 'auth_session';
-// No marker/fallback allowed
-const AUTH_SESSION_MARKER = '__NO_SESSION__';
 
 let fetchRewriteInstalled = false;
 
@@ -105,6 +102,7 @@ function isTimeTrackerApiUrl(url: string): boolean {
   }
 }
 
+
 function buildRequestInit(
   rewrittenUrl: string,
   init?: RequestInit,
@@ -112,36 +110,12 @@ function buildRequestInit(
 ): RequestInit {
   const requiresCookieAuth = isTimeTrackerApiUrl(rewrittenUrl);
   const headers = new Headers(init?.headers ?? fallbackHeaders ?? undefined);
-
-  if (requiresCookieAuth) {
-    // Only attach Authorization if a real JWT is present
-    const sessionToken = resolveSessionAuthToken();
-    if (sessionToken) {
-      headers.set('Authorization', `Bearer ${sessionToken}`);
-    } else {
-      headers.delete('Authorization');
-    }
-  }
-
+  // Do not attach Authorization header; rely on cookie
   return {
     ...init,
     headers,
     credentials: requiresCookieAuth ? 'include' : init?.credentials,
   };
-}
-
-function resolveSessionAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.sessionStorage.getItem(AUTH_SESSION_KEY);
-    if (!raw) return null;
-    const normalized = raw.trim();
-    // Only accept a real JWT (three segments, non-empty)
-    if (!normalized || normalized.split('.').length !== 3) return null;
-    return normalized;
-  } catch {
-    return null;
-  }
 }
 
 export function installApiRouting(): void {

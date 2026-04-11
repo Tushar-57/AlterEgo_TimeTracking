@@ -1,7 +1,4 @@
 export const API_URL = '/api';
-export const AUTH_SESSION_KEY = 'auth_session';
-// No marker/fallback allowed
-export const AUTH_SESSION_MARKER = '__NO_SESSION__';
 
 type AuthCredentials = {
   email: string;
@@ -19,50 +16,26 @@ const readAuthError = async (response: Response): Promise<string> => {
   if (!contentType.includes('application/json')) {
     return '';
   }
-
   const payload: unknown = await response.json().catch(() => ({}));
   if (!payload || typeof payload !== 'object') {
     return '';
   }
-
   const typedPayload = payload as AuthErrorPayload;
   if (typeof typedPayload.message === 'string' && typedPayload.message.trim()) {
     return typedPayload.message;
   }
-
   if (typeof typedPayload.error === 'string' && typedPayload.error.trim()) {
     return typedPayload.error;
   }
-
   return '';
 };
 
-export const markSessionActive = (token?: string | null): void => {
-  const normalizedToken = typeof token === 'string' ? token.trim() : '';
-  if (normalizedToken && normalizedToken !== AUTH_SESSION_MARKER) {
-    sessionStorage.setItem(AUTH_SESSION_KEY, normalizedToken);
-  } else {
-    clearSession();
-  }
-};
+// No-op: session is managed by cookie
+export const markSessionActive = (): void => {};
+export const clearSession = (): void => {};
+export const hasActiveSession = (): boolean => false;
+export const getStoredAuthToken = (): string | null => null;
 
-export const clearSession = (): void => {
-  sessionStorage.removeItem(AUTH_SESSION_KEY);
-};
-
-export const hasActiveSession = (): boolean => {
-  const tokenOrMarker = sessionStorage.getItem(AUTH_SESSION_KEY);
-  return Boolean(tokenOrMarker && tokenOrMarker.trim().length > 0);
-};
-
-export const getStoredAuthToken = (): string | null => {
-  const value = sessionStorage.getItem(AUTH_SESSION_KEY);
-  if (!value) return null;
-  const normalized = value.trim();
-  // Only accept a real JWT (three segments, non-empty)
-  if (!normalized || normalized.split('.').length !== 3) return null;
-  return normalized;
-};
 
 export const login = async (credentials: AuthCredentials) => {
   try {
@@ -74,12 +47,10 @@ export const login = async (credentials: AuthCredentials) => {
       credentials: 'include',
       body: JSON.stringify(credentials),
     });
-
     if (!response.ok) {
       const errorMessage = await readAuthError(response);
       throw new Error(errorMessage || 'Login failed');
     }
-
     return await response.json();
   } catch (error: unknown) {
     console.error('Login Error:', error);
@@ -110,40 +81,28 @@ export const signup = async (credentials: AuthCredentials) => {
   }
 };
 
-export const logout = () => {
-  clearSession();
-};
 
-export const isAuthenticated = () => {
-  return hasActiveSession();
-};
+export const logout = () => {};
 
+
+export const isAuthenticated = () => false;
+
+
+// Deprecated: use fetch with credentials: 'include' and rely on cookie
 export const fetchWithToken = async <T>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> => {
   const headers = new Headers(options.headers || {});
-
   if (options.method && options.method !== 'GET') {
     headers.set('Content-Type', 'application/json');
   }
-
-  // Only attach Authorization if a real JWT is present
-  const storedToken = getStoredAuthToken();
-  if (storedToken) {
-    headers.set('Authorization', `Bearer ${storedToken}`);
-  } else {
-    // Never attach a marker or empty header
-    headers.delete('Authorization');
-  }
-
   try {
     const response = await fetch(url, {
       ...options,
       headers,
       credentials: 'include',
     });
-
     if (!response.ok) {
       const contentType = response.headers.get('content-type');
       const errorData: AuthErrorPayload | null = contentType?.includes('application/json')
@@ -152,7 +111,6 @@ export const fetchWithToken = async <T>(
       const fallbackText = !contentType?.includes('application/json')
         ? await response.text().catch(() => null)
         : null;
-
       throw new Error(
         errorData?.message ||
           errorData?.error ||
@@ -160,12 +118,10 @@ export const fetchWithToken = async <T>(
           `Request to ${url} failed with status ${response.status} ${response.statusText}`
       );
     }
-
     const contentType = response.headers.get('content-type');
     if (!contentType?.includes('application/json')) {
       throw new Error(`Expected JSON response from ${url}, received ${contentType || 'unknown'}`);
     }
-
     return response.json();
   } catch (error) {
     console.error(`Fetch error for ${url}:`, error);
