@@ -30,9 +30,9 @@ const toLocalDateTimeString = (date: Date) => {
   )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 };
 
-const formatTimeInput = (date: Date) => {
+const formatDateTimeLocalInput = (date: Date) => {
   const pad = (value: number) => value.toString().padStart(2, '0');
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
 const toProjectId = (value: CurrentTask['projectId']): number | null => {
@@ -163,7 +163,7 @@ export default function TimeTracker() {
   const [showAdvancedCustomCountdown, setShowAdvancedCustomCountdown] = useState(false);
   const [isCustomCountdownDialogOpen, setIsCustomCountdownDialogOpen] = useState(false);
   const [startFromPreviousTime, setStartFromPreviousTime] = useState(false);
-  const [manualStartTime, setManualStartTime] = useState<string>(() => formatTimeInput(new Date()));
+  const [manualStartDateTime, setManualStartDateTime] = useState<string>(() => formatDateTimeLocalInput(new Date()));
 
   // Data states
   const [projects, setProjects] = useState<Project[]>([]);
@@ -409,7 +409,7 @@ export default function TimeTracker() {
             newTag: '',
             category: response.data.category || '',
           });
-          setManualStartTime(formatTimeInput(new Date(response.data.startTime)));
+          setManualStartDateTime(formatDateTimeLocalInput(new Date(response.data.startTime)));
           setStartFromPreviousTime(false);
           setTimerMode('stopwatch');
           console.log('Active timer tags:', response.data.tags);
@@ -519,7 +519,7 @@ export default function TimeTracker() {
 
     setDescriptionError(false);
     setStartFromPreviousTime(false);
-    setManualStartTime(formatTimeInput(new Date()));
+    setManualStartDateTime(formatDateTimeLocalInput(new Date()));
 
     if (showResetToast) {
       toast({
@@ -815,27 +815,22 @@ export default function TimeTracker() {
       let requestedStartDate = now;
 
       if (timerMode === 'stopwatch' && startFromPreviousTime) {
-        const [hoursRaw, minutesRaw] = manualStartTime.split(':');
-        const hours = Number(hoursRaw);
-        const minutes = Number(minutesRaw);
+        const candidate = new Date(manualStartDateTime);
 
-        if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+        if (Number.isNaN(candidate.getTime())) {
           toast({
             title: 'Invalid Start Time',
-            description: 'Please pick a valid start time.',
+            description: 'Please pick a valid start date and time.',
             variant: 'destructive',
             className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
           });
           return;
         }
 
-        const candidate = new Date(now);
-        candidate.setHours(hours, minutes, 0, 0);
-
         if (candidate.getTime() > now.getTime()) {
           toast({
             title: 'Future Time Not Allowed',
-            description: 'Start time must be current or earlier.',
+            description: 'Start date/time must be current or earlier.',
             variant: 'destructive',
             className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
           });
@@ -1690,7 +1685,7 @@ export default function TimeTracker() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-[#2D3748] dark:text-[#E6E6FA]">Start From Previous Time</p>
-                      <p className="text-xs text-[#6B7280] dark:text-[#B0C4DE]">Backdate stopwatch start to an earlier time today.</p>
+                      <p className="text-xs text-[#6B7280] dark:text-[#B0C4DE]">Backdate stopwatch start to any earlier date/time.</p>
                     </div>
                     <Switch
                       checked={startFromPreviousTime}
@@ -1703,21 +1698,21 @@ export default function TimeTracker() {
                   {startFromPreviousTime && (
                     <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
                       <div className="flex-1">
-                        <label htmlFor="manual-start-time" className="text-xs font-semibold text-[#6B7280] dark:text-[#B0C4DE]">
-                          Start Time
+                        <label htmlFor="manual-start-datetime" className="text-xs font-semibold text-[#6B7280] dark:text-[#B0C4DE]">
+                          Start Date & Time
                         </label>
                         <Input
-                          id="manual-start-time"
-                          type="time"
-                          value={manualStartTime}
-                          onChange={(event) => setManualStartTime(event.target.value)}
+                          id="manual-start-datetime"
+                          type="datetime-local"
+                          value={manualStartDateTime}
+                          onChange={(event) => setManualStartDateTime(event.target.value)}
                           className="mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                         />
                       </div>
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => setManualStartTime(formatTimeInput(new Date()))}
+                        onClick={() => setManualStartDateTime(formatDateTimeLocalInput(new Date()))}
                         className="rounded-xl border-[#D8BFD8]/50 bg-[#F8FAFC] text-[#6B7280] hover:bg-[#D8BFD8]/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
                       >
                         Use Now

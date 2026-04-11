@@ -509,8 +509,14 @@ const roundToNextMinute = (date: Date) => {
   return rounded;
 };
 
+const formatDateInput = (date: Date) => {
+  const pad = (value: number) => value.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
 export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onSave, onDelete, onContinue }: TaskPopupProps) {
   const [description, setDescription] = useState('');
+  const [entryDate, setEntryDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -539,6 +545,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
 
   const resetForm = () => {
     setDescription('');
+    setEntryDate('');
     setStartTime('');
     setEndTime('');
     setProjectId(null);
@@ -558,6 +565,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     const start = baseDate ? new Date(baseDate) : roundToNextMinute(new Date());
     const end = new Date(start);
     end.setHours(end.getHours() + 1);
+    setEntryDate(formatDateInput(start));
     setStartTime(formatTimeInput(start));
     setEndTime(formatTimeInput(end));
   };
@@ -572,6 +580,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     const end = new Date(start.getTime() + fallbackDurationSeconds * 1000);
 
     setDescription(entry.title ?? '');
+    setEntryDate(formatDateInput(start));
     setStartTime(formatTimeInput(start));
     setEndTime(formatTimeInput(end));
     setProjectId(entry.projectId !== null && entry.projectId !== undefined ? entry.projectId.toString() : null);
@@ -672,13 +681,26 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
 
   // Calculate duration
   useEffect(() => {
-    if (startTime && endTime) {
+    if (entryDate && startTime && endTime) {
+      const [yearRaw, monthRaw, dayRaw] = entryDate.split('-').map(Number);
       const [startHours, startMinutes] = startTime.split(':').map(Number);
       const [endHours, endMinutes] = endTime.split(':').map(Number);
-      const start = new Date();
-      start.setHours(startHours, startMinutes);
-      const end = new Date();
-      end.setHours(endHours, endMinutes);
+
+      if (
+        !Number.isFinite(yearRaw)
+        || !Number.isFinite(monthRaw)
+        || !Number.isFinite(dayRaw)
+        || !Number.isFinite(startHours)
+        || !Number.isFinite(startMinutes)
+        || !Number.isFinite(endHours)
+        || !Number.isFinite(endMinutes)
+      ) {
+        setDuration('');
+        return;
+      }
+
+      const start = new Date(yearRaw, monthRaw - 1, dayRaw, startHours, startMinutes, 0, 0);
+      const end = new Date(yearRaw, monthRaw - 1, dayRaw, endHours, endMinutes, 0, 0);
       const diffMs = end.getTime() - start.getTime();
       if (diffMs > 0) {
         const totalMinutes = Math.floor(diffMs / (1000 * 60));
@@ -689,7 +711,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     } else {
       setDuration('');
     }
-  }, [startTime, endTime]);
+  }, [entryDate, startTime, endTime]);
 
   // Handle outside click, ignoring dropdowns
   useEffect(() => {
@@ -734,7 +756,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
   }, [isOpen]);
 
   const handleSave = async () => {
-    if (!description || !startTime || !endTime) {
+    if (!description || !entryDate || !startTime || !endTime) {
       toast({
         title: 'Validation Error',
         description: 'Please fill in all required fields.',
@@ -759,16 +781,30 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
       }
 
       // Construct start and end times in local datetime format expected by backend
-      const baseDate = initialEntry
-        ? new Date(initialEntry.startTime)
-        : defaultStartTime
-        ? new Date(defaultStartTime)
-        : roundToNextMinute(new Date());
-      const startDate = new Date(baseDate);
+      const [yearRaw, monthRaw, dayRaw] = entryDate.split('-').map(Number);
       const [startHours, startMinutes] = startTime.split(':').map(Number);
-      startDate.setHours(startHours, startMinutes, 0, 0);
-      const endDate = new Date(startDate);
       const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+      if (
+        !Number.isFinite(yearRaw)
+        || !Number.isFinite(monthRaw)
+        || !Number.isFinite(dayRaw)
+        || !Number.isFinite(startHours)
+        || !Number.isFinite(startMinutes)
+        || !Number.isFinite(endHours)
+        || !Number.isFinite(endMinutes)
+      ) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please pick a valid date and time range.',
+          variant: 'destructive',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+        });
+        return;
+      }
+
+      const startDate = new Date(yearRaw, monthRaw - 1, dayRaw, startHours, startMinutes, 0, 0);
+      const endDate = new Date(startDate);
       endDate.setHours(endHours, endMinutes, 0, 0);
 
       if (endDate <= startDate) {
@@ -929,6 +965,18 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter task description"
                 className="mt-1 h-12 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-base text-slate-900 shadow-sm transition-all duration-200 hover:shadow-md focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              />
+            </div>
+            <div className="col-span-2">
+              <label htmlFor="entryDate" className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                Date
+              </label>
+              <Input
+                id="entryDate"
+                type="date"
+                value={entryDate}
+                onChange={(e) => setEntryDate(e.target.value)}
+                className="mt-1 rounded-xl border-[#D8BFD8]/50 bg-white/95 text-slate-900 shadow-sm transition-all duration-200 hover:shadow-md focus:border-[#A795C9] focus:ring-[#A795C9] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
               />
             </div>
             <div>
