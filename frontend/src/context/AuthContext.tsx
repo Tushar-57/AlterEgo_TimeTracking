@@ -104,10 +104,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const storedToken = getStoredAuthToken();
+        const headers: HeadersInit = {};
+        if (storedToken) {
+          headers['Authorization'] = `Bearer ${storedToken}`;
+        }
         const response = await fetch('/api/auth/validate', {
           method: 'GET',
           credentials: 'include',
           signal: controller.signal,
+          headers,
         });
         clearTimeout(timeoutId);
         if (response.status === 401 || response.status === 403) {
