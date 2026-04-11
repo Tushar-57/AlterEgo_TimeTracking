@@ -211,6 +211,35 @@ public class OnboardingController {
         }
     }
 
+            @PostMapping("syncAgenticSnapshot")
+            public ResponseEntity<?> syncAgenticSnapshot(Authentication authentication) {
+            try {
+                Users user = userRepo.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+                OnboardingEntity onboarding = onboardingRepository.findTopByUserOrderByIdDesc(user)
+                    .orElseThrow(() -> new ResourceNotFoundException("Onboarding not found for user: " + user.getEmail()));
+
+                boolean synced = syncOnboardingSnapshot(onboarding, user);
+                if (!synced) {
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of(
+                        "error", "Agentic sync unavailable",
+                        "message", "Onboarding snapshot could not be synced to Agentic right now"
+                    ));
+                }
+
+                return ResponseEntity.accepted()
+                    .body(Map.of("success", true, "message", "Onboarding snapshot sync triggered"));
+            } catch (ResourceNotFoundException e) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Not found", "message", e.getMessage()));
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Processing failed", "message", e.getMessage()));
+            }
+            }
+
     @PutMapping("updateOnboardingData")
     public ResponseEntity<?> updateOnboardingData(@RequestBody OnboardingRequestDTO request,
             Authentication authentication) {
@@ -480,7 +509,7 @@ public class OnboardingController {
         }
     }
 
-    private void syncOnboardingSnapshot(OnboardingEntity onboarding, Users user) {
+    private boolean syncOnboardingSnapshot(OnboardingEntity onboarding, Users user) {
         try {
             OnboardingRequestDTO syncRequest = new OnboardingRequestDTO();
             String preferredTone = firstNonBlank(onboarding.getPreferredTone(), "Friendly");
@@ -513,6 +542,7 @@ public class OnboardingController {
                 goals.size(),
                 answers.size()
             );
+            return true;
         } catch (Exception e) {
             // Do not block onboarding reads if best-effort sync fails.
             logger.warn(
@@ -520,6 +550,7 @@ public class OnboardingController {
                 user != null ? user.getEmail() : "unknown",
                 e.getMessage()
             );
+            return false;
         }
     }
 

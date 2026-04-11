@@ -133,6 +133,10 @@ const requestAgenticBridgeToken = async (): Promise<BridgeTokenResponse | null> 
 };
 
 const AGENTIC_BACKFILL_MARKER = 'alterego-agentic-backfill-date';
+const AGENTIC_ONBOARDING_SYNC_MARKER = 'alterego-agentic-onboarding-sync-ts';
+const AGENTIC_TIME_ENTRY_BACKFILL_MARKER = 'alterego-agentic-time-backfill-ts';
+const AGENTIC_ONBOARDING_SYNC_INTERVAL_MS = 2 * 60 * 1000;
+const AGENTIC_TIME_ENTRY_BACKFILL_INTERVAL_MS = 30 * 60 * 1000;
 
 const toLocalDateKey = (date: Date) => {
   const year = date.getFullYear();
@@ -156,22 +160,61 @@ const shouldRunFullBackfill = (): boolean => {
   }
 };
 
+const shouldRunIntervalSync = (markerKey: string, intervalMs: number): boolean => {
+  try {
+    const now = Date.now();
+    const raw = window.localStorage.getItem(markerKey);
+    const lastRun = raw ? Number.parseInt(raw, 10) : 0;
+    if (Number.isFinite(lastRun) && lastRun > 0 && now - lastRun < intervalMs) {
+      return false;
+    }
+
+    window.localStorage.setItem(markerKey, String(now));
+    return true;
+  } catch {
+    return true;
+  }
+};
+
 const primeCoachKnowledge = async (): Promise<void> => {
   try {
-    const backfillEndpoint = shouldRunFullBackfill()
-      ? '/api/timers/sync/agentic/backfill'
-      : '/api/timers/sync/agentic/backfill?limit=250';
+    const onboardingSyncEnabled = shouldRunIntervalSync(
+      AGENTIC_ONBOARDING_SYNC_MARKER,
+      AGENTIC_ONBOARDING_SYNC_INTERVAL_MS,
+    );
 
-    await Promise.allSettled([
+    const shouldRunBackfill = shouldRunFullBackfill()
+      || shouldRunIntervalSync(AGENTIC_TIME_ENTRY_BACKFILL_MARKER, AGENTIC_TIME_ENTRY_BACKFILL_INTERVAL_MS);
+    const backfillEndpoint = shouldRunBackfill
+      ? '/api/timers/sync/agentic/backfill?limit=250'
+      : null;
+
+    const syncTasks: Array<Promise<Response>> = [
       fetch('/api/onboarding/getOnboardingData', {
         method: 'GET',
         credentials: 'include',
       }),
-      fetch(backfillEndpoint, {
-        method: 'POST',
-        credentials: 'include',
-      }),
-    ]);
+    ];
+
+    if (onboardingSyncEnabled) {
+      syncTasks.push(
+        fetch('/api/onboarding/syncAgenticSnapshot', {
+          method: 'POST',
+          credentials: 'include',
+        }),
+      );
+    }
+
+    if (backfillEndpoint) {
+      syncTasks.push(
+        fetch(backfillEndpoint, {
+          method: 'POST',
+          credentials: 'include',
+        }),
+      );
+    }
+
+    await Promise.allSettled(syncTasks);
   } catch {
     // Best-effort pre-sync only; Coach launch should continue regardless.
   }
@@ -260,8 +303,8 @@ const CoachWorkspace = ({
       return;
     }
 
-    // Warm up sync in the background without blocking navigation.
-    void primeCoachKnowledge();
+    // Warm up sync and give requests a short head start before navigating away.
+    const preSyncPromise = primeCoachKnowledge();
 
     const popup = newTab ? window.open('about:blank', '_blank', 'noopener,noreferrer') : null;
 
@@ -284,8 +327,12 @@ const CoachWorkspace = ({
       window.location.assign(launchUrl);
     };
 
-    void ensureBridgeToken()
-      .then((token) => navigateToCoach(token))
+    void Promise.allSettled([preSyncPromise, ensureBridgeToken()])
+      .then((results) => {
+        const tokenResult = results[1];
+        const token = tokenResult.status === 'fulfilled' ? tokenResult.value : null;
+        navigateToCoach(token);
+      })
       .catch(() => navigateToCoach(null));
   }, [coachSrc, ensureBridgeToken, resolvedReturnPath, targetView]);
 
