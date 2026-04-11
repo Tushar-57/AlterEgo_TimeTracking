@@ -326,12 +326,18 @@ public class AgenticKnowledgeSyncService {
             Map<String, Object> summary = asMap(habitSnapshot.get("summary"));
             Map<String, Object> dailyCompletionCounts = asMap(habitSnapshot.get("dailyCompletionCounts"));
             List<Object> habits = asList(habitSnapshot.get("habits"));
+            String capturedAt = asString(habitSnapshot.get("capturedAt"));
+            String capturedDay = capturedAt.length() >= 10 ? capturedAt.substring(0, 10) : "latest";
+
+            List<String> habitHighlights = buildHabitHighlights(habits, 4);
+            int recentCompletionTotal = sumRecentDailyCompletions(dailyCompletionCounts, 7);
 
             Map<String, Object> context = new LinkedHashMap<>();
             context.put("source", "alterego_task_manager");
             context.put("source_action", sourceAction);
             context.put("category", "habit_snapshot");
-            context.put("captured_at", asString(habitSnapshot.get("capturedAt")));
+            context.put("captured_at", capturedAt);
+            context.put("sync_event_key", "alterego:habit_snapshot:" + capturedDay);
             context.put("summary", summary);
             context.put("daily_completion_counts", dailyCompletionCounts);
             context.put("habits", habits);
@@ -342,11 +348,26 @@ public class AgenticKnowledgeSyncService {
             context.put("active_days", toInt(summary.get("activeDays")));
             context.put("current_run", toInt(summary.get("currentRun")));
             context.put("longest_run", toInt(summary.get("longestRun")));
+            context.put("habit_highlights", habitHighlights);
+
+            Map<String, Object> digest = new LinkedHashMap<>();
+            digest.put("recent_days", Math.min(7, dailyCompletionCounts.size()));
+            digest.put("recent_total_events", recentCompletionTotal);
+            context.put("daily_completion_digest", digest);
+
+            String highlightsText = habitHighlights.isEmpty()
+                ? "No standout habits in this snapshot"
+                : String.join("; ", habitHighlights);
 
             String responseText = String.format(
-                    "Captured habit snapshot with %d habits and %d completion events.",
-                    habits.size(),
-                    toInt(summary.get("totalCompletionEvents"))
+                "Habit snapshot %s: %d habits, %d completion events, %d active days, %d-day current run, %d-day longest run. Highlights: %s.",
+                capturedDay,
+                toInt(summary.get("totalHabits")),
+                toInt(summary.get("totalCompletionEvents")),
+                toInt(summary.get("activeDays")),
+                toInt(summary.get("currentRun")),
+                toInt(summary.get("longestRun")),
+                highlightsText
             );
 
             Map<String, Object> payload = new LinkedHashMap<>();
@@ -834,6 +855,72 @@ public class AgenticKnowledgeSyncService {
 
     private String asString(Object value) {
         return value == null ? "" : String.valueOf(value);
+    }
+
+    private List<String> buildHabitHighlights(List<Object> habits, int limit) {
+        if (habits == null || habits.isEmpty()) {
+            return List.of();
+        }
+
+        List<Map<String, Object>> normalizedHabits = new ArrayList<>();
+        for (Object rawHabit : habits) {
+            Map<String, Object> habit = asMap(rawHabit);
+            if (!habit.isEmpty()) {
+                normalizedHabits.add(habit);
+            }
+        }
+
+        normalizedHabits.sort((left, right) -> Integer.compare(
+                toInt(right.get("completionCount")) + toInt(right.get("currentStreak")),
+                toInt(left.get("completionCount")) + toInt(left.get("currentStreak"))
+        ));
+
+        List<String> highlights = new ArrayList<>();
+        for (Map<String, Object> habit : normalizedHabits) {
+            if (highlights.size() >= Math.max(1, limit)) {
+                break;
+            }
+
+            String name = safeText(asString(habit.get("name")), "").trim();
+            if (name.isBlank()) {
+                name = safeText(asString(habit.get("title")), "").trim();
+            }
+            if (name.isBlank()) {
+                continue;
+            }
+
+            int completionCount = toInt(habit.get("completionCount"));
+            int streak = toInt(habit.get("currentStreak"));
+
+            if (completionCount > 0 && streak > 0) {
+                highlights.add(String.format("%s (%d completions, %d-day streak)", name, completionCount, streak));
+            } else if (completionCount > 0) {
+                highlights.add(String.format("%s (%d completions)", name, completionCount));
+            } else if (streak > 0) {
+                highlights.add(String.format("%s (%d-day streak)", name, streak));
+            } else {
+                highlights.add(name);
+            }
+        }
+
+        return highlights;
+    }
+
+    private int sumRecentDailyCompletions(Map<String, Object> dailyCompletionCounts, int limit) {
+        if (dailyCompletionCounts == null || dailyCompletionCounts.isEmpty()) {
+            return 0;
+        }
+
+        List<String> keys = new ArrayList<>(dailyCompletionCounts.keySet());
+        Collections.sort(keys);
+
+        int start = Math.max(0, keys.size() - Math.max(1, limit));
+        int total = 0;
+        for (int index = start; index < keys.size(); index++) {
+            total += toInt(dailyCompletionCounts.get(keys.get(index)));
+        }
+
+        return total;
     }
 
     private List<Map<String, Object>> mapGoals(List<OnboardingRequestDTO.Goal> goals) {

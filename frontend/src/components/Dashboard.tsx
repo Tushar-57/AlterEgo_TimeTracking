@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useToast } from "./Calendar_updated/components/hooks/use-toast";
 import { CalendarSection } from "./Calendar_updated/screens/Fantastical/sections/CalendarSection/CalendarSection";
 import { CalendarEvent } from "./Calendar_updated/components/DraggableEvent";
+import { parseDateTimeAsLocal } from "../utils/utils";
 
 interface TimerEntryResponse {
   id: number;
@@ -57,7 +58,7 @@ const formatLocalDateTime = (date: Date) => {
 };
 
 export const calculatePosition = (startTime: string) => {
-  const startDate = new Date(startTime);
+  const startDate = parseDateTimeAsLocal(startTime);
   const hours = startDate.getHours();
   const minutes = startDate.getMinutes();
   const dayIndex = startDate.getDay();
@@ -131,7 +132,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
       }
 
       const transformed: CalendarEvent[] = entries.map((entry) => {
-        const startDate = new Date(entry.startTime);
+        const startDate = parseDateTimeAsLocal(entry.startTime);
         const hours = startDate.getHours();
         const minutes = startDate.getMinutes().toString().padStart(2, "0");
         const projectId = entry.projectId ?? entry.project?.id ?? null;
@@ -266,7 +267,7 @@ export const Dashboard = ({ isAuthenticated }: { isAuthenticated: boolean }) => 
           return;
         }
 
-        const sourceStart = new Date(source.startTime);
+        const sourceStart = parseDateTimeAsLocal(source.startTime);
         const durationSeconds = source.durationSeconds ?? Math.max(900, Math.round((Number.parseFloat(source.height) / 60) * 3600));
         const duplicateStart = new Date(sourceStart);
         duplicateStart.setDate(duplicateStart.getDate() + 1);

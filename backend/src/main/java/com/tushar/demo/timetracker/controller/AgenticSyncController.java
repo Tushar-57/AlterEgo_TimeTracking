@@ -101,7 +101,10 @@ public class AgenticSyncController {
         payload.put("success", metrics.success());
         payload.put("cooldownRemainingSeconds", metrics.cooldownRemainingSeconds());
         payload.put("nextAttemptAt", metrics.nextAttemptAt());
-        payload.put("degraded", metrics.cooldownRemainingSeconds() > 0 || metrics.failed() > 0);
+        boolean hasBacklog = metrics.pending() > 0 || metrics.retry() > 0 || metrics.processing() > 0;
+        boolean isDegraded = metrics.cooldownRemainingSeconds() > 0 || hasBacklog;
+        payload.put("hasFailures", metrics.failed() > 0);
+        payload.put("degraded", isDegraded);
 
         return ResponseEntity.ok(ApiResponse.success(payload, "Agentic sync status retrieved"));
     }

@@ -19,7 +19,7 @@ import { Timer, AlarmClock, Coffee, Plus, RefreshCw, Sunrise, Moon, AlertTriangl
 import { motion } from 'framer-motion';
 import { CurrentTask, Project, Tag, TimeEntry, UserPreferences, TimerStatus, TimerMode, PomodoroState } from './types';
 import { formatTime, getRandomColor } from './utility';
-import { formatMinutesAsHoursMinutes, formatSecondsAsHoursMinutes } from '../../utils/utils';
+import { formatMinutesAsHoursMinutes, formatSecondsAsHoursMinutes, parseDateTimeAsLocal } from '../../utils/utils';
 import 'react-circular-progressbar/dist/styles.css';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -57,6 +57,14 @@ type AgenticSyncStatus = {
   cooldownRemainingSeconds: number;
   nextAttemptAt?: string | null;
   degraded: boolean;
+  hasFailures?: boolean;
+};
+
+type ApiEnvelope<T> = {
+  success: boolean;
+  message?: string;
+  data?: T;
+  errors?: Record<string, string> | null;
 };
 
 const DAILY_MARKER_CONFIG: Record<
@@ -197,6 +205,7 @@ export default function TimeTracker() {
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
   const [dailyMarkerLoading, setDailyMarkerLoading] = useState<DailyMarkerType | null>(null);
   const [agenticSyncStatus, setAgenticSyncStatus] = useState<AgenticSyncStatus | null>(null);
+  const [agenticRetryInProgress, setAgenticRetryInProgress] = useState(false);
 
   // User preferences
   const [preferences, setPreferences] = useState<UserPreferences>(() => {
@@ -317,27 +326,77 @@ export default function TimeTracker() {
     const fetchData = async () => {
       setLoading(true);
       setFetchError(null);
+
       try {
-        const projectsData = await fetchWithToken<Project[]>('/api/projects/userProjects');
-        setProjects(projectsData);
-
-        const entriesResponse = await fetchWithToken<{
-          success: boolean;
-          message: string;
-          data: TimeEntry[];
-          errors: Record<string, string> | null;
-        }>('/api/timers?limit=5');
-        if (!entriesResponse.success) {
-          throw new Error(entriesResponse.message || 'Failed to fetch time entries');
+        const cachedProjectsRaw = localStorage.getItem('cached_projects');
+        if (cachedProjectsRaw) {
+          const cachedProjects = JSON.parse(cachedProjectsRaw) as Project[];
+          if (Array.isArray(cachedProjects) && cachedProjects.length > 0) {
+            setProjects(cachedProjects);
+          }
         }
-        setTimeEntries(entriesResponse.data.filter((entry: TimeEntry) => entry.endTime !== null));
-        console.log('Fetched time entries:', entriesResponse.data);
+      } catch {
+        // Ignore cache parse issues and continue with network fetch.
+      }
 
-        const tagsData = await fetchWithToken<Tag[]>('/api/tags');
-        setTags(tagsData);
+      try {
+        const cachedTagsRaw = localStorage.getItem('cached_tags');
+        if (cachedTagsRaw) {
+          const cachedTags = JSON.parse(cachedTagsRaw) as Tag[];
+          if (Array.isArray(cachedTags) && cachedTags.length > 0) {
+            setTags(cachedTags);
+          }
+        }
+      } catch {
+        // Ignore cache parse issues and continue with network fetch.
+      }
+
+      const errors: string[] = [];
+      try {
+        const projectsPromise = fetchWithToken<Project[]>('/api/projects/userProjects')
+          .then((projectsData) => {
+            setProjects(projectsData);
+            localStorage.setItem('cached_projects', JSON.stringify(projectsData));
+          })
+          .catch((error) => {
+            errors.push(error instanceof Error ? `Projects: ${error.message}` : 'Projects: Unknown error');
+          });
+
+        const tagsPromise = fetchWithToken<Tag[]>('/api/tags')
+          .then((tagsData) => {
+            setTags(tagsData);
+            localStorage.setItem('cached_tags', JSON.stringify(tagsData));
+          })
+          .catch((error) => {
+            errors.push(error instanceof Error ? `Tags: ${error.message}` : 'Tags: Unknown error');
+          });
+
+        const entriesPromise = fetchWithToken<ApiEnvelope<TimeEntry[]>>('/api/timers?limit=5')
+          .then((entriesResponse) => {
+            if (!entriesResponse.success || !Array.isArray(entriesResponse.data)) {
+              throw new Error(entriesResponse.message || 'Failed to fetch time entries');
+            }
+            setTimeEntries(entriesResponse.data.filter((entry: TimeEntry) => entry.endTime !== null));
+          })
+          .catch((error) => {
+            errors.push(error instanceof Error ? `Entries: ${error.message}` : 'Entries: Unknown error');
+          });
+
+        await Promise.allSettled([projectsPromise, tagsPromise, entriesPromise]);
+
+        if (errors.length > 0) {
+          const errorMessage = errors.join(' | ');
+          setFetchError(errorMessage);
+          toast({
+            title: 'Data Loading Error',
+            description: errorMessage,
+            variant: 'destructive',
+            className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+          });
+        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        console.error('Fetch error:', error);
+        setFetchError(errorMessage);
         toast({
           title: 'Data Loading Error',
           description: errorMessage,
@@ -389,7 +448,7 @@ export default function TimeTracker() {
 
         const response = await resp.json();
         if (response.success && response.data) {
-          const startTime = new Date(response.data.startTime).getTime();
+          const startTime = parseDateTimeAsLocal(response.data.startTime).getTime();
           const currentTime = Date.now();
           const elapsed = Math.max(0, Math.floor((currentTime - startTime) / 1000));
 
@@ -409,7 +468,7 @@ export default function TimeTracker() {
             newTag: '',
             category: response.data.category || '',
           });
-          setManualStartDateTime(formatDateTimeLocalInput(new Date(response.data.startTime)));
+          setManualStartDateTime(formatDateTimeLocalInput(parseDateTimeAsLocal(response.data.startTime)));
           setStartFromPreviousTime(false);
           setTimerMode('stopwatch');
           console.log('Active timer tags:', response.data.tags);
@@ -445,28 +504,12 @@ export default function TimeTracker() {
 
     const fetchAgenticSyncStatus = async () => {
       try {
-        const token = sessionStorage.getItem('auth_session');
-        if (!token) {
-          return;
-        }
-
-        const response = await fetch('/api/agentic/sync/status', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const envelope = await response.json();
+        const envelope = await fetchWithToken<ApiEnvelope<AgenticSyncStatus>>('/api/agentic/sync/status');
         if (!isActive || !envelope?.success || !envelope?.data) {
           return;
         }
 
-        setAgenticSyncStatus(envelope.data as AgenticSyncStatus);
+        setAgenticSyncStatus(envelope.data);
       } catch {
         // Non-blocking status panel only.
       }
@@ -482,6 +525,43 @@ export default function TimeTracker() {
       window.clearInterval(timer);
     };
   }, [isAuthenticated]);
+
+  const retryFailedAgenticEvents = async () => {
+    if (agenticRetryInProgress) {
+      return;
+    }
+
+    setAgenticRetryInProgress(true);
+    try {
+      await fetchWithToken<ApiEnvelope<{ retried: number }>>('/api/agentic/sync/retry-failed?limit=100', {
+        method: 'POST',
+      });
+      await fetchWithToken<ApiEnvelope<{ triggered: boolean }>>('/api/agentic/sync/process-now', {
+        method: 'POST',
+      });
+
+      const status = await fetchWithToken<ApiEnvelope<AgenticSyncStatus>>('/api/agentic/sync/status');
+      if (status.success && status.data) {
+        setAgenticSyncStatus(status.data);
+      }
+
+      toast({
+        title: 'Agentic Sync Retry Started',
+        description: 'Failed Agentic sync events were queued for retry.',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to retry Agentic sync events.';
+      toast({
+        title: 'Retry Failed',
+        description: message,
+        variant: 'destructive',
+        className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+      });
+    } finally {
+      setAgenticRetryInProgress(false);
+    }
+  };
 
   const clearTimerStateLocally = ({
     showResetToast = false,
@@ -918,7 +998,7 @@ export default function TimeTracker() {
     }
   };
 
-  const stopTimer = async (options?: { triggeredByReset?: boolean }) => {
+  const stopTimer = async (options?: { triggeredByReset?: boolean }): Promise<boolean> => {
     if (timerMode === 'countdown' || (timerMode === 'pomodoro' && pomodoroState.isBreak)) {
       // Best-effort cleanup for stale server timers from older sessions.
       if (timerState.activeTimerId && timerState.startTime) {
@@ -950,16 +1030,16 @@ export default function TimeTracker() {
         showResetToast: true,
         resetDescription: 'Timer has been reset.',
       });
-      return;
+      return true;
     }
-    if (!timerState.activeTimerId || !timerState.startTime) {
+    if (!timerState.activeTimerId) {
       toast({
         title: 'No Active Timer',
         description: 'There is no timer to stop',
         variant: 'destructive',
         className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
-      return;
+      return false;
     }
 
     try {
@@ -972,8 +1052,12 @@ export default function TimeTracker() {
           className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
         logout();
-        return;
+        return false;
       }
+      const fallbackStartTime = toLocalDateTimeString(
+        new Date(Date.now() - Math.max(0, timerState.stopwatchTime) * 1000)
+      );
+      const effectiveStartTime = timerState.startTime || fallbackStartTime;
       const projectId = toProjectId(currentTask.projectId);
       const tagIds = currentTask.tags.map(tag => tag.id);
       console.log('Stopping timer with tagIds:', tagIds);
@@ -985,8 +1069,8 @@ export default function TimeTracker() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          description: currentTask.description,
-          startTime: timerState.startTime,
+          description: currentTask.description?.trim() || 'Untitled task',
+          startTime: effectiveStartTime,
           endTime: endTime,
           projectId: projectId,
           tagIds: tagIds,
@@ -1001,7 +1085,7 @@ export default function TimeTracker() {
           className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
         logout();
-        return;
+        return false;
       }
       const response = await res.json();
       if (!response.success) {
@@ -1028,6 +1112,7 @@ export default function TimeTracker() {
           className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
         });
       }
+      return true;
     } catch (error) {
       console.error('Stop timer error:', error);
       toast({
@@ -1038,17 +1123,24 @@ export default function TimeTracker() {
         variant: 'destructive',
         className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
       });
+      return false;
     }
   };
 
-  const resetTimer = () => {
+  const resetTimer = async () => {
     if (timerState.status === 'running') {
       setIsResetConfirmOpen(true);
       return;
     }
 
-    if (timerState.activeTimerId && timerState.startTime) {
-      void stopTimer({ triggeredByReset: true });
+    if (timerState.activeTimerId) {
+      const wasStopped = await stopTimer({ triggeredByReset: true });
+      if (!wasStopped) {
+        clearTimerStateLocally({
+          showResetToast: true,
+          resetDescription: 'Timer reset locally. The active session could not be saved.',
+        });
+      }
       return;
     }
 
@@ -1060,8 +1152,14 @@ export default function TimeTracker() {
     setIsResetConfirmOpen(false);
 
     try {
-      if (timerState.activeTimerId && timerState.startTime) {
-        await stopTimer({ triggeredByReset: true });
+      if (timerState.activeTimerId) {
+        const wasStopped = await stopTimer({ triggeredByReset: true });
+        if (!wasStopped) {
+          clearTimerStateLocally({
+            showResetToast: true,
+            resetDescription: 'Timer reset locally. The active session could not be saved.',
+          });
+        }
         return;
       }
 
@@ -1478,20 +1576,30 @@ export default function TimeTracker() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement
+        || e.target instanceof HTMLTextAreaElement
+        || e.target instanceof HTMLSelectElement
+        || (e.target instanceof HTMLElement && e.target.isContentEditable)
+      ) {
         return;
       }
+
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+      }
+
       if (e.code === 'Space') {
         e.preventDefault();
         toggleTimer();
       }
-      if (e.code === 'KeyS' && !e.ctrlKey && !e.metaKey) {
+      if (e.code === 'KeyS') {
         if (timerState.status !== 'stopped') {
           e.preventDefault();
           stopTimer();
         }
       }
-      if (e.code === 'KeyR' && !e.ctrlKey && !e.metaKey) {
+      if (e.code === 'KeyR') {
         e.preventDefault();
         resetTimer();
       }
@@ -1512,6 +1620,18 @@ export default function TimeTracker() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [timerState.status, toggleTimer, stopTimer, resetTimer, handleTimerModeChange]);
+
+  const agenticPendingCount = (agenticSyncStatus?.pending || 0) + (agenticSyncStatus?.retry || 0);
+  const agenticHasBacklog = agenticPendingCount > 0 || (agenticSyncStatus?.processing || 0) > 0;
+  const agenticIsDegraded = Boolean(
+    agenticSyncStatus
+      && ((agenticSyncStatus.cooldownRemainingSeconds || 0) > 0 || agenticHasBacklog)
+  );
+  const agenticHasFailedOnly = Boolean(
+    agenticSyncStatus
+      && !agenticIsDegraded
+      && (agenticSyncStatus.failed > 0 || agenticSyncStatus.hasFailures)
+  );
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fafc_0%,_#eef2ff_40%,_#e2e8f0_100%)] font-sans dark:bg-[#111827]">
@@ -1540,7 +1660,7 @@ export default function TimeTracker() {
           </motion.div>
         )}
 
-        {agenticSyncStatus?.degraded && (
+        {agenticIsDegraded && (
           <motion.div
             className="mb-6 rounded-2xl border border-amber-300/60 bg-amber-50/85 p-4 text-amber-900 shadow-sm dark:border-amber-700/60 dark:bg-amber-950/35 dark:text-amber-100"
             initial={{ opacity: 0, y: -10 }}
@@ -1555,9 +1675,39 @@ export default function TimeTracker() {
                   Background sync is delayed. You can keep working locally, then use the refresh/sync action once Agentic is back.
                 </p>
                 <p className="text-xs opacity-90">
-                  Cooldown: {Math.max(0, agenticSyncStatus.cooldownRemainingSeconds || 0)}s | Pending: {agenticSyncStatus.pending + agenticSyncStatus.retry} | Failed: {agenticSyncStatus.failed}
+                  Cooldown: {Math.max(0, agenticSyncStatus?.cooldownRemainingSeconds || 0)}s | Pending: {agenticPendingCount} | Failed: {agenticSyncStatus?.failed || 0}
                 </p>
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {agenticHasFailedOnly && (
+          <motion.div
+            className="mb-6 rounded-2xl border border-yellow-300/60 bg-yellow-50/85 p-4 text-yellow-900 shadow-sm dark:border-yellow-700/60 dark:bg-yellow-950/35 dark:text-yellow-100"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1 text-sm">
+                <p className="font-semibold">Agentic sync needs attention</p>
+                <p>
+                  Queue is idle, but {agenticSyncStatus?.failed || 0} earlier sync event(s) failed and need retry.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void retryFailedAgenticEvents();
+                }}
+                disabled={agenticRetryInProgress}
+                className="shrink-0 rounded-xl border-yellow-500/40 bg-yellow-100/80 text-yellow-900 hover:bg-yellow-200 dark:border-yellow-600/40 dark:bg-yellow-900/40 dark:text-yellow-100"
+              >
+                {agenticRetryInProgress ? 'Retrying...' : 'Retry Failed Sync'}
+              </Button>
             </div>
           </motion.div>
         )}

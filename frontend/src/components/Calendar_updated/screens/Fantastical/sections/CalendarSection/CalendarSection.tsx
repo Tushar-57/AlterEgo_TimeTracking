@@ -340,7 +340,7 @@ import { TaskPopup } from "./TaskPopup";
 import { ContextMenu } from "./ContextMenu";
 import { motion } from "framer-motion";
 import Draggable, { DraggableData, DraggableEvent } from "react-draggable";
-import { formatSecondsAsHoursMinutes } from "../../../../../../utils/utils";
+import { formatSecondsAsHoursMinutes, parseDateTimeAsLocal } from "../../../../../../utils/utils";
 
 const timeSlots = Array.from({ length: 24 }, (_, i) => {
   const hour = i % 12 || 12;
@@ -371,7 +371,7 @@ const isSameDay = (left: Date, right: Date) =>
   left.getDate() === right.getDate();
 
 const formatEventTimeLabel = (event: CalendarEvent) => {
-  const parsed = new Date(event.startTime);
+  const parsed = parseDateTimeAsLocal(event.startTime);
   if (Number.isNaN(parsed.getTime())) {
     return `${event.time} ${event.period}`;
   }
@@ -547,7 +547,7 @@ export const CalendarSection = ({
         isToday: isSameDay(cellDate, new Date()),
         isWeekend: cellDate.getDay() === 0 || cellDate.getDay() === 6,
         events: scopedEvents.filter((event) => {
-          const eventDate = new Date(event.startTime);
+          const eventDate = parseDateTimeAsLocal(event.startTime);
           return !Number.isNaN(eventDate.getTime()) && isSameDay(eventDate, cellDate);
         }),
       };
@@ -604,7 +604,7 @@ export const CalendarSection = ({
 
   const openEditPopup = (event: CalendarEvent) => {
     setSelectedEvent(event);
-    setSelectedTime(new Date(event.startTime));
+    setSelectedTime(parseDateTimeAsLocal(event.startTime));
     setIsPopupOpen(true);
     setContextMenu(null);
   };
@@ -666,10 +666,10 @@ export const CalendarSection = ({
   const getEventsForDate = (targetDate: Date) =>
     searchableEvents
       .filter((event) => {
-        const eventDate = new Date(event.startTime);
+        const eventDate = parseDateTimeAsLocal(event.startTime);
         return !Number.isNaN(eventDate.getTime()) && isSameDay(eventDate, targetDate);
       })
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      .sort((a, b) => parseDateTimeAsLocal(a.startTime).getTime() - parseDateTimeAsLocal(b.startTime).getTime());
 
   const applyMobileEntryFilter = (sourceEvents: CalendarEvent[]) => {
     if (mobileEntryFilter === "billable") {
@@ -687,21 +687,25 @@ export const CalendarSection = ({
     const eventsCopy = [...sourceEvents];
 
     if (mobileEntrySort === "oldest") {
-      return eventsCopy.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      return eventsCopy.sort(
+        (a, b) => parseDateTimeAsLocal(a.startTime).getTime() - parseDateTimeAsLocal(b.startTime).getTime()
+      );
     }
 
     if (mobileEntrySort === "duration") {
       return eventsCopy.sort((a, b) => getEventDurationSeconds(b) - getEventDurationSeconds(a));
     }
 
-    return eventsCopy.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+    return eventsCopy.sort(
+      (a, b) => parseDateTimeAsLocal(b.startTime).getTime() - parseDateTimeAsLocal(a.startTime).getTime()
+    );
   };
 
   const getPositionedEvents = (dayEvents: CalendarEvent[]): PositionedEvent[] => {
     const laneEndTimes: number[] = [];
 
     const items = dayEvents.map((event) => {
-      const eventDate = new Date(event.startTime);
+      const eventDate = parseDateTimeAsLocal(event.startTime);
       const startMinutes = eventDate.getHours() * 60 + eventDate.getMinutes();
       const top = (startMinutes / 60) * HOUR_ROW_HEIGHT;
 
@@ -764,7 +768,7 @@ export const CalendarSection = ({
       return dragPreview[event.id];
     }
 
-    const startDate = new Date(event.startTime);
+    const startDate = parseDateTimeAsLocal(event.startTime);
     const fallbackTop = startDate.getHours() * HOUR_ROW_HEIGHT + (startDate.getMinutes() / 60) * HOUR_ROW_HEIGHT;
     const fallbackLeft = startDate.getDay() * weekColumnWidth;
     const parsedTop = parsePixelValue(event.position?.top, fallbackTop);
@@ -830,7 +834,7 @@ export const CalendarSection = ({
     end.setDate(start.getDate() + 7);
 
     return searchableEvents.filter((event) => {
-      const eventDate = new Date(event.startTime);
+      const eventDate = parseDateTimeAsLocal(event.startTime);
       return !Number.isNaN(eventDate.getTime()) && eventDate >= start && eventDate < end;
     });
   }, [currentDate, searchableEvents]);
@@ -1035,14 +1039,14 @@ export const CalendarSection = ({
       applyMobileEntryFilter(
         searchableEvents
       .filter((event) => {
-        const eventDate = new Date(event.startTime);
+        const eventDate = parseDateTimeAsLocal(event.startTime);
         return eventDate >= range.start && eventDate <= range.end;
       })
       )
     );
 
     const groupedEvents = visibleEvents.reduce<Record<string, CalendarEvent[]>>((acc, event) => {
-      const eventDate = new Date(event.startTime);
+      const eventDate = parseDateTimeAsLocal(event.startTime);
       const key = `${eventDate.getFullYear()}-${(eventDate.getMonth() + 1)
         .toString()
         .padStart(2, "0")}-${eventDate.getDate().toString().padStart(2, "0")}`;
@@ -1239,7 +1243,7 @@ export const CalendarSection = ({
 
   const renderWeekView = () => {
     const renderedWeekEvents = [...weekRangeEvents].sort(
-      (left, right) => new Date(left.startTime).getTime() - new Date(right.startTime).getTime()
+      (left, right) => parseDateTimeAsLocal(left.startTime).getTime() - parseDateTimeAsLocal(right.startTime).getTime()
     );
 
     return (
