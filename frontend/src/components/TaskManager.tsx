@@ -361,18 +361,48 @@ const buildHabitSyncPayload = (habitTasks: Task[], trendSnapshot: HabitTrendSnap
     sortedDailyKeys.map((key) => [key, completionMap.get(key) || 0])
   );
 
+  const analyzeCompletionPattern = (dates: string[]): string => {
+    if (dates.length === 0) return 'not_started';
+    if (dates.length === 1) return 'started';
+    
+    // Check for recent completions (last 7 days)
+    const today = new Date();
+    const recentCompletions = dates.filter(d => {
+      const date = new Date(d);
+      const daysDiff = (today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
+      return daysDiff <= 7;
+    }).length;
+    
+    if (recentCompletions >= 5) return 'very_consistent';
+    if (recentCompletions >= 3) return 'consistent';
+    if (recentCompletions >= 1) return 'struggling';
+    return 'stalled';
+  };
+
   const sortedHabits = [...habitTasks]
     .sort((left, right) => left.id.localeCompare(right.id))
     .map((habit) => {
       const completedDates = Array.from(new Set(habit.completedDates)).sort(sortDateKeysAsc);
+      const last7Days = completedDates.slice(-7);
+      const last30Days = completedDates.slice(-30);
+      
       return {
         id: habit.id,
         title: habit.title,
+        description: habit.description || '',
         tags: [...habit.tags].sort(),
+        priority: habit.priority,
         currentStreak: habit.currentStreak,
         streakTarget: habit.streakTarget || 1,
         completionCount: completedDates.length,
-        completedDates,
+        completionRate7d: Math.round((last7Days.length / 7) * 100),
+        completionRate30d: Math.round((last30Days.length / 30) * 100),
+        completedDates: last30Days, // Only send last 30 days to keep payload reasonable
+        lastCompletedDate: completedDates[completedDates.length - 1] || null,
+        pattern: analyzeCompletionPattern(completedDates),
+        estimatedDuration: habit.estimatedDuration,
+        totalTimeSpent: habit.timeSpent,
+        noteToAI: habit.noteToAI || '',
         updatedAt: habit.updatedAt,
       };
     });
