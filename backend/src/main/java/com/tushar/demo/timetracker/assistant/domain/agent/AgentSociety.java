@@ -175,9 +175,9 @@ public class AgentSociety {
         if (projects.isEmpty()) {
             baseMessage = "You don't have any projects yet. Ready to create one to kickstart your journey?";
         } else {
-            baseMessage = "Here are your projects:\n" + projects.stream()
+            baseMessage = projects.stream()
                     .map(p -> "- " + p.getName() + " (Client: " + (p.getClient() != null ? p.getClient() : "None") + ")")
-                    .collect(Collectors.joining("\n"));
+                    .collect(Collectors.joining("\n", "Here are your projects:\n", ""));
         }
         return formatMessage(baseMessage, tone, archetype, 4);
     }

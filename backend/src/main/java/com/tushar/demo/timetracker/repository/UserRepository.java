@@ -1,6 +1,5 @@
 package com.tushar.demo.timetracker.repository;
 
-import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

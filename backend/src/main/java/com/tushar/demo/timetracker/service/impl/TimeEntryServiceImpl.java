@@ -18,6 +18,7 @@ import com.tushar.demo.timetracker.service.TimeEntryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -47,6 +48,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     }
 
     @Override
+    @Transactional
     public TimeEntry startTimeEntry(StartTimeEntryRequest request, Users user) {
         logger.info("Starting time entry for user: {}, projectId: {}, description: {}", 
                     user.getEmail(), request.getProjectId(), request.getDescription());
@@ -96,6 +98,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     }
 
     @Override
+    @Transactional
     public TimeEntry stopTimer(Long id, Users user, LocalDateTime manualEnd) {
         logger.info("Stopping time entry with ID: {} for user: {}", id, user.getEmail());
 
@@ -177,6 +180,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     }
 
     @Override
+    @Transactional
     public TimeEntry updateTimerPosition(Long timerId, Users user, String positionTop, String positionLeft) {
         TimeEntry timeEntry = timeEntryRepository.findByIdAndUser(timerId, user)
                 .orElseThrow(() -> new IllegalArgumentException("Timer not found or does not belong to user"));
@@ -187,6 +191,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     }
     
     @Override
+    @Transactional
     public TimeEntry addTimeEntry(addTimeEntryRequest request, Users user) {
         logger.info("Adding time entry for user: {}, projectId: {}, description: {}", 
                     user.getEmail(), request.getProjectId(), request.getDescription());
@@ -238,6 +243,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     }
 
     @Override
+    @Transactional
     public TimeEntry updateTimeEntry(Long timerId, addTimeEntryRequest request, Users user) {
         logger.info("Updating time entry {} for user: {}", timerId, user.getEmail());
 
@@ -282,6 +288,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     }
 
     @Override
+    @Transactional
     public void deleteTimeEntry(Long timerId, Users user) {
         logger.info("Deleting time entry {} for user: {}", timerId, user.getEmail());
 
@@ -296,6 +303,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
     }
 
     @Override
+    @Transactional
     public TimeEntry continueTimeEntry(Long timerId, Users user) {
         logger.info("Continuing time entry {} for user: {}", timerId, user.getEmail());
 

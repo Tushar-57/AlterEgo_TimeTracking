@@ -12,6 +12,7 @@ import com.tushar.demo.timetracker.service.ProjectService;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProjectServiceImpl implements ProjectService {
@@ -23,6 +24,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
     
     @Override
+    @Transactional
     public Project createDefaultProject(Users user) {
         if (projectRepository.findByNameAndUser("No Project", user).isPresent()) {
             throw new ConflictException("Default project already exists");
@@ -44,6 +46,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional
     public Project createProject(ProjectRequest request, Users user) {
         // Check for existing project name
     	if ("No Project".equalsIgnoreCase(request.name())) {
@@ -63,6 +66,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional
     public Project updateProject(Long id, ProjectRequest request, Users user) {
         Project project = projectRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
@@ -84,6 +88,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional
     public void deleteProject(Long id, Users user) {
         Project project = projectRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
