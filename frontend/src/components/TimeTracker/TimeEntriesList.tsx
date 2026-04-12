@@ -181,9 +181,8 @@ const exportTimeEntries = (timeEntries: TimeEntry[]) => {
   const link = document.createElement('a');
   link.setAttribute('href', url);
   link.setAttribute('download', `time_entries_${new Date().toISOString().split('T')[0]}.csv`);
-  document.body.appendChild(link);
+  // No need to append to body - just click and cleanup
   link.click();
-  document.body.removeChild(link);
   URL.revokeObjectURL(url);
 };
 
