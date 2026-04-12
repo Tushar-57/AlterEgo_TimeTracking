@@ -120,6 +120,11 @@
 			<artifactId>janino</artifactId>
 			<version>3.1.12</version>
 		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>1.4.14</version>
+		</dependency>
 	</dependencies>
 
 	<build>

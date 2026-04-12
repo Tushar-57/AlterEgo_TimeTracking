@@ -84,8 +84,16 @@
     <!-- Performance Log Appender -->
     <appender name="PERFORMANCE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/performance.log</file>
+        <!--
+            NOTE: Requires Janino dependency:
+            <dependency>
+              <groupId>org.codehaus.janino</groupId>
+              <artifactId>janino</artifactId>
+              <version>3.1.11</version>
+            </dependency>
+        -->
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator class="ch.qos.logback.classic.boo.JaninoEventEvaluator">
+            <evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
                 <expression>
                     return message != null &amp;&amp; message.contains("\"metricType\":\"performance\"");
                 </expression>
@@ -109,7 +117,7 @@
     <appender name="SECURITY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/security.log</file>
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator class="ch.qos.logback.classic.boo.JaninoEventEvaluator">
+            <evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
                 <expression>
                     return message != null &amp;&amp; message.contains("\"eventType\":\"security\"");
                 </expression>
@@ -133,7 +141,7 @@
     <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/audit.log</file>
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator class="ch.qos.logback.classic.boo.JaninoEventEvaluator">
+            <evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
                 <expression>
                     return message != null &amp;&amp; message.contains("\"eventType\":\"audit\"");
                 </expression>
