@@ -134,11 +134,33 @@
     <logger name="org.springframework" level="${SPRING_LOG_LEVEL:-WARN}"/>
     <logger name="org.hibernate" level="${HIBERNATE_LOG_LEVEL:-WARN}"/>
 
+    <!-- Dedicated logger for performance metrics -->
+    <logger name="app.performance" level="INFO" additivity="false">
+        <appender-ref ref="PERFORMANCE_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Dedicated logger for security events -->
+    <logger name="app.security" level="INFO" additivity="false">
+        <appender-ref ref="SECURITY_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Dedicated logger for audit events -->
+    <logger name="app.audit" level="INFO" additivity="false">
+        <appender-ref ref="AUDIT_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
     <!-- Root logger -->
     <root level="${ROOT_LOG_LEVEL:-INFO}">
-        
-        <!-- Always log to file -->
+        <!-- Console output: JSON in prod, pretty in dev -->
         <appender-ref ref="CONSOLE"/>
+        <springProfile name="prod">
+            <appender-ref ref="CONSOLE_JSON"/>
+        </springProfile>
+
+        <!-- Always log to file -->
         <appender-ref ref="FILE"/>
         <appender-ref ref="ERROR_FILE"/>
     </root>
