@@ -20,6 +20,7 @@ import com.tushar.demo.timetracker.service.impl.UserDetailsServiceImpl;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,28 @@ public class TimerController {
 
     // Rate limiting for backfill to prevent concurrent requests flooding the outbox
     private static final long BACKFILL_RATE_LIMIT_MS = 60_000; // 1 minute between backfills per user
+    private static final long BACKFILL_ENTRY_TTL_MS = 300_000; // 5 minutes TTL for entries (prevents memory leak)
     private static final ConcurrentHashMap<Long, Long> lastBackfillByUser = new ConcurrentHashMap<>();
+
+    /**
+     * Cleanup expired entries from rate limit map to prevent memory leak.
+     * Called periodically when accessing the map.
+     */
+    private void cleanupExpiredBackfillEntries() {
+        long now = System.currentTimeMillis();
+        Iterator<Map.Entry<Long, Long>> iterator = lastBackfillByUser.entrySet().iterator();
+        int removed = 0;
+        while (iterator.hasNext()) {
+            Map.Entry<Long, Long> entry = iterator.next();
+            if ((now - entry.getValue()) > BACKFILL_ENTRY_TTL_MS) {
+                iterator.remove();
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            logger.debug("Cleaned up {} expired backfill rate limit entries", removed);
+        }
+    }
 
     private final TimeEntryService timeEntryService;
     private final UserDetailsServiceImpl userDetailsService;
@@ -423,6 +445,7 @@ public class TimerController {
             Long userId = user.getId();
 
             // Rate limiting: prevent concurrent backfill requests from same user
+            cleanupExpiredBackfillEntries(); // Prevent memory leak
             long now = System.currentTimeMillis();
             Long lastBackfill = lastBackfillByUser.get(userId);
             if (lastBackfill != null && (now - lastBackfill) < BACKFILL_RATE_LIMIT_MS) {

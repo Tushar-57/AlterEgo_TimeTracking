@@ -49,6 +49,9 @@ public class TagsController {
 
 	@GetMapping
 	public ResponseEntity<List<Tags>> getUserTags(Authentication authentication) {
+		if (authentication == null || authentication.getName() == null) {
+			throw new ResourceNotFoundException("User not authenticated");
+		}
 		Users user = userRepository.findByEmail(authentication.getName())
 				.orElseThrow(() -> new ResourceNotFoundException("User not found"));
 		return ResponseEntity.ok(tagsRepository.findByUser(user)); // Fixed user-specific query

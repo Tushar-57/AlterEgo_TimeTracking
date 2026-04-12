@@ -30,11 +30,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class AgenticKnowledgeSyncService {
     private static final Logger logger = LoggerFactory.getLogger(AgenticKnowledgeSyncService.class);
     private static final int BACKFILL_PAGE_SIZE = 250;
+
+    // Static shared HttpClient for efficient resource management
+    private static final HttpClient SHARED_HTTP_CLIENT = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(30))
+            .build();
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
@@ -49,7 +55,7 @@ public class AgenticKnowledgeSyncService {
     private final long retryBackoffMs;
     private final long upstreamCooldownMillis;
 
-    private volatile long upstreamCooldownUntilEpochMillis = 0L;
+    private final AtomicLong upstreamCooldownUntilEpochMillis = new AtomicLong(0L);
 
     public static final class SyncBackfillResult {
         private final boolean configured;
@@ -122,9 +128,10 @@ public class AgenticKnowledgeSyncService {
         this.upstreamCooldownMillis = Math.max(0L, upstreamCooldownSeconds) * 1000L;
         this.requestTimeout = Duration.ofMillis(requestTimeoutMs);
         this.objectMapper = new ObjectMapper();
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(connectTimeoutMs))
-                .build();
+        // Use shared HttpClient for resource efficiency, or create custom one if specific timeout needed
+        this.httpClient = connectTimeoutMs > 0 && connectTimeoutMs != 30000
+                ? HttpClient.newBuilder().connectTimeout(Duration.ofMillis(connectTimeoutMs)).build()
+                : SHARED_HTTP_CLIENT;
     }
 
     public boolean isConfiguredForSync() {
@@ -132,7 +139,7 @@ public class AgenticKnowledgeSyncService {
     }
 
     public long getUpstreamCooldownRemainingSeconds() {
-        long remainingMillis = upstreamCooldownUntilEpochMillis - System.currentTimeMillis();
+        long remainingMillis = upstreamCooldownUntilEpochMillis.get() - System.currentTimeMillis();
         if (remainingMillis <= 0) {
             return 0L;
         }
@@ -778,7 +785,8 @@ public class AgenticKnowledgeSyncService {
         }
 
         long nextCooldownUntil = System.currentTimeMillis() + upstreamCooldownMillis;
-        upstreamCooldownUntilEpochMillis = Math.max(upstreamCooldownUntilEpochMillis, nextCooldownUntil);
+        // Atomic update to prevent race conditions
+        upstreamCooldownUntilEpochMillis.updateAndGet(current -> Math.max(current, nextCooldownUntil));
 
         logger.warn(
                 "Agentic {} received upstream status {}. Activating cooldown for {}s.",
