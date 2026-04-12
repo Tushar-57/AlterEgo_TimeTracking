@@ -81,26 +81,9 @@
         </rollingPolicy>
     </appender>
 
-    <!-- Performance Log Appender -->
+    <!-- Performance Log Appender - simplified without Janino -->
     <appender name="PERFORMANCE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/performance.log</file>
-        <!--
-            NOTE: Requires Janino dependency:
-            <dependency>
-              <groupId>org.codehaus.janino</groupId>
-              <artifactId>janino</artifactId>
-              <version>3.1.11</version>
-            </dependency>
-        -->
-        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
-                <expression>
-                    return message != null &amp;&amp; message.contains("\"metricType\":\"performance\"");
-                </expression>
-            </evaluator>
-            <OnMatch>ACCEPT</OnMatch>
-            <OnMismatch>DENY</OnMismatch>
-        </filter>
         <encoder>
             <pattern>${JSON_LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
@@ -113,18 +96,9 @@
         </rollingPolicy>
     </appender>
 
-    <!-- Security Log Appender -->
+    <!-- Security Log Appender - simplified without Janino -->
     <appender name="SECURITY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/security.log</file>
-        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
-                <expression>
-                    return message != null &amp;&amp; message.contains("\"eventType\":\"security\"");
-                </expression>
-            </evaluator>
-            <OnMatch>ACCEPT</OnMatch>
-            <OnMismatch>DENY</OnMismatch>
-        </filter>
         <encoder>
             <pattern>${JSON_LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
@@ -137,18 +111,9 @@
         </rollingPolicy>
     </appender>
 
-    <!-- Audit Log Appender -->
+    <!-- Audit Log Appender - simplified without Janino -->
     <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/audit.log</file>
-        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
-                <expression>
-                    return message != null &amp;&amp; message.contains("\"eventType\":\"audit\"");
-                </expression>
-            </evaluator>
-            <OnMatch>ACCEPT</OnMatch>
-            <OnMismatch>DENY</OnMismatch>
-        </filter>
         <encoder>
             <pattern>${JSON_LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
@@ -168,22 +133,11 @@
 
     <!-- Root logger -->
     <root level="${ROOT_LOG_LEVEL:-INFO}">
-        <!-- Use JSON console for production, pretty for dev -->
-        <if condition='property("JSON_LOGGING").contains("true")'>
-            <then>
-                <appender-ref ref="CONSOLE_JSON"/>
-            </then>
-            <else>
-                <appender-ref ref="CONSOLE"/>
-            </else>
-        </if>
         
         <!-- Always log to file -->
+        <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
         <appender-ref ref="ERROR_FILE"/>
-        <appender-ref ref="PERFORMANCE_FILE"/>
-        <appender-ref ref="SECURITY_FILE"/>
-        <appender-ref ref="AUDIT_FILE"/>
     </root>
 
 </configuration>
