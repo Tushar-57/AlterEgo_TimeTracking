@@ -1,168 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Spring Boot Logback Configuration for Structured JSON Logging
-    
-    Features:
-    - JSON formatted logs for production (machine parseable)
-    - Human-readable format for development
-    - Request correlation tracking
-    - Component-based log segregation
-    - File rotation with size limits
+    Modern Spring Boot Logback Configuration
+    - No obsolete Janino dependencies
+    - Uses standard Logback features only
+    - Clean and maintainable
 -->
 <configuration>
     <!-- Import Spring Boot defaults -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
     <!-- Properties -->
-    <!-- Beautiful colored pattern for development with visual separators -->
-    <property name="LOG_PATTERN" value="%d{HH:mm:ss.SSS} %gray(│) %highlight(%-8level) %gray(│) %logger{12} %gray(│) %gray(req:%X{requestId:-unknown}) %gray(│) %gray(usr:%X{userId:-system}) %gray(│→) %msg%n"/>
-    <!-- Pretty pattern with colors for different components -->
-    <property name="PRETTY_PATTERN" value="%d{HH:mm:ss} %gray(│) %highlight(%-8level) %gray(│) %cyan(%-12logger{0}) %gray(│) %gray(req:%X{requestId:-unknown}) %gray(usr:%X{userId:-system}) %gray(│→) %msg%n"/>
-    <property name="JSON_LOG_PATTERN" value="%msg%n"/>
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
     <property name="LOG_FILE" value="${LOG_FILE:-logs/application.log}"/>
-    <property name="MAX_FILE_SIZE" value="${LOG_FILE_MAX_SIZE:-10MB}"/>
-    <property name="MAX_HISTORY" value="${LOG_FILE_MAX_HISTORY:-30}"/>
-    <property name="TOTAL_SIZE_CAP" value="${LOG_FILE_TOTAL_SIZE_CAP:-3GB}"/>
 
-    <!-- Console Appender - Beautiful colored output for development -->
+    <!-- Console Appender - Clean colored output -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${CONSOLE_LOG_LEVEL:-INFO}</level>
-        </filter>
         <encoder>
-            <pattern>%d{HH:mm:ss} %gray(|) %highlight(%-5level) %gray(|) %cyan(%-12logger{0}) %gray(|) %gray(req:%X{requestId:-unknown}) %gray(|) %msg%n</pattern>
+            <pattern>%d{HH:mm:ss} %highlight(%-5level) %cyan(%logger{12}) - %msg%n</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>
 
-    <!-- Console Appender - JSON for structured logging -->
-    <appender name="CONSOLE_JSON" class="ch.qos.logback.core.ConsoleAppender">
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${CONSOLE_LOG_LEVEL:-INFO}</level>
-        </filter>
-        <encoder>
-            <pattern>${JSON_LOG_PATTERN}</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-    </appender>
-
-    <!-- File Appender - Always JSON for machine parsing -->
+    <!-- File Appender with rotation -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_FILE}</file>
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${FILE_LOG_LEVEL:-INFO}</level>
-        </filter>
         <encoder>
-            <pattern>${JSON_LOG_PATTERN}</pattern>
+            <pattern>${LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
-            <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
-            <maxHistory>${MAX_HISTORY}</maxHistory>
-            <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
-        </rollingPolicy>
-    </appender>
-
-    <!-- Error File Appender - Separate error logs -->
-    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/errors.log</file>
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <level>ERROR</level>
-            <onMatch>ACCEPT</onMatch>
-            <onMismatch>DENY</onMismatch>
-        </filter>
-        <encoder>
-            <pattern>${JSON_LOG_PATTERN}</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/errors.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
-            <maxFileSize>100MB</maxFileSize>
+            <maxFileSize>10MB</maxFileSize>
             <maxHistory>30</maxHistory>
-            <totalSizeCap>1GB</totalSizeCap>
-        </rollingPolicy>
-    </appender>
-
-    <!-- Performance Log Appender - simplified without Janino -->
-    <appender name="PERFORMANCE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/performance.log</file>
-        <encoder>
-            <pattern>${JSON_LOG_PATTERN}</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/performance.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
-            <maxFileSize>100MB</maxFileSize>
-            <maxHistory>30</maxHistory>
-            <totalSizeCap>1GB</totalSizeCap>
-        </rollingPolicy>
-    </appender>
-
-    <!-- Security Log Appender - simplified without Janino -->
-    <appender name="SECURITY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/security.log</file>
-        <encoder>
-            <pattern>${JSON_LOG_PATTERN}</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/security.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
-            <maxFileSize>100MB</maxFileSize>
-            <maxHistory>90</maxHistory>
-            <totalSizeCap>2GB</totalSizeCap>
-        </rollingPolicy>
-    </appender>
-
-    <!-- Audit Log Appender - simplified without Janino -->
-    <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/audit.log</file>
-        <encoder>
-            <pattern>${JSON_LOG_PATTERN}</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/audit.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
-            <maxFileSize>100MB</maxFileSize>
-            <maxHistory>365</maxHistory>
-            <totalSizeCap>5GB</totalSizeCap>
         </rollingPolicy>
     </appender>
 
     <!-- Logger configurations -->
-    <logger name="com.tushar.demo.timetracker" level="${APP_LOG_LEVEL:-INFO}"/>
-    <logger name="org.springframework" level="${SPRING_LOG_LEVEL:-WARN}"/>
-    <logger name="org.hibernate" level="${HIBERNATE_LOG_LEVEL:-WARN}"/>
-
-    <!-- Dedicated logger for performance metrics -->
-    <logger name="app.performance" level="INFO" additivity="false">
-        <appender-ref ref="PERFORMANCE_FILE"/>
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <!-- Dedicated logger for security events -->
-    <logger name="app.security" level="INFO" additivity="false">
-        <appender-ref ref="SECURITY_FILE"/>
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-
-    <!-- Dedicated logger for audit events -->
-    <logger name="app.audit" level="INFO" additivity="false">
-        <appender-ref ref="AUDIT_FILE"/>
-        <appender-ref ref="CONSOLE"/>
-    </logger>
+    <logger name="com.tushar.demo.timetracker" level="INFO"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.hibernate" level="WARN"/>
 
     <!-- Root logger -->
-    <root level="${ROOT_LOG_LEVEL:-INFO}">
-        <!-- Console output: JSON in prod, pretty in dev -->
+    <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <springProfile name="prod">
-            <appender-ref ref="CONSOLE_JSON"/>
-        </springProfile>
-
-        <!-- Always log to file -->
         <appender-ref ref="FILE"/>
-        <appender-ref ref="ERROR_FILE"/>
     </root>
-
 </configuration>
