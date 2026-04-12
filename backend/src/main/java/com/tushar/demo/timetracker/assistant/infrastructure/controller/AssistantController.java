@@ -32,6 +32,12 @@ public class AssistantController {
 
     @PostMapping("/api/ai/chat")
     public ResponseEntity<Map<String, Object>> chat(@RequestBody Map<String, String> request, Authentication authentication) {
+        // Explicit authentication validation for defense in depth
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Authentication required", "message", "Please log in to use this feature"));
+        }
+
     	Users user = userRepo.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     	String userId = authentication.getName();

@@ -145,6 +145,9 @@ public class AgentSociety {
     }
 
     private String formatTimeEntryResponse(TimeEntry timeEntry, String tone, String archetype) {
+        if (timeEntry == null) {
+            return formatMessage("Failed to create time entry. Please try again.", tone, archetype, 2);
+        }
         String baseMessage = String.format(
                 "Time entry created: %s for project %s, started at %s, duration %d minutes",
                 timeEntry.getDescription(),
@@ -156,6 +159,9 @@ public class AgentSociety {
     }
 
     private String formatProjectResponse(Project project, String tone, String archetype) {
+        if (project == null) {
+            return formatMessage("Failed to create project. Please try again.", tone, archetype, 3);
+        }
         String baseMessage = String.format(
                 "Project created: %s (Description: %s)",
                 project.getName(),

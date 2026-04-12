@@ -1,7 +1,9 @@
 package com.tushar.demo.timetracker.assistant.domain.agent;
 
+import com.tushar.demo.timetracker.model.Project;
 import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
+import com.tushar.demo.timetracker.repository.ProjectRepository;
 import com.tushar.demo.timetracker.repository.UserRepository;
 import com.tushar.demo.timetracker.assistant.infrastructure.service.AI_TimeEntryService;
 import dev.langchain4j.model.chat.ChatLanguageModel;
@@ -14,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 interface TimeEntryExtractor {
@@ -45,13 +48,16 @@ public class SchedulerAgent {
     private final TimeEntryExtractor extractor;
     private final AI_TimeEntryService timeEntryService;
     private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
 
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_ZONED_DATE_TIME;
 
-    public SchedulerAgent(ChatLanguageModel chatLanguageModel, AI_TimeEntryService timeEntryService, UserRepository userRepository) {
+    public SchedulerAgent(ChatLanguageModel chatLanguageModel, AI_TimeEntryService timeEntryService,
+                          UserRepository userRepository, ProjectRepository projectRepository) {
         this.extractor = AiServices.create(TimeEntryExtractor.class, chatLanguageModel);
         this.timeEntryService = timeEntryService;
         this.userRepository = userRepository;
+        this.projectRepository = projectRepository;
     }
 
     public TimeEntry processTimeEntryCommand(String userId, String command) {
@@ -71,6 +77,13 @@ public class SchedulerAgent {
                 ? Long.parseLong(details.get("duration").toString())
                 : 0);
         timeEntry.setUser(user);
+
+        // Associate project if mentioned
+        String projectName = (String) details.get("projectName");
+        if (projectName != null && !projectName.isBlank()) {
+            Optional<Project> project = projectRepository.findByNameAndUser(projectName, user);
+            project.ifPresent(timeEntry::setProject);
+        }
 
         String action = (String) details.get("action");
         if ("stop".equalsIgnoreCase(action)) {

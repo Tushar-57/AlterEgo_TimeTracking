@@ -58,7 +58,7 @@ public class AIController {
         try {
             Users user = userRepo.findByEmail(authentication.getName())
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-            TimeEntry entry = aiService.createTimeEntryFromCommand(request.command());
+            TimeEntry entry = aiService.createTimeEntryFromCommand(request.command(), user);
             if (entry == null) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "Time entry creation failed", "message", "AI service returned null"));
@@ -86,7 +86,12 @@ public class AIController {
             Users user = userRepo.findByEmail(authentication.getName())
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-            TimeEntry entry = aiService.createTimeEntryFromCommand(request.command());
+            TimeEntry entry = aiService.createTimeEntryFromCommand(request.command(), user);
+
+            if (entry == null) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Failed to parse command", "message", "AI service returned null"));
+            }
 
             if (entry.getProject() != null) {
                 Optional<Project> project = projectRepository.findByNameAndUser(entry.getProject().getName(), user);

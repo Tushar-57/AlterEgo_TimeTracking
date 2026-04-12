@@ -15,6 +15,8 @@ import dev.langchain4j.model.input.PromptTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +45,21 @@ public class CheckerAgent {
         this.timeEntryRepository = timeEntryRepository;
         this.userRepository = userRepository;
         this.objectMapper = new ObjectMapper();
+    }
+
+    /**
+     * Safely parse a datetime string, returning defaultValue on parse errors.
+     */
+    private LocalDateTime parseDateTimeSafe(String dateTimeStr, LocalDateTime defaultValue, List<String> errors, String fieldName) {
+        if (dateTimeStr == null || dateTimeStr.trim().isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        } catch (DateTimeParseException e) {
+            errors.add("Invalid " + fieldName + " format. Expected ISO format (e.g., 2025-05-03T10:00:00).");
+            return defaultValue;
+        }
     }
 
     public static class ValidationResult {
@@ -135,9 +152,9 @@ public class CheckerAgent {
             suggestedAction.put("duration", duration);
         }
 
-        // Time validation
-        LocalDateTime startTime = startTimeStr != null ? LocalDateTime.parse(startTimeStr) : LocalDateTime.now();
-        LocalDateTime endTime = endTimeStr != null ? LocalDateTime.parse(endTimeStr) : null;
+        // Time validation with safe parsing
+        LocalDateTime startTime = parseDateTimeSafe(startTimeStr, LocalDateTime.now(), errors, "startTime");
+        LocalDateTime endTime = parseDateTimeSafe(endTimeStr, null, errors, "endTime");
         if (endTime != null && startTime != null && !endTime.isAfter(startTime)) {
             errors.add("End time must be after start time.");
             suggestedAction.put("action", "adjustTime");
