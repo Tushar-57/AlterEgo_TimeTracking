@@ -453,6 +453,7 @@
 //   );
 // }
 import { useState, useEffect, useRef } from 'react';
+import { useBodyScrollLock } from '../../../../../../hooks/useBodyScrollLock';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import {
@@ -743,18 +744,8 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     };
   }, [isOpen, onClose]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const { overflow } = document.body.style;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = overflow;
-    };
-  }, [isOpen]);
+  // Safe scroll lock using ref-counted hook
+  useBodyScrollLock(isOpen);
 
   const handleSave = async () => {
     if (!description || !entryDate || !startTime || !endTime) {

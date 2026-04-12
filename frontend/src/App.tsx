@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useBodyScrollLock } from './hooks/useBodyScrollLock';
 import { BarChart2, BellRing, Brain, Clock, LayoutDashboard, ListChecks, Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import TimeTracker from './components/TimeTracker/TimeTracker';
@@ -143,16 +144,8 @@ const ProtectedRoutes = () => {
     }
   }, [isAuthenticated, user]);
 
-  useEffect(() => {
-    if (mobileNavOpen) {
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = '';
-      };
-    }
-
-    document.body.style.overflow = '';
-  }, [mobileNavOpen]);
+  // Safe scroll lock using ref-counted hook
+  useBodyScrollLock(mobileNavOpen);
 
   if (loading) return <LoadingSpinner />;
 
