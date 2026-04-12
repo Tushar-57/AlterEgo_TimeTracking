@@ -31,7 +31,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/projects")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
+@CrossOrigin(origins = "${cors.allowed-origins:http://localhost:5173}", allowCredentials = "true")
 public class ProjectController {
 
  private final ProjectService projectService;
@@ -96,6 +96,9 @@ public class ProjectController {
  }
 
  private Users getUserFromAuth(Authentication authentication) {
+     if (authentication == null || authentication.getName() == null) {
+         throw new ResourceNotFoundException("User not authenticated");
+     }
      return userRepository.findByEmail(authentication.getName())
              .orElseThrow(() -> new ResourceNotFoundException("User not found"));
  }

@@ -19,6 +19,4 @@ public interface AI_TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
     List<TimeEntry> findTopByUserIdOrderByStartTimeDesc(@Param("userId") Long userId, @Param("limit") int limit);
 
     Optional<TimeEntry> findByIdAndUser(Long timerId, Users user);
-//    Optional<TimeEntry> findActiveTimerByUser(Users user);
-    
 }

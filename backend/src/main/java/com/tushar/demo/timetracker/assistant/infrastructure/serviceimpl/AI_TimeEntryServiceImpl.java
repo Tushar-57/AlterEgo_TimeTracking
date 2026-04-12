@@ -41,15 +41,23 @@ public class AI_TimeEntryServiceImpl implements AI_TimeEntryService {
 
     @Override
     public TimeEntry createTimeEntryFromCommand(String command) {
+        throw new UnsupportedOperationException("Use createTimeEntryFromCommand(String command, Users user) instead");
+    }
+
+    public TimeEntry createTimeEntryFromCommand(String command, Users user) {
+        if (user == null || user.getEmail() == null) {
+            throw new IllegalArgumentException("User must be provided and have a valid email");
+        }
+
         String promptTemplate = """
                 Extract the following details from the user's command:
                 - description: The task description (e.g., "Coding").
                 - projectName: The project name, if mentioned (e.g., "Project X").
                 - startTime: The start time, if specified, in ISO format (e.g., "2025-05-03T10:00:00Z"). Use current time if not specified.
                 - duration: The duration in minutes, if specified (e.g., 60). Set to 0 if not specified.
-                
+
                 Command: {{command}}
-                
+
                 Return a JSON object with the extracted details.
                 """;
         Prompt prompt = PromptTemplate.from(promptTemplate)
@@ -69,9 +77,6 @@ public class AI_TimeEntryServiceImpl implements AI_TimeEntryService {
 
             String projectName = (String) details.get("projectName");
             if (projectName != null && !projectName.isEmpty()) {
-                // User lookup should be handled by the controller or service caller
-                Users user = userRepository.findByEmail("current_user_email")
-                        .orElseThrow(() -> new RuntimeException("User not found"));
                 Project project = projectRepository.findByNameAndUser(projectName, user)
                         .orElseThrow(() -> new RuntimeException("Project not found: " + projectName));
                 timeEntry.setProject(project);
@@ -79,7 +84,7 @@ public class AI_TimeEntryServiceImpl implements AI_TimeEntryService {
 
             return createTimeEntryFromCommand(timeEntry);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse time entry command: " + e.getMessage());
+            throw new RuntimeException("Failed to parse time entry command: " + e.getMessage(), e);
         }
     }
 

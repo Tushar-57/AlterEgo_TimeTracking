@@ -3,21 +3,30 @@ package com.tushar.demo.timetracker.assistant.infrastructure.repository;
 import com.tushar.demo.timetracker.assistant.domain.conversation.Conversation;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Repository
 public class ConversationRepository {
 
-    private final List<Conversation> conversations = new ArrayList<>();
+    private final Map<String, List<Conversation>> conversationsByUserId = new ConcurrentHashMap<>();
 
     public void save(Conversation conversation) {
-        conversations.add(conversation);
+        if (conversation == null || conversation.userId() == null) {
+            throw new IllegalArgumentException("Conversation and userId must not be null");
+        }
+        conversationsByUserId
+                .computeIfAbsent(conversation.userId(), k -> new CopyOnWriteArrayList<>())
+                .add(conversation);
     }
 
     public List<Conversation> findByUserId(String userId) {
-        return conversations.stream()
-                .filter(c -> c.userId().equals(userId))
-                .toList();
+        if (userId == null) {
+            return List.of();
+        }
+        List<Conversation> conversations = conversationsByUserId.get(userId);
+        return conversations != null ? List.copyOf(conversations) : List.of();
     }
 }
