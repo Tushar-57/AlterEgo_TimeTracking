@@ -14,20 +14,23 @@
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
     <!-- Properties -->
-    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+    <!-- Beautiful colored pattern for development with visual separators -->
+    <property name="LOG_PATTERN" value="%d{HH:mm:ss.SSS} %gray(│) %highlight(%-8level) %gray(│) %logger{12} %gray(│) %gray(req:%X{requestId:-unknown}) %gray(│) %gray(usr:%X{userId:-system}) %gray(│→) %msg%n"/>
+    <!-- Pretty pattern with colors for different components -->
+    <property name="PRETTY_PATTERN" value="%d{HH:mm:ss} %gray(│) %highlight(%-8level) %gray(│) %cyan(%-12logger{0}) %gray(│) %gray(req:%X{requestId:-unknown}) %gray(usr:%X{userId:-system}) %gray(│→) %msg%n"/>
     <property name="JSON_LOG_PATTERN" value="%msg%n"/>
     <property name="LOG_FILE" value="${LOG_FILE:-logs/application.log}"/>
     <property name="MAX_FILE_SIZE" value="${LOG_FILE_MAX_SIZE:-10MB}"/>
     <property name="MAX_HISTORY" value="${LOG_FILE_MAX_HISTORY:-30}"/>
     <property name="TOTAL_SIZE_CAP" value="${LOG_FILE_TOTAL_SIZE_CAP:-3GB}"/>
 
-    <!-- Console Appender - Pretty for dev, JSON for prod -->
+    <!-- Console Appender - Beautiful colored output for development -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>${CONSOLE_LOG_LEVEL:-INFO}</level>
         </filter>
         <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
+            <pattern>%d{HH:mm:ss} %gray(|) %highlight(%-5level) %gray(|) %cyan(%-12logger{0}) %gray(|) %gray(req:%X{requestId:-unknown}) %gray(|) %msg%n</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>
