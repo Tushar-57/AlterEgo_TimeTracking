@@ -49,6 +49,9 @@ public class Users {
     @Column(name = "onboarding_completed")
     private boolean onboardingCompleted = false;
 
+    @Column(name = "agentic_last_backfill_at")
+    private Instant agenticLastBackfillAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -184,8 +187,17 @@ public class Users {
     public void setOnboardingCompleted(boolean onboardingCompleted) {
         this.onboardingCompleted = onboardingCompleted;
     }
+
+    public Instant getAgenticLastBackfillAt() {
+        return agenticLastBackfillAt;
+    }
+
+    public void setAgenticLastBackfillAt(Instant agenticLastBackfillAt) {
+        this.agenticLastBackfillAt = agenticLastBackfillAt;
+    }
+
 	public boolean isEnabled() {
-		
+
 		return true;
 	}
 }

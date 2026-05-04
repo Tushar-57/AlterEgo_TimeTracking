@@ -19,7 +19,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -281,22 +283,37 @@ public class AgenticSyncOutboxService {
             return new BackfillQueueResult(false, Math.max(0, maxEntries), 0, 0, 0, 0);
         }
 
-        int requested = resolveRequestedEntries(user, maxEntries);
+        // Use cursor to limit backfill to entries newer than the last known horizon.
+        // Avoids re-queuing the entire history on every Agentic_lyf spin-down cycle.
+        Instant lastBackfillAt = user.getAgenticLastBackfillAt();
+        LocalDateTime horizon = lastBackfillAt != null
+                ? LocalDateTime.ofInstant(lastBackfillAt.minusSeconds(3600L), ZoneOffset.UTC)
+                : LocalDateTime.now(ZoneOffset.UTC).minusDays(30L);
+
+        int requested;
+        if (maxEntries > 0) {
+            requested = maxEntries;
+        } else {
+            long count = lastBackfillAt != null
+                    ? timeEntryRepository.countByUserIdAndStartTimeAfter(user.getId(), horizon)
+                    : timeEntryRepository.countByUserId(user.getId());
+            requested = (int) Math.min(Integer.MAX_VALUE, count);
+        }
+
         int scanned = 0;
         int queued = 0;
         int enqueueFailed = 0;
         int skippedActive = 0;
         int offset = 0;
+        LocalDateTime mostRecentStartTime = null;
 
         while (scanned < requested) {
             int remaining = requested - scanned;
             int batchLimit = Math.min(BACKFILL_PAGE_SIZE, remaining);
 
-            List<TimeEntry> batch = timeEntryRepository.findByUserIdOrderByStartTimeDescPaged(
-                    user.getId(),
-                    batchLimit,
-                    offset
-            );
+            List<TimeEntry> batch = lastBackfillAt != null
+                    ? timeEntryRepository.findByUserIdAndStartTimeAfterPaged(user.getId(), horizon, batchLimit, offset)
+                    : timeEntryRepository.findByUserIdOrderByStartTimeDescPaged(user.getId(), batchLimit, offset);
             if (batch.isEmpty()) {
                 break;
             }
@@ -311,6 +328,10 @@ public class AgenticSyncOutboxService {
                 EnqueueResult enqueueResult = enqueueTimeEntrySync(entry, user, "backfill_time_entry");
                 if (enqueueResult.accepted()) {
                     queued += 1;
+                    if (entry.getStartTime() != null &&
+                            (mostRecentStartTime == null || entry.getStartTime().isAfter(mostRecentStartTime))) {
+                        mostRecentStartTime = entry.getStartTime();
+                    }
                 } else {
                     enqueueFailed += 1;
                 }
@@ -322,9 +343,28 @@ public class AgenticSyncOutboxService {
             }
         }
 
+        // Advance the persistent cursor so the next backfill is incremental.
+        if (mostRecentStartTime != null) {
+            try {
+                Instant newCursor = mostRecentStartTime.toInstant(ZoneOffset.UTC);
+                user.setAgenticLastBackfillAt(newCursor);
+                userRepository.save(user);
+                logger.info(
+                        "Agentic backfill cursor advanced for user={} newCursor={}",
+                        user.getEmail(), newCursor
+                );
+            } catch (Exception cursorError) {
+                logger.warn(
+                        "Failed to persist backfill cursor for user={}: {}",
+                        user.getEmail(), cursorError.getMessage()
+                );
+            }
+        }
+
         logger.info(
-                "Queued Agentic backfill for user={} requested={} scanned={} queued={} failed={} skipped_active={}",
+                "Queued Agentic backfill for user={} horizon={} requested={} scanned={} queued={} failed={} skipped_active={}",
                 user.getEmail(),
+                horizon,
                 requested,
                 scanned,
                 queued,

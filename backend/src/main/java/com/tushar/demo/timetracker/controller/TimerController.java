@@ -551,7 +551,7 @@ public class TimerController {
             Users user = userDetailsService.getCurrentUser(authentication);
             Long userId = user.getId();
 
-            // Rate limiting: prevent concurrent backfill requests from same user
+            // Rate limiting: prevent concurrent backfill requests from same user (in-memory, short window)
             cleanupExpiredBackfillEntries(); // Prevent memory leak
             long now = System.currentTimeMillis();
             Long lastBackfill = lastBackfillByUser.get(userId);
@@ -565,6 +565,22 @@ public class TimerController {
                         )));
             }
             lastBackfillByUser.put(userId, now);
+
+            // Persistent rate limit: skip backfill if it ran recently enough (survives restarts).
+            // This prevents a full re-backfill on every Agentic_lyf spin-down/up cycle.
+            if (!agenticKnowledgeSyncService.isBackfillAllowed(user)) {
+                logger.info(
+                        "Backfill skipped for user {} — last backfill cursor is within the rate-limit window",
+                        userId
+                );
+                Map<String, Object> skippedPayload = new LinkedHashMap<>();
+                skippedPayload.put("configured", agenticKnowledgeSyncService.isConfiguredForSync());
+                skippedPayload.put("skipped", true);
+                skippedPayload.put("reason", "backfill_cursor_recent");
+                skippedPayload.put("lastBackfillAt", user.getAgenticLastBackfillAt() != null
+                        ? user.getAgenticLastBackfillAt().toString() : null);
+                return ResponseEntity.ok(ApiResponse.success(skippedPayload, "Backfill skipped — cursor is recent"));
+            }
 
             if (limit != null && limit < 1) {
                 return ResponseEntity.badRequest()

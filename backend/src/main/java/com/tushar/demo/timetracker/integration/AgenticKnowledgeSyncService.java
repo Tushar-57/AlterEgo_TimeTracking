@@ -10,6 +10,7 @@ import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.TimeEntryRepository;
 import com.tushar.demo.timetracker.repository.TimeEntryDetailRepository;
+import com.tushar.demo.timetracker.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,9 @@ import java.net.http.HttpTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -42,6 +46,12 @@ public class AgenticKnowledgeSyncService {
             .connectTimeout(Duration.ofSeconds(30))
             .build();
 
+    private static final long BACKFILL_HORIZON_BUFFER_HOURS = 1L;
+    // Minimum interval between two triggered backfills to avoid hammering on every spin-down cycle.
+    private static final long BACKFILL_RATE_LIMIT_HOURS = 6L;
+    // For first-run (no cursor): look back this many days instead of fetching everything.
+    private static final long BACKFILL_INITIAL_LOOKBACK_DAYS = 30L;
+
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
     private final boolean enabled;
@@ -49,6 +59,7 @@ public class AgenticKnowledgeSyncService {
     private final Duration requestTimeout;
     private final TimeEntryRepository timeEntryRepository;
     private final TimeEntryDetailRepository timeEntryDetailRepository;
+    private final UserRepository userRepository;
     private final JwtUtils jwtUtils;
     private final long bridgeTokenTtlSeconds;
     private final int maxAttempts;
@@ -108,6 +119,7 @@ public class AgenticKnowledgeSyncService {
     public AgenticKnowledgeSyncService(
             TimeEntryRepository timeEntryRepository,
             TimeEntryDetailRepository timeEntryDetailRepository,
+            UserRepository userRepository,
             JwtUtils jwtUtils,
             @Value("${agentic.sync.enabled:false}") boolean enabled,
             @Value("${agentic.sync.base-url:}") String baseUrl,
@@ -119,6 +131,7 @@ public class AgenticKnowledgeSyncService {
             @Value("${agentic.sync.request-timeout-ms:30000}") long requestTimeoutMs) {
         this.timeEntryRepository = timeEntryRepository;
         this.timeEntryDetailRepository = timeEntryDetailRepository;
+        this.userRepository = userRepository;
         this.jwtUtils = jwtUtils;
         this.enabled = enabled;
         this.baseUrl = normalizeBaseUrl(baseUrl);
@@ -280,23 +293,38 @@ public class AgenticKnowledgeSyncService {
             return new SyncBackfillResult(false, requestedWhenUnavailable, 0, 0, 0, 0);
         }
 
-        int requested = resolveRequestedEntries(user, maxEntries);
+        // Determine the horizon: if a cursor exists, only resync entries newer than
+        // (lastBackfillAt - buffer) to catch any stragglers; otherwise fall back to
+        // the last BACKFILL_INITIAL_LOOKBACK_DAYS days so the first run is bounded.
+        Instant lastBackfillAt = user.getAgenticLastBackfillAt();
+        LocalDateTime horizon;
+        if (lastBackfillAt != null) {
+            horizon = LocalDateTime.ofInstant(
+                    lastBackfillAt.minusSeconds(BACKFILL_HORIZON_BUFFER_HOURS * 3600L),
+                    ZoneOffset.UTC
+            );
+        } else {
+            horizon = LocalDateTime.now(ZoneOffset.UTC).minusDays(BACKFILL_INITIAL_LOOKBACK_DAYS);
+        }
+
+        int requested = maxEntries > 0
+                ? maxEntries
+                : (int) Math.min(Integer.MAX_VALUE, timeEntryRepository.countByUserIdAndStartTimeAfter(user.getId(), horizon));
 
         int scanned = 0;
         int synced = 0;
         int failed = 0;
         int skippedActive = 0;
         int offset = 0;
+        LocalDateTime mostRecentStartTime = null;
 
         while (scanned < requested) {
             int remaining = requested - scanned;
             int batchLimit = Math.min(BACKFILL_PAGE_SIZE, remaining);
 
-            List<TimeEntry> batch = timeEntryRepository.findByUserIdOrderByStartTimeDescPaged(
-                    user.getId(),
-                    batchLimit,
-                    offset
-            );
+            List<TimeEntry> batch = lastBackfillAt != null
+                    ? timeEntryRepository.findByUserIdAndStartTimeAfterPaged(user.getId(), horizon, batchLimit, offset)
+                    : timeEntryRepository.findByUserIdOrderByStartTimeDescPaged(user.getId(), batchLimit, offset);
             if (batch.isEmpty()) {
                 break;
             }
@@ -311,6 +339,10 @@ public class AgenticKnowledgeSyncService {
                 boolean success = syncTimeEntry(entry, user, "backfill_time_entry");
                 if (success) {
                     synced += 1;
+                    if (entry.getStartTime() != null &&
+                            (mostRecentStartTime == null || entry.getStartTime().isAfter(mostRecentStartTime))) {
+                        mostRecentStartTime = entry.getStartTime();
+                    }
                 } else {
                     failed += 1;
                 }
@@ -322,9 +354,28 @@ public class AgenticKnowledgeSyncService {
             }
         }
 
+        // Advance the cursor to the most recent entry successfully synced this run.
+        if (mostRecentStartTime != null) {
+            try {
+                Instant newCursor = mostRecentStartTime.toInstant(ZoneOffset.UTC);
+                user.setAgenticLastBackfillAt(newCursor);
+                userRepository.save(user);
+                logger.info(
+                        "Agentic backfill cursor advanced for user={} newCursor={}",
+                        user.getEmail(), newCursor
+                );
+            } catch (Exception cursorError) {
+                logger.warn(
+                        "Failed to persist backfill cursor for user={}: {}",
+                        user.getEmail(), cursorError.getMessage()
+                );
+            }
+        }
+
         logger.info(
-                "Agentic backfill completed for user={} requested={} scanned={} synced={} failed={} skipped_active={}",
+                "Agentic backfill completed for user={} horizon={} requested={} scanned={} synced={} failed={} skipped_active={}",
                 user.getEmail(),
+                horizon,
                 requested,
                 scanned,
                 synced,
@@ -337,6 +388,22 @@ public class AgenticKnowledgeSyncService {
 
     public SyncBackfillResult syncHistoricalTimeEntries(Users user) {
         return syncHistoricalTimeEntries(user, 0);
+    }
+
+    /**
+     * Returns true if enough time has passed since the last backfill to allow a new one.
+     * Prevents redundant full re-backfills on every Agentic_lyf spin-down/up cycle.
+     */
+    public boolean isBackfillAllowed(Users user) {
+        if (user == null) {
+            return false;
+        }
+        Instant lastBackfillAt = user.getAgenticLastBackfillAt();
+        if (lastBackfillAt == null) {
+            return true; // First run — always allow
+        }
+        long hoursSinceLast = Duration.between(lastBackfillAt, Instant.now()).toHours();
+        return hoursSinceLast >= BACKFILL_RATE_LIMIT_HOURS;
     }
 
     public boolean syncHabitSnapshot(Map<String, Object> habitSnapshot, Users user, String sourceAction) {
