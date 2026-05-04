@@ -5,5 +5,7 @@ public enum AgenticSyncOutboxStatus {
     RETRY,
     PROCESSING,
     SUCCESS,
-    FAILED
+    FAILED,
+    /** Terminal: event was discarded because the referenced entity no longer exists or the remote operation is a no-op. Not retried and not counted as an actionable failure in UI. */
+    DEAD
 }

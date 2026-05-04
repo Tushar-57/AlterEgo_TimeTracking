@@ -156,12 +156,16 @@ public class AgenticSyncController {
         payload.put("pending", metrics.pending());
         payload.put("retry", metrics.retry());
         payload.put("processing", metrics.processing());
+        // "failed" counts only FAILED events — DEAD events are terminal no-ops and excluded.
         payload.put("failed", metrics.failed());
+        // Expose dead count separately so the UI can show it for information without treating it as degraded.
+        payload.put("dead", metrics.dead());
         payload.put("success", metrics.success());
         payload.put("cooldownRemainingSeconds", metrics.cooldownRemainingSeconds());
         payload.put("nextAttemptAt", metrics.nextAttemptAt());
         boolean hasBacklog = metrics.pending() > 0 || metrics.retry() > 0 || metrics.processing() > 0;
         boolean isDegraded = metrics.cooldownRemainingSeconds() > 0 || hasBacklog;
+        // hasFailures is true only for FAILED (retryable/actionable) events, never for DEAD.
         payload.put("hasFailures", metrics.failed() > 0);
         payload.put("degraded", isDegraded);
 
@@ -181,6 +185,28 @@ public class AgenticSyncController {
         return ResponseEntity.ok(ApiResponse.success(
                 Map.of("retried", retried),
                 "Queued failed events for retry"
+        ));
+    }
+
+    @PostMapping("/sync/discard-stale")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> discardStaleEvents(
+            Authentication authentication,
+            @RequestBody(required = false) Map<String, Object> body) {
+        if (!isAuthenticatedUser(authentication)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
+        }
+
+        int olderThanHours = 24;
+        if (body != null && body.get("olderThanHours") instanceof Number n) {
+            olderThanHours = Math.max(1, n.intValue());
+        }
+
+        int discarded = agenticSyncOutboxService.discardStaleEvents(olderThanHours);
+        logger.info("Manual discard-stale triggered by {} — discarded={} olderThanHours={}", authName(authentication), discarded, olderThanHours);
+        return ResponseEntity.ok(ApiResponse.success(
+                Map.of("discarded", discarded, "olderThanHours", olderThanHours),
+                "Stale failed events discarded"
         ));
     }
 

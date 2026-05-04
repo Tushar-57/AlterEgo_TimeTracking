@@ -83,22 +83,28 @@ public class AgenticSyncOutboxService {
             long retry,
             long processing,
             long failed,
+            long dead,
             long success,
             long cooldownRemainingSeconds,
             String nextAttemptAt
     ) {}
 
-    private record DispatchOutcome(boolean success, boolean retryable, String message) {
+    private record DispatchOutcome(boolean success, boolean retryable, boolean dead, String message) {
         static DispatchOutcome successful() {
-            return new DispatchOutcome(true, false, "success");
+            return new DispatchOutcome(true, false, false, "success");
         }
 
         static DispatchOutcome retryableFailure(String message) {
-            return new DispatchOutcome(false, true, message);
+            return new DispatchOutcome(false, true, false, message);
         }
 
         static DispatchOutcome permanentFailure(String message) {
-            return new DispatchOutcome(false, false, message);
+            return new DispatchOutcome(false, false, false, message);
+        }
+
+        /** Terminal discard — entry no longer exists or operation is a no-op. Marks event DEAD, not FAILED. */
+        static DispatchOutcome deadDiscard(String message) {
+            return new DispatchOutcome(false, false, true, message);
         }
     }
 
@@ -194,11 +200,43 @@ public class AgenticSyncOutboxService {
             return EnqueueResult.rejected("Time entry deletion event is missing required identifiers");
         }
 
+        // Cancel any pending TIME_ENTRY_SYNC events for this entry — they would fail with
+        // "no longer exists" anyway, and we're about to queue a deletion event instead.
+        cancelPendingSyncEventsForEntry(entry.getId(), user.getId());
+
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("sourceAction", normalizeSourceAction(sourceAction));
         payload.put("entry", serializeTimeEntrySnapshot(entry));
 
         return enqueueEvent(EVENT_TIME_ENTRY_DELETION, payload, user);
+    }
+
+    /**
+     * Marks all PENDING/RETRY TIME_ENTRY_SYNC outbox events for the given entry as DEAD.
+     * Called before queueing a TIME_ENTRY_DELETION so stale sync events don't pile up.
+     */
+    private void cancelPendingSyncEventsForEntry(Long entryId, Long userId) {
+        try {
+            // The payload JSON always contains the timeEntryId value; a substring match is sufficient.
+            String fragment = "\"timeEntryId\":" + entryId;
+            List<AgenticSyncOutboxEvent> staleEvents =
+                    outboxRepository.findActiveSyncEventsForEntry(userId, fragment);
+            if (staleEvents.isEmpty()) {
+                return;
+            }
+            for (AgenticSyncOutboxEvent stale : staleEvents) {
+                stale.setStatus(AgenticSyncOutboxStatus.DEAD);
+                stale.setLastError("Entry deleted — superseded by TIME_ENTRY_DELETION event");
+            }
+            outboxRepository.saveAll(staleEvents);
+            logger.info(
+                    "Cancelled {} pending TIME_ENTRY_SYNC event(s) for deleted entry={} userId={}",
+                    staleEvents.size(), entryId, userId
+            );
+        } catch (Exception e) {
+            // Non-fatal — the deletion event is still enqueued; stale sync events will self-discard on dispatch.
+            logger.warn("Could not cancel pending sync events for entry={}: {}", entryId, e.getMessage());
+        }
     }
 
     public EnqueueResult enqueueTimeEntryContinuation(TimeEntry sourceEntry, TimeEntry continuedEntry, Users user, String sourceAction) {
@@ -331,11 +369,41 @@ public class AgenticSyncOutboxService {
                 outboxRepository.countByStatus(AgenticSyncOutboxStatus.PENDING),
                 outboxRepository.countByStatus(AgenticSyncOutboxStatus.RETRY),
                 outboxRepository.countByStatus(AgenticSyncOutboxStatus.PROCESSING),
+                // DEAD events are terminal no-ops and must NOT inflate the failed count shown in the UI.
                 outboxRepository.countByStatus(AgenticSyncOutboxStatus.FAILED),
+                outboxRepository.countByStatus(AgenticSyncOutboxStatus.DEAD),
                 outboxRepository.countByStatus(AgenticSyncOutboxStatus.SUCCESS),
                 syncService.getUpstreamCooldownRemainingSeconds(),
                 nextPending.map(event -> event.getNextAttemptAt().toString()).orElse(null)
         );
+    }
+
+    /**
+     * Marks FAILED outbox events older than {@code olderThanHours} hours as DEAD.
+     * This is a manual cleanup operation exposed via the admin endpoint so operators can
+     * clear stuck events without direct DB access.
+     *
+     * @param olderThanHours events created before (now - olderThanHours) are eligible; minimum 1
+     * @return number of events transitioned to DEAD
+     */
+    public int discardStaleEvents(int olderThanHours) {
+        int hours = Math.max(1, olderThanHours);
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(hours);
+        List<AgenticSyncOutboxEvent> stale = outboxRepository.findByStatusAndCreatedAtBefore(
+                AgenticSyncOutboxStatus.FAILED, cutoff);
+        if (stale.isEmpty()) {
+            return 0;
+        }
+        for (AgenticSyncOutboxEvent event : stale) {
+            event.setStatus(AgenticSyncOutboxStatus.DEAD);
+            event.setLastError(
+                    (event.getLastError() != null ? event.getLastError() + " | " : "")
+                    + "Manually discarded after " + hours + "h stale threshold"
+            );
+        }
+        outboxRepository.saveAll(stale);
+        logger.info("Discarded {} stale FAILED outbox events older than {}h", stale.size(), hours);
+        return stale.size();
     }
 
     public int retryFailedEvents(int limit) {
@@ -427,9 +495,21 @@ public class AgenticSyncOutboxService {
             return;
         }
 
+        if (outcome.dead()) {
+            markDead(event, outcome.message());
+            return;
+        }
+
         int maxAttempts = Math.max(1, event.getMaxAttempts());
         if (!outcome.retryable() || nextAttempt >= maxAttempts) {
-            markFailed(event, outcome.message());
+            // TIME_ENTRY_DELETION events that exhaust retries are treated as terminal no-ops:
+            // if the remote never acknowledged the deletion it either never had the entry or is
+            // persistently unavailable — either way there is nothing actionable left to retry.
+            if (EVENT_TIME_ENTRY_DELETION.equals(event.getEventType())) {
+                markDead(event, "remote entry not found — discarded");
+            } else {
+                markFailed(event, outcome.message());
+            }
             return;
         }
 
@@ -476,7 +556,8 @@ public class AgenticSyncOutboxService {
 
         Optional<TimeEntry> entryOpt = timeEntryRepository.findById(timeEntryId);
         if (entryOpt.isEmpty()) {
-            return DispatchOutcome.permanentFailure("Time entry " + timeEntryId + " no longer exists");
+            // Entry was deleted after this outbox event was queued — discard immediately, nothing to sync.
+            return DispatchOutcome.deadDiscard("Time entry " + timeEntryId + " no longer exists — discarded");
         }
 
         String sourceAction = asText(payload.get("sourceAction"), "outbox_time_entry");
@@ -526,9 +607,14 @@ public class AgenticSyncOutboxService {
         TimeEntry entry = deserializeTimeEntrySnapshot(snapshot);
         String sourceAction = asText(payload.get("sourceAction"), "outbox_delete_time_entry");
         boolean synced = syncService.syncTimeEntryDeletion(entry, user, sourceAction);
-        return synced
-            ? DispatchOutcome.successful()
-            : DispatchOutcome.retryableFailure("syncTimeEntryDeletion returned false");
+        if (synced) {
+            return DispatchOutcome.successful();
+        }
+        // syncTimeEntryDeletion returns false when the remote returned a non-2xx status
+        // that wasn't a 404. Treat as retryable on first attempts; after exhausting retries
+        // the normal max-attempts path will mark it FAILED. The no-op 404 case is handled
+        // inside AgenticKnowledgeSyncService and returns true (so we never reach here for it).
+        return DispatchOutcome.retryableFailure("syncTimeEntryDeletion returned false");
     }
 
     private DispatchOutcome dispatchTimeEntryContinuation(Map<String, Object> payload, Users user) {
@@ -575,6 +661,19 @@ public class AgenticSyncOutboxService {
                 event.getId(),
                 event.getCorrelationId(),
                 event.getAttemptCount(),
+                reason
+        );
+    }
+
+    private void markDead(AgenticSyncOutboxEvent event, String reason) {
+        event.setStatus(AgenticSyncOutboxStatus.DEAD);
+        event.setLastError(reason);
+        outboxRepository.save(event);
+
+        logger.info(
+                "Agentic outbox event discarded (DEAD) eventId={} correlationId={} reason={}",
+                event.getId(),
+                event.getCorrelationId(),
                 reason
         );
     }

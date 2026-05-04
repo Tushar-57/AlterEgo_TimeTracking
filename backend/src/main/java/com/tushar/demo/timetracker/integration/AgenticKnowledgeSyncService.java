@@ -709,7 +709,17 @@ public class AgenticKnowledgeSyncService {
             context.put("user_email", user != null ? user.getEmail() : null);
 
             String responseText = "Time entry \"" + description + "\" was deleted.";
-            return syncInteractionEvent("time_entry", "Delete time entry: " + description, responseText, context, user);
+
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("agent_type", "time_entry");
+            payload.put("user_input", "Delete time entry: " + description);
+            payload.put("agent_response", responseText);
+            payload.put("context", context);
+
+            // Use deletion-aware postJson that treats 404 as success:
+            // if Agentic_lyf never had this entry (sync failed before deletion), the record
+            // doesn't exist remotely — deleting a non-existent record is a no-op, not a failure.
+            return postJsonDeletion("/api/knowledge/interactions", payload, "time_entry_deletion", user);
         } catch (Exception e) {
             logger.warn("Agentic time-entry deletion sync skipped due to payload error: {}", e.getMessage());
             return false;
@@ -837,6 +847,49 @@ public class AgenticKnowledgeSyncService {
             HttpResponse<String> response = sendWithRetry(request, syncType);
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 logger.info("Agentic {} sync successful for user {}", syncType, user != null ? user.getEmail() : "unknown");
+                return true;
+            }
+
+            logger.warn("Agentic {} sync failed with status {} and body {}", syncType, response.statusCode(), response.body());
+            return false;
+        } catch (Exception e) {
+            logger.warn("Agentic {} sync request failed: {}", syncType, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Like {@link #postJson} but treats HTTP 404 as success for deletion operations.
+     * A 404 means the remote knowledge base never recorded the entry (e.g. the original SYNC
+     * failed before the entry was deleted), so the deletion is already a no-op there.
+     */
+    private boolean postJsonDeletion(String path, Map<String, Object> payload, String syncType, Users user) {
+        try {
+            String body = objectMapper.writeValueAsString(payload);
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + path))
+                    .timeout(requestTimeout)
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json");
+
+            if (user != null) {
+                String bridgeToken = jwtUtils.generateAgenticBridgeToken(user, bridgeTokenTtlSeconds);
+                requestBuilder.header("X-Agentic-Bridge-Token", bridgeToken);
+                requestBuilder.header("X-Agentic-User-Id", user.getId() != null ? user.getId().toString() : user.getEmail());
+            }
+
+            HttpRequest request = requestBuilder
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            HttpResponse<String> response = sendWithRetry(request, syncType);
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                logger.info("Agentic {} sync successful for user {}", syncType, user != null ? user.getEmail() : "unknown");
+                return true;
+            }
+            if (response.statusCode() == 404) {
+                // Entry never existed on the remote — deletion is already satisfied.
+                logger.info("Agentic {} treating 404 as success (entry not on remote) for user {}", syncType, user != null ? user.getEmail() : "unknown");
                 return true;
             }
 
