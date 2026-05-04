@@ -1,6 +1,7 @@
 package com.tushar.demo.timetracker.model;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -42,6 +43,15 @@ public class GoalEntity {
     @Embedded
     private SmartCriteriaEntity smartCriteria;
 
+    @Column(name = "progress_percent")
+    private Integer progressPercent;
+
+    @Column(name = "status", length = 20)
+    private String status = "ACTIVE";
+
+    @Column(name = "last_updated_at")
+    private Instant lastUpdatedAt;
+
     public GoalEntity() {}
     public GoalEntity(String id, String title, String description, String category, String priority,
                       List<String> milestones, String endDate, Integer estimatedEffortHours, String whyItMatters,
@@ -81,4 +91,10 @@ public class GoalEntity {
     public void setWhyItMatters(String whyItMatters) { this.whyItMatters = whyItMatters; }
     public SmartCriteriaEntity getSmartCriteria() { return smartCriteria; }
     public void setSmartCriteria(SmartCriteriaEntity smartCriteria) { this.smartCriteria = smartCriteria; }
+    public Integer getProgressPercent() { return progressPercent; }
+    public void setProgressPercent(Integer progressPercent) { this.progressPercent = progressPercent; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public Instant getLastUpdatedAt() { return lastUpdatedAt; }
+    public void setLastUpdatedAt(Instant lastUpdatedAt) { this.lastUpdatedAt = lastUpdatedAt; }
 }

@@ -3,7 +3,9 @@ package com.tushar.demo.timetracker.controller;
 import com.tushar.demo.timetracker.dto.request.ApiResponse;
 import com.tushar.demo.timetracker.integration.AgenticKnowledgeSyncService;
 import com.tushar.demo.timetracker.integration.AgenticSyncOutboxService;
+import com.tushar.demo.timetracker.model.TaskBoardState;
 import com.tushar.demo.timetracker.model.Users;
+import com.tushar.demo.timetracker.repository.TaskBoardStateRepository;
 import com.tushar.demo.timetracker.service.impl.UserDetailsServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,13 +31,16 @@ public class AgenticSyncController {
     private final UserDetailsServiceImpl userDetailsService;
     private final AgenticKnowledgeSyncService agenticKnowledgeSyncService;
     private final AgenticSyncOutboxService agenticSyncOutboxService;
+    private final TaskBoardStateRepository taskBoardStateRepository;
 
     public AgenticSyncController(UserDetailsServiceImpl userDetailsService,
                                  AgenticKnowledgeSyncService agenticKnowledgeSyncService,
-                                 AgenticSyncOutboxService agenticSyncOutboxService) {
+                                 AgenticSyncOutboxService agenticSyncOutboxService,
+                                 TaskBoardStateRepository taskBoardStateRepository) {
         this.userDetailsService = userDetailsService;
         this.agenticKnowledgeSyncService = agenticKnowledgeSyncService;
         this.agenticSyncOutboxService = agenticSyncOutboxService;
+        this.taskBoardStateRepository = taskBoardStateRepository;
     }
 
     @PostMapping("/habits/snapshot")
@@ -80,6 +85,60 @@ public class AgenticSyncController {
             logger.error("Failed to sync habit snapshot for user {}", authName(authentication), e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Habit sync failed", Map.of("message", e.getMessage())));
+        }
+    }
+
+    @PostMapping("/tasks/snapshot")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> syncTaskBoardSnapshot(
+            @RequestBody(required = false) Map<String, Object> payload,
+            Authentication authentication) {
+        if (!isAuthenticatedUser(authentication)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
+        }
+
+        try {
+            Users user = userDetailsService.getCurrentUser(authentication);
+
+            String tasksJson;
+            Object rawTasks = payload != null ? payload.get("tasks") : null;
+            if (rawTasks instanceof java.util.List<?> list) {
+                try {
+                    tasksJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(list);
+                } catch (Exception serializationError) {
+                    logger.warn("Failed to serialize tasks payload for user {}: {}", user.getEmail(), serializationError.getMessage());
+                    tasksJson = "[]";
+                }
+            } else {
+                // No body provided — read latest persisted state and re-sync
+                tasksJson = taskBoardStateRepository.findTopByUserOrderByUpdatedAtDesc(user)
+                        .map(TaskBoardState::getTasksJson)
+                        .orElse("[]");
+            }
+
+            AgenticSyncOutboxService.EnqueueResult queueResult =
+                    agenticSyncOutboxService.enqueueTaskBoardSync(tasksJson, user, "manual_task_board_snapshot");
+
+            Map<String, Object> responsePayload = new LinkedHashMap<>();
+            responsePayload.put("queued", queueResult.accepted());
+            responsePayload.put("eventId", queueResult.eventId());
+            responsePayload.put("correlationId", queueResult.correlationId());
+            responsePayload.put("queueMessage", queueResult.message());
+
+            if (!queueResult.accepted()) {
+                return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED)
+                        .body(ApiResponse.error(
+                                "Task board snapshot saved locally, Agentic queue unavailable",
+                                Map.of("code", "AGENTIC_QUEUE_UNAVAILABLE", "message", queueResult.message())
+                        ));
+            }
+
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(ApiResponse.success(responsePayload, "Task board snapshot queued for Agentic sync"));
+        } catch (Exception e) {
+            logger.error("Failed to sync task board snapshot for user {}", authName(authentication), e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Task board sync failed", Map.of("message", e.getMessage())));
         }
     }
 

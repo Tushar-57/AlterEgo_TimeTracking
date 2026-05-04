@@ -3,10 +3,13 @@ package com.tushar.demo.timetracker.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
+import com.tushar.demo.timetracker.integration.AgenticSyncOutboxService;
 import com.tushar.demo.timetracker.model.TaskBoardState;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.TaskBoardStateRepository;
 import com.tushar.demo.timetracker.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -22,20 +25,24 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/task-board")
 public class TaskBoardController {
+    private static final Logger logger = LoggerFactory.getLogger(TaskBoardController.class);
 
     private static final int MAX_TASK_ITEMS = 2000;
 
     private final UserRepository userRepository;
     private final TaskBoardStateRepository taskBoardStateRepository;
     private final ObjectMapper objectMapper;
+    private final AgenticSyncOutboxService agenticSyncOutboxService;
 
     public TaskBoardController(
             UserRepository userRepository,
             TaskBoardStateRepository taskBoardStateRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            AgenticSyncOutboxService agenticSyncOutboxService) {
         this.userRepository = userRepository;
         this.taskBoardStateRepository = taskBoardStateRepository;
         this.objectMapper = objectMapper;
+        this.agenticSyncOutboxService = agenticSyncOutboxService;
     }
 
     @GetMapping("/state")
@@ -88,6 +95,18 @@ public class TaskBoardController {
             state.setTasksJson(tasksJson);
 
             TaskBoardState saved = taskBoardStateRepository.save(state);
+
+            // Bug 2: enqueue task board snapshot to Agentic_Lyf
+            try {
+                AgenticSyncOutboxService.EnqueueResult queueResult =
+                        agenticSyncOutboxService.enqueueTaskBoardSync(tasksJson, user, "update_task_board_state");
+                if (!queueResult.accepted()) {
+                    logger.debug("Task board sync not queued for user {}: {}", user.getEmail(), queueResult.message());
+                }
+            } catch (Exception syncError) {
+                logger.warn("Task board Agentic enqueue failed for user {}: {}", user.getEmail(), syncError.getMessage());
+            }
+
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "tasksCount", tasks.size(),

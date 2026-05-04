@@ -6,8 +6,10 @@ import com.tushar.demo.timetracker.model.AgenticSyncOutboxEvent;
 import com.tushar.demo.timetracker.model.AgenticSyncOutboxStatus;
 import com.tushar.demo.timetracker.model.Project;
 import com.tushar.demo.timetracker.model.TimeEntry;
+import com.tushar.demo.timetracker.model.TimeEntryDetail;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.AgenticSyncOutboxRepository;
+import com.tushar.demo.timetracker.repository.TimeEntryDetailRepository;
 import com.tushar.demo.timetracker.repository.TimeEntryRepository;
 import com.tushar.demo.timetracker.repository.UserRepository;
 import org.slf4j.Logger;
@@ -33,11 +35,14 @@ public class AgenticSyncOutboxService {
     private static final String EVENT_TIME_ENTRY_DELETION = "TIME_ENTRY_DELETION";
     private static final String EVENT_TIME_ENTRY_CONTINUATION = "TIME_ENTRY_CONTINUATION";
     private static final String EVENT_HABIT_SNAPSHOT = "HABIT_SNAPSHOT_SYNC";
+    private static final String EVENT_TASK_BOARD_SYNC = "TASK_BOARD_SYNC";
+    private static final String EVENT_GOAL_PROGRESS_SYNC = "GOAL_PROGRESS_SYNC";
 
     private final AgenticSyncOutboxRepository outboxRepository;
     private final AgenticKnowledgeSyncService syncService;
     private final UserRepository userRepository;
     private final TimeEntryRepository timeEntryRepository;
+    private final TimeEntryDetailRepository timeEntryDetailRepository;
     private final ObjectMapper objectMapper;
 
     private final boolean outboxEnabled;
@@ -102,6 +107,7 @@ public class AgenticSyncOutboxService {
             AgenticKnowledgeSyncService syncService,
             UserRepository userRepository,
             TimeEntryRepository timeEntryRepository,
+            TimeEntryDetailRepository timeEntryDetailRepository,
             @Value("${agentic.sync.outbox.enabled:true}") boolean outboxEnabled,
             @Value("${agentic.sync.outbox.batch-size:25}") int workerBatchSize,
             @Value("${agentic.sync.outbox.max-attempts:8}") int defaultMaxAttempts,
@@ -111,6 +117,7 @@ public class AgenticSyncOutboxService {
         this.syncService = syncService;
         this.userRepository = userRepository;
         this.timeEntryRepository = timeEntryRepository;
+        this.timeEntryDetailRepository = timeEntryDetailRepository;
         this.objectMapper = new ObjectMapper();
         this.outboxEnabled = outboxEnabled;
         this.workerBatchSize = Math.max(1, workerBatchSize);
@@ -136,7 +143,46 @@ public class AgenticSyncOutboxService {
         payload.put("timeEntryId", entry.getId());
         payload.put("sourceAction", normalizeSourceAction(sourceAction));
 
+        // Bug 6: snapshot TimeEntryDetail fields at enqueue time so retries see consistent data
+        Map<String, Object> detailSnapshot = serializeTimeEntryDetailSnapshot(entry.getId());
+        if (!detailSnapshot.isEmpty()) {
+            payload.put("detail", detailSnapshot);
+        }
+
         return enqueueEvent(EVENT_TIME_ENTRY_SYNC, payload, user);
+    }
+
+    public EnqueueResult enqueueTaskBoardSync(String tasksJson, Users user, String sourceAction) {
+        if (!isQueueConfigured()) {
+            return EnqueueResult.rejected("Agentic sync is not configured");
+        }
+
+        if (user == null || user.getId() == null) {
+            return EnqueueResult.rejected("Task board sync event is missing user identity");
+        }
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("tasksJson", tasksJson != null ? tasksJson : "[]");
+        payload.put("sourceAction", normalizeSourceAction(sourceAction));
+        payload.put("capturedAt", LocalDateTime.now().toString());
+
+        return enqueueEvent(EVENT_TASK_BOARD_SYNC, payload, user);
+    }
+
+    public EnqueueResult enqueueGoalProgressSync(Map<String, Object> goalSnapshot, Users user, String sourceAction) {
+        if (!isQueueConfigured()) {
+            return EnqueueResult.rejected("Agentic sync is not configured");
+        }
+
+        if (goalSnapshot == null || goalSnapshot.isEmpty() || user == null || user.getId() == null) {
+            return EnqueueResult.rejected("Goal progress payload is empty or missing user context");
+        }
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("goal", goalSnapshot);
+        payload.put("sourceAction", normalizeSourceAction(sourceAction));
+
+        return enqueueEvent(EVENT_GOAL_PROGRESS_SYNC, payload, user);
     }
 
     public EnqueueResult enqueueTimeEntryDeletion(TimeEntry entry, Users user, String sourceAction) {
@@ -413,6 +459,8 @@ public class AgenticSyncOutboxService {
                 case EVENT_TIME_ENTRY_DELETION -> dispatchTimeEntryDeletion(payload, user);
                 case EVENT_TIME_ENTRY_CONTINUATION -> dispatchTimeEntryContinuation(payload, user);
                 case EVENT_HABIT_SNAPSHOT -> dispatchHabitSnapshot(payload, user);
+                case EVENT_TASK_BOARD_SYNC -> dispatchTaskBoardSync(payload, user);
+                case EVENT_GOAL_PROGRESS_SYNC -> dispatchGoalProgressSync(payload, user);
                 default -> DispatchOutcome.permanentFailure("Unsupported outbox event type: " + eventType);
             };
         } catch (Exception e) {
@@ -432,10 +480,41 @@ public class AgenticSyncOutboxService {
         }
 
         String sourceAction = asText(payload.get("sourceAction"), "outbox_time_entry");
-        boolean synced = syncService.syncTimeEntry(entryOpt.get(), user, sourceAction);
+        // Bug 6: pass the snapshot of detail fields (focusScore/energyScore/blockers/contextNotes/linkedGoal/aiDetail)
+        // captured at enqueue time so a later detail edit doesn't overwrite the historical record on retry.
+        Map<String, Object> detailSnapshot = asMap(payload.get("detail"));
+        boolean synced = syncService.syncTimeEntry(
+                entryOpt.get(),
+                user,
+                sourceAction,
+                detailSnapshot.isEmpty() ? null : detailSnapshot
+        );
         return synced
                 ? DispatchOutcome.successful()
                 : DispatchOutcome.retryableFailure("syncTimeEntry returned false");
+    }
+
+    private DispatchOutcome dispatchTaskBoardSync(Map<String, Object> payload, Users user) {
+        String tasksJson = asText(payload.get("tasksJson"), "[]");
+        String sourceAction = asText(payload.get("sourceAction"), "outbox_task_board_snapshot");
+        String capturedAt = asText(payload.get("capturedAt"), LocalDateTime.now().toString());
+        boolean synced = syncService.syncTaskBoard(user, tasksJson, capturedAt, sourceAction);
+        return synced
+                ? DispatchOutcome.successful()
+                : DispatchOutcome.retryableFailure("syncTaskBoard returned false");
+    }
+
+    private DispatchOutcome dispatchGoalProgressSync(Map<String, Object> payload, Users user) {
+        Map<String, Object> goalSnapshot = asMap(payload.get("goal"));
+        if (goalSnapshot.isEmpty()) {
+            return DispatchOutcome.permanentFailure("Goal progress payload is empty");
+        }
+
+        String sourceAction = asText(payload.get("sourceAction"), "outbox_goal_progress");
+        boolean synced = syncService.syncGoalProgress(goalSnapshot, user, sourceAction);
+        return synced
+                ? DispatchOutcome.successful()
+                : DispatchOutcome.retryableFailure("syncGoalProgress returned false");
     }
 
     private DispatchOutcome dispatchTimeEntryDeletion(Map<String, Object> payload, Users user) {
@@ -533,6 +612,30 @@ public class AgenticSyncOutboxService {
 
     private boolean isQueueConfigured() {
         return syncService.isConfiguredForSync();
+    }
+
+    private Map<String, Object> serializeTimeEntryDetailSnapshot(Long timeEntryId) {
+        if (timeEntryId == null) {
+            return Map.of();
+        }
+        try {
+            Optional<TimeEntryDetail> detailOpt = timeEntryDetailRepository.findByTimeEntryId(timeEntryId);
+            if (detailOpt.isEmpty()) {
+                return Map.of();
+            }
+            TimeEntryDetail detail = detailOpt.get();
+            Map<String, Object> snapshot = new LinkedHashMap<>();
+            snapshot.put("focusScore", detail.getFocusScore());
+            snapshot.put("energyScore", detail.getEnergyScore());
+            snapshot.put("blockers", detail.getBlockers());
+            snapshot.put("contextNotes", detail.getContextNotes());
+            snapshot.put("linkedGoal", detail.getLinkedGoal());
+            snapshot.put("aiDetail", detail.getAiDetail());
+            return snapshot;
+        } catch (Exception e) {
+            logger.warn("Unable to capture TimeEntryDetail snapshot for entry {}: {}", timeEntryId, e.getMessage());
+            return Map.of();
+        }
     }
 
     private Map<String, Object> serializeTimeEntrySnapshot(TimeEntry entry) {

@@ -12,8 +12,10 @@ import com.tushar.demo.timetracker.integration.AgenticKnowledgeSyncService;
 import com.tushar.demo.timetracker.integration.AgenticSyncOutboxService;
 import com.tushar.demo.timetracker.model.Project;
 import com.tushar.demo.timetracker.model.TimeEntry;
+import com.tushar.demo.timetracker.model.TimeEntryDetail;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.ProjectRepository;
+import com.tushar.demo.timetracker.repository.TimeEntryDetailRepository;
 import com.tushar.demo.timetracker.repository.TimeEntryRepository;
 import com.tushar.demo.timetracker.service.TimeEntryService;
 import com.tushar.demo.timetracker.service.impl.UserDetailsServiceImpl;
@@ -68,19 +70,22 @@ public class TimerController {
     private final UserDetailsServiceImpl userDetailsService;
     private final ProjectRepository projectRepository;
     private final TimeEntryRepository timeEntryRepository;
+    private final TimeEntryDetailRepository timeEntryDetailRepository;
     private final AgenticKnowledgeSyncService agenticKnowledgeSyncService;
     private final AgenticSyncOutboxService agenticSyncOutboxService;
 
-    public TimerController(TimeEntryService timeEntryService, 
+    public TimerController(TimeEntryService timeEntryService,
                            UserDetailsServiceImpl userDetailsService,
                            ProjectRepository projectRepository,
                            TimeEntryRepository timeEntryRepository,
+                           TimeEntryDetailRepository timeEntryDetailRepository,
                            AgenticKnowledgeSyncService agenticKnowledgeSyncService,
                            AgenticSyncOutboxService agenticSyncOutboxService) {
         this.timeEntryService = timeEntryService;
         this.userDetailsService = userDetailsService;
         this.projectRepository = projectRepository;
         this.timeEntryRepository = timeEntryRepository;
+        this.timeEntryDetailRepository = timeEntryDetailRepository;
         this.agenticKnowledgeSyncService = agenticKnowledgeSyncService;
         this.agenticSyncOutboxService = agenticSyncOutboxService;
     }
@@ -426,6 +431,108 @@ public class TimerController {
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Continue failed", Map.of("message", e.getMessage())));
         }
+    }
+
+    @PutMapping("/{id}/detail")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> updateTimeEntryDetail(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, Object> body,
+            Authentication authentication) {
+        if (!isAuthenticatedUser(authentication)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized", Map.of("code", "UNAUTHORIZED")));
+        }
+
+        try {
+            Users user = userDetailsService.getCurrentUser(authentication);
+            TimeEntry entry = timeEntryRepository.findByIdAndUser(id, user)
+                    .orElseThrow(() -> new ResourceNotFoundException("Time entry not found with ID: " + id));
+
+            TimeEntryDetail detail = timeEntryDetailRepository.findByTimeEntryId(entry.getId())
+                    .orElseGet(() -> {
+                        TimeEntryDetail fresh = new TimeEntryDetail();
+                        fresh.setTimeEntry(entry);
+                        return fresh;
+                    });
+
+            if (body != null) {
+                if (body.containsKey("focusScore")) {
+                    detail.setFocusScore(parseScore(body.get("focusScore"), "focusScore"));
+                }
+                if (body.containsKey("energyScore")) {
+                    detail.setEnergyScore(parseScore(body.get("energyScore"), "energyScore"));
+                }
+                if (body.containsKey("blockers")) {
+                    Object value = body.get("blockers");
+                    detail.setBlockers(value == null ? null : String.valueOf(value));
+                }
+                if (body.containsKey("contextNotes")) {
+                    Object value = body.get("contextNotes");
+                    detail.setContextNotes(value == null ? null : String.valueOf(value));
+                }
+                if (body.containsKey("linkedGoal")) {
+                    Object value = body.get("linkedGoal");
+                    detail.setLinkedGoal(value == null ? null : String.valueOf(value));
+                }
+                if (body.containsKey("aiDetail")) {
+                    Object value = body.get("aiDetail");
+                    detail.setAiDetail(value == null ? null : String.valueOf(value));
+                }
+            }
+
+            TimeEntryDetail savedDetail = timeEntryDetailRepository.save(detail);
+
+            // Re-enqueue a TIME_ENTRY_SYNC so the new detail snapshot reaches Agentic_Lyf
+            try {
+                AgenticSyncOutboxService.EnqueueResult queueResult =
+                        agenticSyncOutboxService.enqueueTimeEntrySync(entry, user, "update_time_entry_detail");
+                if (!queueResult.accepted()) {
+                    logger.debug("Time entry detail sync not queued for user {}: {}", user.getEmail(), queueResult.message());
+                }
+            } catch (Exception syncError) {
+                logger.warn("Time entry detail Agentic enqueue failed: {}", syncError.getMessage());
+            }
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("timeEntryId", entry.getId());
+            response.put("focusScore", savedDetail.getFocusScore());
+            response.put("energyScore", savedDetail.getEnergyScore());
+            response.put("blockers", savedDetail.getBlockers());
+            response.put("contextNotes", savedDetail.getContextNotes());
+            response.put("linkedGoal", savedDetail.getLinkedGoal());
+            response.put("aiDetail", savedDetail.getAiDetail());
+            return ResponseEntity.ok(ApiResponse.success(response, "Time entry detail updated"));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Resource not found", Map.of("message", e.getMessage(), "code", "RESOURCE_NOT_FOUND")));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Validation failed", Map.of("message", e.getMessage(), "code", "VALIDATION_FAILED")));
+        } catch (Exception e) {
+            logger.error("Failed to update time entry detail {} for user: {}", id, authName(authentication), e);
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Update failed", Map.of("message", e.getMessage())));
+        }
+    }
+
+    private Integer parseScore(Object value, String fieldName) {
+        if (value == null) {
+            return null;
+        }
+        int parsed;
+        if (value instanceof Number number) {
+            parsed = number.intValue();
+        } else {
+            try {
+                parsed = Integer.parseInt(String.valueOf(value).trim());
+            } catch (NumberFormatException ex) {
+                throw new IllegalArgumentException(fieldName + " must be an integer");
+            }
+        }
+        if (parsed < 0 || parsed > 10) {
+            throw new IllegalArgumentException(fieldName + " must be between 0 and 10");
+        }
+        return parsed;
     }
 
     @PostMapping("/sync/agentic/backfill")

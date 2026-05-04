@@ -21,3 +21,8 @@ POCs/**/.env
 !.env.unified.example
 .vercel
 .env*.local
+
+# DB backups — never commit dumps
+db-backups/
+*.dump
+*.sql.gz

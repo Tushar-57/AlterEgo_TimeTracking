@@ -196,6 +196,10 @@ public class AgenticKnowledgeSyncService {
     }
 
     public boolean syncTimeEntry(TimeEntry entry, Users user, String sourceAction) {
+        return syncTimeEntry(entry, user, sourceAction, null);
+    }
+
+    public boolean syncTimeEntry(TimeEntry entry, Users user, String sourceAction, Map<String, Object> detailSnapshot) {
         if (!isConfigured() || entry == null) {
             return false;
         }
@@ -234,14 +238,25 @@ public class AgenticKnowledgeSyncService {
             context.put("user_id", user != null ? user.getId() : null);
             context.put("user_email", user != null ? user.getEmail() : null);
 
-            timeEntryDetailRepository.findByTimeEntryId(entry.getId()).ifPresent(detail -> {
-                context.put("linked_goal", safeText(detail.getLinkedGoal(), null));
-                context.put("focus_score", detail.getFocusScore());
-                context.put("energy_score", detail.getEnergyScore());
-                context.put("blockers", safeText(detail.getBlockers(), null));
-                context.put("context_notes", safeText(detail.getContextNotes(), null));
-                context.put("ai_detail", safeText(detail.getAiDetail(), null));
-            });
+            // Bug 6: prefer the snapshot captured at enqueue time (if present) so retries reflect the moment the
+            // event was queued; otherwise fall back to current persisted detail.
+            if (detailSnapshot != null && !detailSnapshot.isEmpty()) {
+                context.put("linked_goal", safeText(asString(detailSnapshot.get("linkedGoal")), null));
+                context.put("focus_score", detailSnapshot.get("focusScore"));
+                context.put("energy_score", detailSnapshot.get("energyScore"));
+                context.put("blockers", safeText(asString(detailSnapshot.get("blockers")), null));
+                context.put("context_notes", safeText(asString(detailSnapshot.get("contextNotes")), null));
+                context.put("ai_detail", safeText(asString(detailSnapshot.get("aiDetail")), null));
+            } else if (entry.getId() != null) {
+                timeEntryDetailRepository.findByTimeEntryId(entry.getId()).ifPresent(detail -> {
+                    context.put("linked_goal", safeText(detail.getLinkedGoal(), null));
+                    context.put("focus_score", detail.getFocusScore());
+                    context.put("energy_score", detail.getEnergyScore());
+                    context.put("blockers", safeText(detail.getBlockers(), null));
+                    context.put("context_notes", safeText(detail.getContextNotes(), null));
+                    context.put("ai_detail", safeText(detail.getAiDetail(), null));
+                });
+            }
 
             String responseText = "Recorded " + durationMinutes + " minutes for \"" + description + "\""
                     + (entry.getProject() != null ? " under project \"" + safeText(entry.getProject().getName(), "") + "\"." : ".");
@@ -396,6 +411,182 @@ public class AgenticKnowledgeSyncService {
             return postJson("/api/knowledge/interactions", payload, "habit_progress", user);
         } catch (Exception e) {
             logger.warn("Agentic habit snapshot sync skipped due to payload error: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean syncTaskBoard(Users user, String tasksJson) {
+        return syncTaskBoard(user, tasksJson, null, "task_board_snapshot");
+    }
+
+    public boolean syncTaskBoard(Users user, String tasksJson, String capturedAt, String sourceAction) {
+        if (!isConfigured() || user == null || user.getId() == null) {
+            return false;
+        }
+
+        try {
+            List<Object> tasks;
+            try {
+                if (tasksJson == null || tasksJson.isBlank()) {
+                    tasks = List.of();
+                } else {
+                    tasks = objectMapper.readValue(tasksJson, new TypeReference<>() {});
+                }
+            } catch (Exception parseError) {
+                logger.warn(
+                        "Task board JSON parse failed for user {}; sending empty tasks. Error: {}",
+                        user.getEmail(),
+                        parseError.getMessage()
+                );
+                tasks = List.of();
+            }
+
+            int taskCount = tasks.size();
+            int activeCount = 0;
+            int completedCount = 0;
+            int overdueCount = 0;
+            int dueTodayCount = 0;
+            String today = java.time.LocalDate.now().toString();
+
+            for (Object rawTask : tasks) {
+                Map<String, Object> task = asMap(rawTask);
+                if (task.isEmpty()) {
+                    continue;
+                }
+
+                String status = asString(task.get("status")).toLowerCase().trim();
+                boolean completed = "done".equals(status)
+                        || "completed".equals(status)
+                        || Boolean.TRUE.equals(task.get("completed"))
+                        || Boolean.TRUE.equals(task.get("done"));
+                if (completed) {
+                    completedCount++;
+                } else {
+                    activeCount++;
+                }
+
+                String dueDate = asString(task.get("dueDate"));
+                if (dueDate.isBlank()) {
+                    dueDate = asString(task.get("due_date"));
+                }
+                if (!dueDate.isBlank() && dueDate.length() >= 10) {
+                    String dueDay = dueDate.substring(0, 10);
+                    if (!completed) {
+                        if (dueDay.compareTo(today) < 0) {
+                            overdueCount++;
+                        } else if (dueDay.equals(today)) {
+                            dueTodayCount++;
+                        }
+                    }
+                }
+            }
+
+            String resolvedCapturedAt = (capturedAt == null || capturedAt.isBlank())
+                    ? java.time.LocalDateTime.now().toString()
+                    : capturedAt;
+
+            Map<String, Object> context = new LinkedHashMap<>();
+            context.put("source", "alterego_task_board");
+            context.put("source_action", safeText(sourceAction, "task_board_snapshot"));
+            context.put("category", "task_board_snapshot");
+            context.put("captured_at", resolvedCapturedAt);
+            context.put("updated_at", resolvedCapturedAt);
+            context.put("sync_event_key", "alterego:task_board:" + user.getId());
+            context.put("tasks", tasks);
+            context.put("taskCount", taskCount);
+            context.put("activeCount", activeCount);
+            context.put("completedCount", completedCount);
+            context.put("overdueCount", overdueCount);
+            context.put("dueTodayCount", dueTodayCount);
+            context.put("user_id", user.getId());
+            context.put("user_email", user.getEmail());
+
+            String responseText = String.format(
+                    "Task board snapshot: %d tasks (%d active, %d completed, %d overdue, %d due today).",
+                    taskCount, activeCount, completedCount, overdueCount, dueTodayCount
+            );
+
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("agent_type", "task_board_snapshot");
+            payload.put("user_input", "Task board snapshot update");
+            payload.put("agent_response", responseText);
+            payload.put("context", context);
+
+            return postJson("/api/knowledge/interactions", payload, "task_board_snapshot", user);
+        } catch (Exception e) {
+            logger.warn("Agentic task board sync skipped due to payload error: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean syncGoalProgress(Map<String, Object> goalSnapshot, Users user, String sourceAction) {
+        if (!isConfigured() || goalSnapshot == null || goalSnapshot.isEmpty() || user == null || user.getId() == null) {
+            return false;
+        }
+
+        try {
+            String goalId = asString(goalSnapshot.get("goalId"));
+            if (goalId.isBlank()) {
+                goalId = asString(goalSnapshot.get("id"));
+            }
+            String title = safeText(asString(goalSnapshot.get("title")), "Untitled Goal");
+            String category = safeText(asString(goalSnapshot.get("category")), "");
+            String priority = safeText(asString(goalSnapshot.get("priority")), "");
+            String endDate = safeText(asString(goalSnapshot.get("endDate")), "");
+            Integer progressPercent = goalSnapshot.get("progressPercent") instanceof Number n
+                    ? n.intValue() : null;
+            String status = safeText(asString(goalSnapshot.get("status")), "ACTIVE");
+            Object milestonesCompleted = goalSnapshot.get("milestonesCompleted");
+
+            Long daysUntilDeadline = null;
+            if (!endDate.isBlank()) {
+                try {
+                    java.time.LocalDate end = endDate.length() >= 10
+                            ? java.time.LocalDate.parse(endDate.substring(0, 10))
+                            : java.time.LocalDate.parse(endDate);
+                    daysUntilDeadline = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), end);
+                } catch (Exception parseErr) {
+                    logger.debug("Goal endDate parse skipped for value {}: {}", endDate, parseErr.getMessage());
+                }
+            }
+
+            Map<String, Object> context = new LinkedHashMap<>();
+            context.put("source", "alterego_goals");
+            context.put("source_action", safeText(sourceAction, "goal_update"));
+            context.put("category", "goal_update");
+            String syncKey = goalId.isBlank() ? String.valueOf(user.getId()) : goalId;
+            context.put("sync_event_key", "alterego:goal:" + syncKey);
+            context.put("goal_id", goalId);
+            context.put("title", title);
+            context.put("goal_category", category);
+            context.put("priority", priority);
+            context.put("end_date", endDate);
+            context.put("progress_percent", progressPercent);
+            context.put("status", status);
+            context.put("days_until_deadline", daysUntilDeadline);
+            if (milestonesCompleted != null) {
+                context.put("milestones_completed", milestonesCompleted);
+            }
+            context.put("user_id", user.getId());
+            context.put("user_email", user.getEmail());
+
+            String responseText = String.format(
+                    "Goal \"%s\" updated: %s%s%s",
+                    title,
+                    status,
+                    progressPercent != null ? " at " + progressPercent + "%" : "",
+                    daysUntilDeadline != null ? " (" + daysUntilDeadline + " days until deadline)" : ""
+            );
+
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("agent_type", "goal_update");
+            payload.put("user_input", "Goal progress update: " + title);
+            payload.put("agent_response", responseText);
+            payload.put("context", context);
+
+            return postJson("/api/knowledge/interactions", payload, "goal_update", user);
+        } catch (Exception e) {
+            logger.warn("Agentic goal progress sync skipped due to payload error: {}", e.getMessage());
             return false;
         }
     }
