@@ -8,6 +8,7 @@ import com.tushar.demo.timetracker.model.Project;
 import com.tushar.demo.timetracker.model.Tags;
 import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
+import com.tushar.demo.timetracker.repository.TagsRepository;
 import com.tushar.demo.timetracker.repository.TimeEntryRepository;
 import com.tushar.demo.timetracker.repository.TimeEntryDetailRepository;
 import com.tushar.demo.timetracker.repository.UserRepository;
@@ -60,6 +61,7 @@ public class AgenticKnowledgeSyncService {
     private final TimeEntryRepository timeEntryRepository;
     private final TimeEntryDetailRepository timeEntryDetailRepository;
     private final UserRepository userRepository;
+    private final TagsRepository tagsRepository;
     private final JwtUtils jwtUtils;
     private final long bridgeTokenTtlSeconds;
     private final int maxAttempts;
@@ -120,6 +122,7 @@ public class AgenticKnowledgeSyncService {
             TimeEntryRepository timeEntryRepository,
             TimeEntryDetailRepository timeEntryDetailRepository,
             UserRepository userRepository,
+            TagsRepository tagsRepository,
             JwtUtils jwtUtils,
             @Value("${agentic.sync.enabled:false}") boolean enabled,
             @Value("${agentic.sync.base-url:}") String baseUrl,
@@ -132,6 +135,7 @@ public class AgenticKnowledgeSyncService {
         this.timeEntryRepository = timeEntryRepository;
         this.timeEntryDetailRepository = timeEntryDetailRepository;
         this.userRepository = userRepository;
+        this.tagsRepository = tagsRepository;
         this.jwtUtils = jwtUtils;
         this.enabled = enabled;
         this.baseUrl = normalizeBaseUrl(baseUrl);
@@ -242,7 +246,9 @@ public class AgenticKnowledgeSyncService {
             context.put("duration_minutes", durationMinutes);
             context.put("project_id", entry.getProject() != null ? entry.getProject().getId() : null);
             context.put("project_name", entry.getProject() != null ? entry.getProject().getName() : null);
-            context.put("tag_ids", safeTagIds(entry, "sync_time_entry"));
+            List<Long> tagIds = safeTagIds(entry, "sync_time_entry");
+            context.put("tag_ids", tagIds);
+            context.put("tags", resolveTagNames(tagIds));
             context.put("billable", entry.isBillable());
             context.put("position_top", entry.getPositionTop());
             context.put("position_left", entry.getPositionLeft());
@@ -586,6 +592,96 @@ public class AgenticKnowledgeSyncService {
         }
     }
 
+    /**
+     * Sync a single task as its own atomic vector to Agentic_Lyf (category {@code task_entry}).
+     *
+     * <p>This complements {@link #syncTaskBoard} (which sends the whole board as one snapshot)
+     * by emitting one entry per task so the intelligence layer can build per-task embeddings —
+     * enabling semantic retrieval like "what tasks am I avoiding?" or "tasks linked to my career goal".
+     *
+     * <p>Uses a deterministic {@code sync_event_key} ("alterego:task_entry:&lt;userId&gt;:&lt;taskId&gt;")
+     * so re-syncs upsert in place rather than duplicating.
+     *
+     * @return true if the post succeeded, false otherwise
+     */
+    public boolean syncTask(Users user, Map<String, Object> task, String capturedAt, String sourceAction) {
+        if (!isConfigured() || user == null || user.getId() == null || task == null || task.isEmpty()) {
+            return false;
+        }
+
+        try {
+            String taskId = asString(task.get("id"));
+            if (taskId.isBlank()) {
+                taskId = asString(task.get("taskId"));
+            }
+            if (taskId.isBlank()) {
+                // Without an ID we can't make a deterministic key — skip silently.
+                return false;
+            }
+            String title = safeText(asString(task.get("title")), "Untitled task");
+            String status = asString(task.get("status"));
+            String priority = asString(task.get("priority"));
+            String dueDate = asString(task.get("dueDate"));
+            if (dueDate.isBlank()) {
+                dueDate = asString(task.get("due_date"));
+            }
+            String linkedGoal = asString(task.get("linkedGoal"));
+            if (linkedGoal.isBlank()) {
+                linkedGoal = asString(task.get("linked_goal"));
+            }
+            Object estimatedDuration = task.get("estimatedDuration");
+            if (estimatedDuration == null) {
+                estimatedDuration = task.get("estimated_duration");
+            }
+            String noteToAI = asString(task.get("noteToAI"));
+            if (noteToAI.isBlank()) {
+                noteToAI = asString(task.get("note_to_ai"));
+            }
+
+            String resolvedCapturedAt = (capturedAt == null || capturedAt.isBlank())
+                    ? java.time.LocalDateTime.now().toString()
+                    : capturedAt;
+
+            Map<String, Object> context = new LinkedHashMap<>();
+            context.put("source", "alterego_task_board");
+            context.put("source_action", safeText(sourceAction, "task_entry_sync"));
+            context.put("category", "task_entry");
+            context.put("task_id", taskId);
+            context.put("title", title);
+            context.put("status", status);
+            context.put("priority", priority);
+            context.put("due_date", dueDate);
+            context.put("linked_goal", linkedGoal);
+            context.put("estimated_duration", estimatedDuration);
+            if (!noteToAI.isBlank()) {
+                context.put("note_to_ai", noteToAI);
+            }
+            context.put("captured_at", resolvedCapturedAt);
+            context.put("sync_event_key", "alterego:task_entry:" + user.getId() + ":" + taskId);
+            context.put("user_id", user.getId());
+            context.put("user_email", user.getEmail());
+
+            String responseText = String.format(
+                    "Task sync: %s [%s, priority=%s%s]",
+                    title,
+                    status.isBlank() ? "no-status" : status,
+                    priority.isBlank() ? "—" : priority,
+                    dueDate.isBlank() ? "" : ", due=" + dueDate
+            );
+
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("agent_type", "task_entry");
+            payload.put("user_input", "Task sync");
+            payload.put("agent_response", responseText);
+            payload.put("context", context);
+
+            return postJson("/api/knowledge/interactions", payload, "task_entry", user);
+        } catch (Exception e) {
+            logger.warn("Agentic per-task sync skipped due to payload error: {}", e.getMessage());
+            return false;
+        }
+    }
+
     public boolean syncGoalProgress(Map<String, Object> goalSnapshot, Users user, String sourceAction) {
         if (!isConfigured() || goalSnapshot == null || goalSnapshot.isEmpty() || user == null || user.getId() == null) {
             return false;
@@ -769,7 +865,9 @@ public class AgenticKnowledgeSyncService {
             context.put("duration_minutes", durationMinutes);
             context.put("project_id", entry.getProject() != null ? entry.getProject().getId() : null);
             context.put("project_name", entry.getProject() != null ? entry.getProject().getName() : null);
-            context.put("tag_ids", safeTagIds(entry, "sync_time_entry_deletion"));
+            List<Long> deletionTagIds = safeTagIds(entry, "sync_time_entry_deletion");
+            context.put("tag_ids", deletionTagIds);
+            context.put("tags", resolveTagNames(deletionTagIds));
             context.put("billable", entry.isBillable());
             context.put("deleted", true);
             context.put("user_id", user != null ? user.getId() : null);
@@ -815,7 +913,9 @@ public class AgenticKnowledgeSyncService {
             context.put("duration_minutes", 0L);
             context.put("project_id", continuedEntry.getProject() != null ? continuedEntry.getProject().getId() : null);
             context.put("project_name", continuedEntry.getProject() != null ? continuedEntry.getProject().getName() : null);
-            context.put("tag_ids", safeTagIds(continuedEntry, "sync_time_entry_continuation"));
+            List<Long> continuationTagIds = safeTagIds(continuedEntry, "sync_time_entry_continuation");
+            context.put("tag_ids", continuationTagIds);
+            context.put("tags", resolveTagNames(continuationTagIds));
             context.put("billable", continuedEntry.isBillable());
             context.put("active", true);
             context.put("continued", true);
@@ -1370,8 +1470,26 @@ public class AgenticKnowledgeSyncService {
             return List.of();
         }
 
+        // Preserve BOTH answer and description. Previously safeText() collapsed
+        // to one (description used only as fallback) — losing the user's
+        // free-form context when both fields were populated.
         return answers.stream()
-                .map(answer -> safeText(answer.getAnswer(), answer.getDescription()))
+                .map(answer -> {
+                    String a = answer.getAnswer();
+                    String d = answer.getDescription();
+                    boolean hasAnswer = a != null && !a.isBlank();
+                    boolean hasDetail = d != null && !d.isBlank();
+                    if (hasAnswer && hasDetail) {
+                        return "Answer: " + a.trim() + " | Detail: " + d.trim();
+                    }
+                    if (hasAnswer) {
+                        return a.trim();
+                    }
+                    if (hasDetail) {
+                        return d.trim();
+                    }
+                    return null;
+                })
                 .filter(value -> value != null && !value.isBlank())
                 .toList();
     }
@@ -1545,6 +1663,39 @@ public class AgenticKnowledgeSyncService {
                     syncAction,
                     ex.getMessage()
             );
+            return List.of();
+        }
+    }
+
+    /**
+     * Resolve a list of tag IDs into their names. The intelligence layer needs
+     * names (semantic tokens), not numeric IDs, to build useful embeddings —
+     * a tag_id of 42 is meaningless to retrieval, but "deep_work" or "client_alpha"
+     * matches against natural-language queries.
+     *
+     * <p>Returns an empty list if tagIds is null/empty or if lookup fails. Tag IDs
+     * that can't be resolved are silently dropped (rather than leaving the numeric
+     * ID in the names list).
+     */
+    private List<String> resolveTagNames(List<Long> tagIds) {
+        if (tagIds == null || tagIds.isEmpty()) {
+            return List.of();
+        }
+        try {
+            List<Tags> resolved = tagsRepository.findAllById(tagIds);
+            if (resolved == null || resolved.isEmpty()) {
+                return List.of();
+            }
+            List<String> names = new ArrayList<>(resolved.size());
+            for (Tags tag : resolved) {
+                String name = tag != null ? tag.getName() : null;
+                if (name != null && !name.isBlank()) {
+                    names.add(name);
+                }
+            }
+            return names;
+        } catch (RuntimeException ex) {
+            logger.debug("Tag name resolution failed for ids {}: {}", tagIds, ex.getMessage());
             return List.of();
         }
     }

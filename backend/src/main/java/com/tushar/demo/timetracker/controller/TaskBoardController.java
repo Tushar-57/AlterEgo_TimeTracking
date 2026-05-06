@@ -107,6 +107,30 @@ public class TaskBoardController {
                 logger.warn("Task board Agentic enqueue failed for user {}: {}", user.getEmail(), syncError.getMessage());
             }
 
+            // Phase 7c: enqueue per-task entry vectors so the intelligence layer
+            // can build atomic semantic vectors for each task (note_to_ai, status,
+            // priority, due, linked_goal). Complements the board snapshot above.
+            try {
+                int enqueued = 0;
+                for (Object rawTask : tasks) {
+                    if (!(rawTask instanceof Map<?, ?> rawMap)) {
+                        continue;
+                    }
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> task = (Map<String, Object>) rawMap;
+                    AgenticSyncOutboxService.EnqueueResult perTaskResult =
+                            agenticSyncOutboxService.enqueueTaskEntrySync(task, user, "update_task_board_state");
+                    if (perTaskResult.accepted()) {
+                        enqueued++;
+                    }
+                }
+                if (enqueued > 0) {
+                    logger.debug("Per-task syncs enqueued for user {}: {}", user.getEmail(), enqueued);
+                }
+            } catch (Exception perTaskError) {
+                logger.warn("Per-task Agentic enqueue failed for user {}: {}", user.getEmail(), perTaskError.getMessage());
+            }
+
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "tasksCount", tasks.size(),

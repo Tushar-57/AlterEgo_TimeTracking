@@ -38,6 +38,7 @@ public class AgenticSyncOutboxService {
     private static final String EVENT_TIME_ENTRY_CONTINUATION = "TIME_ENTRY_CONTINUATION";
     private static final String EVENT_HABIT_SNAPSHOT = "HABIT_SNAPSHOT_SYNC";
     private static final String EVENT_TASK_BOARD_SYNC = "TASK_BOARD_SYNC";
+    private static final String EVENT_TASK_ENTRY_SYNC = "TASK_ENTRY_SYNC";
     private static final String EVENT_GOAL_PROGRESS_SYNC = "GOAL_PROGRESS_SYNC";
 
     private final AgenticSyncOutboxRepository outboxRepository;
@@ -175,6 +176,29 @@ public class AgenticSyncOutboxService {
         payload.put("capturedAt", LocalDateTime.now().toString());
 
         return enqueueEvent(EVENT_TASK_BOARD_SYNC, payload, user);
+    }
+
+    /**
+     * Enqueue a per-task sync (one Pinecone vector per task). Complements the
+     * existing {@link #enqueueTaskBoardSync} which sends the whole board as a
+     * single snapshot — per-task vectors enable richer semantic retrieval
+     * (e.g. "what tasks am I avoiding?").
+     */
+    public EnqueueResult enqueueTaskEntrySync(Map<String, Object> task, Users user, String sourceAction) {
+        if (!isQueueConfigured()) {
+            return EnqueueResult.rejected("Agentic sync is not configured");
+        }
+
+        if (task == null || task.isEmpty() || user == null || user.getId() == null) {
+            return EnqueueResult.rejected("Task entry payload is empty or missing user context");
+        }
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("task", task);
+        payload.put("sourceAction", normalizeSourceAction(sourceAction));
+        payload.put("capturedAt", LocalDateTime.now().toString());
+
+        return enqueueEvent(EVENT_TASK_ENTRY_SYNC, payload, user);
     }
 
     public EnqueueResult enqueueGoalProgressSync(Map<String, Object> goalSnapshot, Users user, String sourceAction) {
@@ -580,6 +604,7 @@ public class AgenticSyncOutboxService {
                 case EVENT_TIME_ENTRY_CONTINUATION -> dispatchTimeEntryContinuation(payload, user);
                 case EVENT_HABIT_SNAPSHOT -> dispatchHabitSnapshot(payload, user);
                 case EVENT_TASK_BOARD_SYNC -> dispatchTaskBoardSync(payload, user);
+                case EVENT_TASK_ENTRY_SYNC -> dispatchTaskEntrySync(payload, user);
                 case EVENT_GOAL_PROGRESS_SYNC -> dispatchGoalProgressSync(payload, user);
                 default -> DispatchOutcome.permanentFailure("Unsupported outbox event type: " + eventType);
             };
@@ -623,6 +648,19 @@ public class AgenticSyncOutboxService {
         return synced
                 ? DispatchOutcome.successful()
                 : DispatchOutcome.retryableFailure("syncTaskBoard returned false");
+    }
+
+    private DispatchOutcome dispatchTaskEntrySync(Map<String, Object> payload, Users user) {
+        Map<String, Object> task = asMap(payload.get("task"));
+        if (task.isEmpty()) {
+            return DispatchOutcome.permanentFailure("Task entry payload is empty");
+        }
+        String sourceAction = asText(payload.get("sourceAction"), "outbox_task_entry");
+        String capturedAt = asText(payload.get("capturedAt"), LocalDateTime.now().toString());
+        boolean synced = syncService.syncTask(user, task, capturedAt, sourceAction);
+        return synced
+                ? DispatchOutcome.successful()
+                : DispatchOutcome.retryableFailure("syncTask returned false");
     }
 
     private DispatchOutcome dispatchGoalProgressSync(Map<String, Object> payload, Users user) {
