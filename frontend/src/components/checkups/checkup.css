@@ -1,0 +1,323 @@
+/* Morning / Evening Checkup — visual rendering for LLM-emitted HTML.
+ *
+ * The backend prompt instructs the model to return strict semantic markup
+ * with these exact class names. This stylesheet is the visual contract.
+ * Never style by tag name alone — always scoped under .daily-checkup so
+ * unrelated <section> / <ol> elsewhere stay untouched.
+ */
+
+.daily-checkup {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.25rem 1.5rem;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px -16px rgba(15, 23, 42, 0.18);
+  color: #0f172a;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow: hidden;
+}
+
+.dc-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dc-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dc-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.dc-date {
+  font-size: 11.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dc-focus {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.dc-subtitle {
+  margin: 0;
+  font-size: 12.5px;
+  color: #475569;
+}
+
+/* Metrics row -------------------------------------------------------- */
+
+.dc-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.dc-metric {
+  padding: 0.65rem 0.75rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.dc-metric-label {
+  margin: 0;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.dc-metric-value {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Panels ------------------------------------------------------------- */
+
+.dc-panel {
+  padding: 0.85rem 1rem 1rem;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.dc-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.dc-panel-title {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0f172a;
+}
+
+.dc-panel-subtitle {
+  margin: 0;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+/* Timeline blocks ---------------------------------------------------- */
+
+.dc-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dc-block {
+  position: relative;
+  padding: 0.75rem 0.85rem 0.75rem 1.1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.dc-block::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.7rem;
+  bottom: 0.7rem;
+  width: 4px;
+  border-radius: 4px;
+  background: #cbd5e1;
+}
+
+.dc-block--high::before { background: #ef4444; }
+.dc-block--medium::before { background: #f59e0b; }
+.dc-block--low::before { background: #10b981; }
+
+.dc-time-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dc-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: #0f172a;
+}
+
+.dc-priority {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.dc-block--high .dc-priority { color: #b91c1c; }
+.dc-block--medium .dc-priority { color: #b45309; }
+.dc-block--low .dc-priority { color: #047857; }
+
+.dc-block-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.dc-block-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dc-block-reason {
+  margin: 0;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.45;
+}
+
+/* Notes + journal --------------------------------------------------- */
+
+.dc-notes {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dc-notes li {
+  font-size: 12.5px;
+  color: #334155;
+}
+
+.dc-journal {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.dc-journal-q {
+  margin: 0;
+  font-size: 12.5px;
+  color: #7c2d12;
+  font-style: italic;
+}
+
+/* Mobile / narrow chat width ---------------------------------------- */
+
+@media (max-width: 540px) {
+  .dc-metrics { grid-template-columns: 1fr; }
+  .dc-block { grid-template-columns: 1fr; }
+  .dc-block .dc-time-wrap { flex-direction: row; align-items: center; gap: 0.5rem; }
+}
+
+/* Dark theme override (optional, when host page sets data-theme="dark"). */
+
+[data-theme="dark"] .daily-checkup,
+.dark .daily-checkup {
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  border-color: #1f2937;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .dc-header,
+.dark .dc-header { border-bottom-color: #1f2937; }
+
+[data-theme="dark"] .dc-metric,
+.dark .dc-metric {
+  background: #111827;
+  border-color: #1f2937;
+}
+
+[data-theme="dark"] .dc-metric-label,
+[data-theme="dark"] .dc-panel-subtitle,
+[data-theme="dark"] .dc-priority,
+.dark .dc-metric-label,
+.dark .dc-panel-subtitle,
+.dark .dc-priority { color: #94a3b8; }
+
+[data-theme="dark"] .dc-metric-value,
+[data-theme="dark"] .dc-focus,
+[data-theme="dark"] .dc-panel-title,
+[data-theme="dark"] .dc-block-title,
+[data-theme="dark"] .dc-time,
+.dark .dc-metric-value,
+.dark .dc-focus,
+.dark .dc-panel-title,
+.dark .dc-block-title,
+.dark .dc-time { color: #f1f5f9; }
+
+[data-theme="dark"] .dc-panel,
+.dark .dc-panel {
+  background: #0b1220;
+  border-color: #1f2937;
+}
+
+[data-theme="dark"] .dc-block,
+.dark .dc-block {
+  background: #0b1220;
+  border-color: #1f2937;
+}
+
+[data-theme="dark"] .dc-subtitle,
+[data-theme="dark"] .dc-block-reason,
+.dark .dc-subtitle,
+.dark .dc-block-reason { color: #94a3b8; }
+
+[data-theme="dark"] .dc-notes li,
+.dark .dc-notes li { color: #cbd5e1; }
+
+[data-theme="dark"] .dc-journal,
+.dark .dc-journal {
+  background: rgba(124, 45, 18, 0.18);
+  border-color: rgba(254, 215, 170, 0.25);
+}
+
+[data-theme="dark"] .dc-journal-q,
+.dark .dc-journal-q { color: #fdba74; }

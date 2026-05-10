@@ -15,6 +15,35 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTaskStore } from '../../store/taskStore';
 import { formatMinutesAsHoursMinutes } from '../../utils/utils';
+import './checkup.css';
+
+/** Detect whether a coach-message string is HTML markup (vs plain text).
+ *
+ * The backend prompt instructs the LLM to emit semantic HTML scoped to the
+ * `.daily-checkup` class set, but older / fallback flows still produce plain
+ * text. A simple structural sniff keeps the renderer tolerant of both.
+ */
+function isHtmlMarkup(value: string | undefined): boolean {
+  if (!value) return false;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('<')) return false;
+  return /<\/?(section|div|ol|ul|p|h\d|article)\b/i.test(trimmed);
+}
+
+/** Conservative HTML sanitiser for trusted backend output.
+ *
+ * Strips <script>, <style>, <iframe>, on* event handler attributes, and
+ * javascript: URLs. The LLM is instructed never to emit these but we
+ * defence-in-depth anyway since dangerouslySetInnerHTML bypasses React's
+ * normal escaping.
+ */
+function sanitizeCheckupHtml(value: string): string {
+  return value
+    .replace(/<\/?(script|style|iframe|object|embed|link|meta)[^>]*>/gi, '')
+    .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/javascript:/gi, '');
+}
 
 type CheckupType = 'morning' | 'evening';
 type CheckupFrequency = 'daily' | 'weekly' | 'biweekly';
@@ -1251,7 +1280,17 @@ const CheckupPrompt = () => {
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Checkup saved
               </p>
-              <p className="mt-1 whitespace-pre-wrap">{successPayload.coach_message}</p>
+              {isHtmlMarkup(successPayload.coach_message) ? (
+                <div
+                  className="checkup-html-render mt-2"
+                  /* eslint-disable-next-line react/no-danger */
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeCheckupHtml(successPayload.coach_message),
+                  }}
+                />
+              ) : (
+                <p className="mt-1 whitespace-pre-wrap">{successPayload.coach_message}</p>
+              )}
 
               {Array.isArray(successPayload.wins) && successPayload.wins.length > 0 ? (
                 <div className="mt-2 rounded-lg bg-emerald-100/70 px-2 py-1.5 text-[11px]">
