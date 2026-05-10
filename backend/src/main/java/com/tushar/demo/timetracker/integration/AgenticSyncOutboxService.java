@@ -822,13 +822,33 @@ public class AgenticSyncOutboxService {
         snapshot.put("startTime", entry.getStartTime() != null ? entry.getStartTime().toString() : null);
         snapshot.put("endTime", entry.getEndTime() != null ? entry.getEndTime().toString() : null);
         snapshot.put("duration", entry.getDuration());
-        snapshot.put("tagIds", entry.getTagIds() != null ? new ArrayList<>(entry.getTagIds()) : List.of());
+        // Tag IDs are a lazy collection — accessing it outside the original
+        // Hibernate session throws LazyInitializationException, which previously
+        // killed the deletion path entirely. Try the access, fall back to an
+        // empty list if the session is gone (delete payload doesn't strictly
+        // need tag IDs since the row is already gone in Agentic_Lyf as well).
+        List<Long> tagIds = List.of();
+        try {
+            List<Long> live = entry.getTagIds();
+            if (live != null) {
+                tagIds = new ArrayList<>(live);
+            }
+        } catch (org.hibernate.LazyInitializationException lazy) {
+            logger.debug("Tag IDs not available for entry {} during serialize (session closed); using empty list", entry.getId());
+        } catch (RuntimeException ex) {
+            logger.debug("Unexpected tag IDs access failure for entry {}: {}", entry.getId(), ex.getMessage());
+        }
+        snapshot.put("tagIds", tagIds);
         snapshot.put("billable", entry.isBillable());
         snapshot.put("positionTop", entry.getPositionTop());
         snapshot.put("positionLeft", entry.getPositionLeft());
-        if (entry.getProject() != null) {
-            snapshot.put("projectId", entry.getProject().getId());
-            snapshot.put("projectName", entry.getProject().getName());
+        try {
+            if (entry.getProject() != null) {
+                snapshot.put("projectId", entry.getProject().getId());
+                snapshot.put("projectName", entry.getProject().getName());
+            }
+        } catch (org.hibernate.LazyInitializationException lazy) {
+            logger.debug("Project not available for entry {} during serialize (session closed)", entry.getId());
         }
         return snapshot;
     }
