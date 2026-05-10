@@ -829,8 +829,30 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
         aiDetail: aiDetail.trim() || null,
       };
 
-      const endpoint = initialEntry ? `/api/timers/${initialEntry.id}` : '/api/timers/addTimer';
-      const method = initialEntry ? 'PUT' : 'POST';
+      // Explicit guard: an edit flow with a missing/invalid id is a frontend
+      // bug — without this guard the save silently downgrades to an addTimer
+      // POST, creating a phantom duplicate of whatever the user thought they
+      // were editing. Surface the issue instead of papering over it.
+      const editingExisting = Boolean(initialEntry);
+      const editingId = editingExisting
+        ? Number(initialEntry?.id)
+        : null;
+      if (editingExisting && (!editingId || !Number.isFinite(editingId))) {
+        console.error('[TaskPopup] edit flow missing valid id', { initialEntry });
+        toast({
+          title: 'Cannot save edit',
+          description: 'This entry has no stable id yet. Refresh and try again.',
+          variant: 'destructive',
+          className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
+        });
+        return;
+      }
+
+      const endpoint = editingExisting
+        ? `/api/timers/${editingId}`
+        : '/api/timers/addTimer';
+      const method = editingExisting ? 'PUT' : 'POST';
+      console.info('[TaskPopup] save', { mode: editingExisting ? 'update' : 'create', endpoint, method, id: editingId });
 
       const response = await fetch(endpoint, {
         method,

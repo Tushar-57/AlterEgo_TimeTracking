@@ -287,12 +287,40 @@ export const Dashboard = () => {
             billable: source.billable ?? false,
             positionTop: duplicatedTop,
             positionLeft: duplicatedLeft,
+            // Carry over advanced detail fields so the duplicated entry
+            // is a true copy — including these matters because the edit
+            // modal pulls them straight from CalendarEvent and relying on
+            // backend defaults caused them to render blank in earlier flows.
+            linkedGoal: source.linkedGoal ?? null,
+            focusScore: source.focusScore ?? null,
+            energyScore: source.energyScore ?? null,
+            blockers: source.blockers ?? null,
+            contextNotes: source.contextNotes ?? null,
+            aiDetail: source.aiDetail ?? null,
           }),
         });
 
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(errorText || "Failed to duplicate time entry");
+        }
+
+        // Read the response body so we can verify the server-side id of the
+        // new entry. Earlier flow ignored this and relied entirely on a
+        // refetch — when the refetch hit a stale cache or returned before
+        // the new row was visible, the user would click the new card,
+        // initialEntry was null, and the edit modal saved as a brand-new
+        // POST instead of a PUT update. Logging the new id here also makes
+        // the duplicate-edit-save sequence traceable in DevTools.
+        const duplicateBody = await response.json().catch(() => null);
+        const newEntryId =
+          duplicateBody?.data?.id
+          ?? duplicateBody?.id
+          ?? null;
+        if (newEntryId) {
+          console.info("[duplicate] created entry", { sourceId: eventId, newEntryId });
+        } else {
+          console.warn("[duplicate] response missing entry id", duplicateBody);
         }
 
         toast({
