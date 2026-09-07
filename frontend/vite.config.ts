@@ -1,3 +1,4 @@
+import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -7,6 +8,12 @@ const agenticApiTarget = process.env.VITE_AGENTIC_API_ORIGIN || 'http://localhos
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    // Mirrors the "@/*" -> "src/*" path in tsconfig.app.json.
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   optimizeDeps: {
     exclude: ['lucide-react'],
   },

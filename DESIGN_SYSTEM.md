@@ -108,18 +108,38 @@ teal→cyan→amber sweep use the `.bg-brand-gradient` utility (defined in `inde
 
 ## 4. Primitive inventory
 
-Canonical set: `frontend/src/components/Calendar_updated/components/ui/` (shadcn-style,
-already token-based) — `button`, `card`, `input`, `badge`, `dialog`, `tabs`, `switch`,
-`slider`, `tooltip`, `separator`, `scroll-area`, `toggle`, `toggle-group`.
+**Import primitives from `@/components/ui`** (barrel at
+`frontend/src/components/ui/index.ts`). New code must not reach into
+`Calendar_updated/components/ui/*` directly. The `@/*` → `src/*` alias is wired in
+both `tsconfig.app.json` and `vite.config.ts`.
 
-- `Button` variants: `default` (primary/teal), `secondary`, `outline`, `ghost`, `link`,
-  `destructive`; sizes `sm` / `default` / `lg` / `icon`.
-- `frontend/src/components/ui/index.tsx` (bespoke indigo `Button`/`Input`/`Table`) is
-  **unused** — slated for deletion in Phase 5.
-- Two `use-toast` hooks (`src/hooks/`, `Calendar_updated/components/hooks/`) both wrap
-  `src/components/ui/toast.tsx` — consolidation target (Phase 1).
+The barrel re-exports:
+
+| From | Primitives |
+|---|---|
+| `Calendar_updated/components/ui/` (token-based shadcn set) | `badge`, `button`, `card`, `dialog`, `input`, `scroll-area`, `separator`, `slider`, `switch`, `tabs`, `toggle`, `toggle-group`, `tooltip` |
+| `components/ui/` (local) | `select`, `toast`, `textarea` ✨, `icon-button` ✨, `Skeleton` |
+
+✨ added in Phase 1.
+
+- `Button` (`@/components/ui`): variants `default` (primary/teal), `secondary`,
+  `outline`, `ghost`, `link`, `destructive`; sizes `sm` / `default` / `lg` / `icon`;
+  `isLoading` prop → leading spinner + `disabled` + `aria-busy` (ignored with `asChild`).
+- `IconButton`: square, icon-only; `aria-label` is **type-required** so these never
+  ship nameless. Same variants; sizes `sm` / `default` / `lg`; `isLoading`.
+- `Textarea`: token-based, matches `Input`.
+- Physical consolidation of the `Calendar_updated/` set into `components/ui/` is a
+  Phase 5 move (needs the ~7 direct importers migrated first).
+- **Deferred — toast consolidation:** two functionally-identical `use-toast` hooks
+  (`src/hooks/use-toast.ts` — canonical, re-exported by `ui/toast.tsx`; and
+  `Calendar_updated/components/hooks/use-toast.ts` — used by 6 screens). They are
+  currently *separate module instances* (separate toast stores). Untangling which
+  store `<ToastViewport>` actually renders is its own task — do it in Phase 3
+  (toast behaviour changes there anyway) or Phase 5.
+- `frontend/src/components/ui/index.tsx` (bespoke indigo `Button`/`Input`/`Table`,
+  zero importers) — **deleted** in Phase 1.
 - POC primitive set: `POCs/AI_BETTER_ME/frontend/src/components/ui/` — already
-  shadcn-shaped; only needs the token values synced (done in Phase 0).
+  shadcn-shaped; token values synced in Phase 0. Screen pass in Phase 4.
 
 ---
 
@@ -138,9 +158,10 @@ already token-based) — `button`, `card`, `input`, `badge`, `dialog`, `tabs`, `
 - **Phase 0 — Foundation (this change):** tokens + Tailwind wiring + fonts + shared
   animations + motion/focus rules, in both apps. No screens redesigned. Broken token
   classes (`bg-card`, `border-input`, `bg-secondary`, …) now resolve.
-- **Phase 1 — Shared primitives:** promote the canonical `ui/` set behind
-  `@/components/ui/*`, add `Textarea` / `IconButton` / loading `Button`, consolidate toast,
-  delete the unused bespoke primitives.
+- **Phase 1 — Shared primitives (done):** `@/components/ui` barrel + `@` alias in vite,
+  `Textarea` / `IconButton` (aria-label required) / `Button` `isLoading`, deleted the
+  unused bespoke indigo primitives. Toast consolidation + physical file move deferred
+  (see §4).
 - **Phase 2 — Shell + nav IA:** `Sidebar`, `App` shell, `PageHeader`, placeholder-hub
   copy; retire raw `teal-*` / `gray-*`; brand `--primary` lands on real buttons here.
 - **Phase 3 — One "Coach" identity:** unify the floating chat, the `/coach/*` launcher,
