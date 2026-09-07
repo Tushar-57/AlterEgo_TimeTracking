@@ -27,4 +27,5 @@ export * from "./select";
 export * from "./toast";
 export * from "./textarea";
 export * from "./icon-button";
+export * from "./page-header";
 export { Skeleton } from "./Skeleton";

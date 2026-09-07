@@ -13,7 +13,7 @@ const ThemeToggle = ({ className = '', withLabel = false }: ThemeToggleProps) =>
     <button
       type="button"
       onClick={toggleTheme}
-      className={`inline-flex items-center justify-center gap-2 rounded-lg border border-[#D8BFD8]/40 bg-white/90 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F3EEFF] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground ${className}`}
       aria-label={isDark ? 'Switch to day mode' : 'Switch to night mode'}
       title={isDark ? 'Switch to day mode' : 'Switch to night mode'}
     >

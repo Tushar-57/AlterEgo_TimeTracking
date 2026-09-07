@@ -118,9 +118,13 @@ The barrel re-exports:
 | From | Primitives |
 |---|---|
 | `Calendar_updated/components/ui/` (token-based shadcn set) | `badge`, `button`, `card`, `dialog`, `input`, `scroll-area`, `separator`, `slider`, `switch`, `tabs`, `toggle`, `toggle-group`, `tooltip` |
-| `components/ui/` (local) | `select`, `toast`, `textarea` ✨, `icon-button` ✨, `Skeleton` |
+| `components/ui/` (local) | `select`, `toast`, `textarea` ✨, `icon-button` ✨, `page-header` ✨, `Skeleton` |
 
-✨ added in Phase 1.
+✨ added in Phase 1–2.
+
+- `PageHeader` (`@/components/ui`): `eyebrow` / `title` / `subtitle` / optional `icon`
+  chip / right-aligned `actions` slot. Token-styled, bottom border. Use it for the
+  top-of-page block on every routed screen.
 
 - `Button` (`@/components/ui`): variants `default` (primary/teal), `secondary`,
   `outline`, `ghost`, `link`, `destructive`; sizes `sm` / `default` / `lg` / `icon`;
@@ -162,8 +166,12 @@ The barrel re-exports:
   `Textarea` / `IconButton` (aria-label required) / `Button` `isLoading`, deleted the
   unused bespoke indigo primitives. Toast consolidation + physical file move deferred
   (see §4).
-- **Phase 2 — Shell + nav IA:** `Sidebar`, `App` shell, `PageHeader`, placeholder-hub
-  copy; retire raw `teal-*` / `gray-*`; brand `--primary` lands on real buttons here.
+- **Phase 2 — Shell + nav IA (done):** `Sidebar` (new **Coach** group, `↗` + aria on
+  `/coach/*` handoffs, `Sparkles` icon, tokens), `App` shell (`bg-background`, mobile
+  top-bar wording, mobile bottom-nav 6→5 with a **More** entry, `Dashboard`→`Calendar`
+  label), `ThemeToggle` tokens, new `PageHeader`, `ConnectedPlaceholderPage` tokens +
+  "this is a hub" reframing. The `.dark [class~="…"]` block stays until Phase 5 — other
+  un-migrated screens still lean on it.
 - **Phase 3 — One "Coach" identity:** unify the floating chat, the `/coach/*` launcher,
   and daily checkups under one name + avatar + accent + theme; kill the pink/lavender
   palette and the per-message success toast; fix invisible typing dots / `z-60`.

@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
 import { useBodyScrollLock } from './hooks/useBodyScrollLock';
-import { BarChart2, BellRing, Brain, Clock, LayoutDashboard, ListChecks, Menu } from 'lucide-react';
+import { Clock, LayoutDashboard, ListChecks, Menu, MoreHorizontal, Sparkles } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import TimeTracker from './components/TimeTracker/TimeTracker';
 import LoginClassic from './components/LoginFunctionality';
@@ -72,12 +72,10 @@ const ProtectedRoutes = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const mobileTabs = [
-    { label: 'Timer', to: '/timer', icon: Clock },
-    { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-    { label: 'Tasks', to: '/tasks', icon: ListChecks },
-    { label: 'Analytics', to: '/coach/analytics', icon: BarChart2 },
-    { label: 'Alerts', to: '/coach/notifications', icon: BellRing },
-    { label: 'Coach', to: '/coach/knowledge', icon: Brain },
+    { label: 'Timer', to: '/timer', icon: Clock, external: false },
+    { label: 'Calendar', to: '/dashboard', icon: LayoutDashboard, external: false },
+    { label: 'Tasks', to: '/tasks', icon: ListChecks, external: false },
+    { label: 'Coach', to: '/coach/knowledge', icon: Sparkles, external: true },
   ];
 
   const activeMobileTab = useMemo(
@@ -159,19 +157,19 @@ const ProtectedRoutes = () => {
 
   return (
     <ChatProvider>
-      <div className="relative flex min-h-[100dvh] overflow-x-hidden bg-gradient-to-b from-[#F5FBFA] via-[#F1F9FF] to-[#FFF9EE] text-slate-900 dark:from-[#0B1220] dark:via-[#0F172A] dark:to-[#1E293B] dark:text-slate-100">
-        <div className="fixed left-0 right-0 top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between border-b border-teal-200/60 bg-white/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:hidden dark:border-slate-700 dark:bg-slate-900/95">
+      <div className="relative flex min-h-[100dvh] overflow-x-hidden bg-background text-foreground">
+        <div className="fixed left-0 right-0 top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between border-b border-border bg-card px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:hidden">
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-teal-100 bg-white/75 text-slate-700 transition hover:bg-teal-50 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:hover:bg-slate-800"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             aria-label="Open navigation menu"
           >
             <Menu className="h-5 w-5" />
           </button>
           <div className="text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Alter Ego Workspace</p>
-            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{activeMobileTab?.label ?? 'Workspace'}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Alter Ego</p>
+            <p className="text-sm font-semibold text-foreground">{activeMobileTab?.label ?? 'Workspace'}</p>
           </div>
           <ThemeToggle className="h-10 w-10 p-0" />
         </div>
@@ -355,7 +353,7 @@ const ProtectedRoutes = () => {
           </Routes>
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-6 border-t border-teal-200/60 bg-white/95 px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur-xl md:hidden dark:border-slate-700 dark:bg-slate-900/95">
+        <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-border bg-card px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur-xl md:hidden">
           {mobileTabs.map((tab) => {
             const isActive = location.pathname === tab.to || location.pathname.startsWith(`${tab.to}/`);
             return (
@@ -366,10 +364,11 @@ const ProtectedRoutes = () => {
                   navigate(tab.to);
                   setMobileNavOpen(false);
                 }}
-                className={`flex flex-col items-center justify-center rounded-lg py-2 text-[11px] font-medium transition ${
+                aria-label={tab.external ? `${tab.label} (opens Coach)` : tab.label}
+                className={`flex flex-col items-center justify-center rounded-lg py-2 text-[11px] font-medium transition-colors ${
                   isActive
-                    ? 'bg-gradient-to-r from-teal-700 via-cyan-600 to-amber-500 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-teal-50 dark:text-slate-300 dark:hover:bg-slate-800'
+                    ? 'bg-brand-gradient text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 }`}
               >
                 <tab.icon className="mb-1 h-4 w-4" />
@@ -377,6 +376,15 @@ const ProtectedRoutes = () => {
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="More — open full navigation"
+            className="flex flex-col items-center justify-center rounded-lg py-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <MoreHorizontal className="mb-1 h-4 w-4" />
+            More
+          </button>
         </nav>
 
         <CheckupPrompt />
