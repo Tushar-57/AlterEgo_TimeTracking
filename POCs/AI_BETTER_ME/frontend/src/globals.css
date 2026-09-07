@@ -4,50 +4,79 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Alter Ego design system — canonical semantic tokens (shared with the main app).
+ * Values MUST match ../../../../frontend/src/index.css and DESIGN_SYSTEM.md.
+ * The POC's old blue/purple identity is now a per-agent accent only, not --primary.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 180 25% 99%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
+    --surface: 190 40% 96%;
+    --surface-foreground: 222 47% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 176 61% 26%;
+    --primary-foreground: 166 76% 97%;
+    --brand: 38 92% 50%;
+    --brand-foreground: 26 83% 14%;
+
+    --secondary: 197 37% 94%;
+    --secondary-foreground: 222 40% 20%;
     --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --muted-foreground: 215 16% 42%;
+    --accent: 190 45% 92%;
+    --accent-foreground: 200 45% 18%;
+
+    --success: 160 84% 30%;
+    --success-foreground: 152 76% 96%;
+    --warning: 32 95% 44%;
+    --warning-foreground: 30 90% 96%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 89%;
+    --input: 214 32% 86%;
+    --ring: 176 61% 32%;
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --background: 222 47% 7%;
+    --foreground: 210 40% 96%;
+    --card: 222 44% 11%;
+    --card-foreground: 210 40% 96%;
+    --surface: 217 33% 17%;
+    --surface-foreground: 210 40% 96%;
+    --popover: 222 44% 11%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 172 66% 50%;
+    --primary-foreground: 222 47% 11%;
+    --brand: 38 92% 55%;
+    --brand-foreground: 26 83% 10%;
+
+    --secondary: 217 33% 18%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 22%;
+    --accent-foreground: 210 40% 96%;
+
+    --success: 160 70% 42%;
+    --success-foreground: 152 76% 8%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 26 83% 10%;
+    --destructive: 0 63% 47%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 22%;
+    --input: 217 33% 24%;
+    --ring: 172 66% 45%;
   }
 }
 
@@ -190,6 +219,17 @@
 /* Smooth transitions for theme switching */
 * {
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

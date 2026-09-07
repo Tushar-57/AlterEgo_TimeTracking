@@ -1,18 +1,55 @@
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Alter Ego design system — canonical semantic tokens.
+ * Values are HSL triplets (no hsl() wrapper) so Tailwind can compose alpha:
+ * e.g. bg-primary/90. Mirror any change into POCs/AI_BETTER_ME/frontend base CSS
+ * and keep DESIGN_SYSTEM.md in sync. Use tokens (bg-card, text-muted-foreground,
+ * border-input, bg-primary) — never raw teal, slate, gray or pink ramps in components.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Surfaces */
+    --background: 180 25% 99%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --input: 214.3 31.8% 91.4%;
-    --primary: 222.2 47.4% 11.2%;
-    --border: 214.3 31.8% 91.4%;
-    --radius: 0.5rem;
+    --card-foreground: 222 47% 11%;
+    --surface: 190 40% 96%;
+    --surface-foreground: 222 47% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Brand — teal primary, amber accent pop */
+    --primary: 176 61% 26%;
+    --primary-foreground: 166 76% 97%;
+    --brand: 38 92% 50%;
+    --brand-foreground: 26 83% 14%;
+
+    /* Neutral roles (slate ramp) */
+    --secondary: 197 37% 94%;
+    --secondary-foreground: 222 40% 20%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 42%;
+    --accent: 190 45% 92%;
+    --accent-foreground: 200 45% 18%;
+
+    /* Status */
+    --success: 160 84% 30%;
+    --success-foreground: 152 76% 96%;
+    --warning: 32 95% 44%;
+    --warning-foreground: 30 90% 96%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Lines & focus */
+    --border: 214 32% 89%;
+    --input: 214 32% 86%;
+    --ring: 176 61% 32%;
+
+    --radius: 0.75rem;
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     color-scheme: light;
     height: 100%;
@@ -20,22 +57,55 @@
   }
 
   .dark {
-    --background: 220 32% 10%;
+    --background: 222 47% 7%;
     --foreground: 210 40% 96%;
-    --card: 220 32% 12%;
+    --card: 222 44% 11%;
     --card-foreground: 210 40% 96%;
-    --input: 217 25% 24%;
-    --border: 217 25% 24%;
+    --surface: 217 33% 17%;
+    --surface-foreground: 210 40% 96%;
+    --popover: 222 44% 11%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 172 66% 50%;
+    --primary-foreground: 222 47% 11%;
+    --brand: 38 92% 55%;
+    --brand-foreground: 26 83% 10%;
+
+    --secondary: 217 33% 18%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 22%;
+    --accent-foreground: 210 40% 96%;
+
+    --success: 160 70% 42%;
+    --success-foreground: 152 76% 8%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 26 83% 10%;
+    --destructive: 0 63% 47%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 22%;
+    --input: 217 33% 24%;
+    --ring: 172 66% 45%;
+
     color-scheme: dark;
   }
 
   body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-feature-settings: "liga" 1, "kern" 1;
     -webkit-font-smoothing: antialiased;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
 
+  /*
+   * TODO(design-system): remove this dark-mode override block as components
+   * migrate to tokens (bg-card / border-border / text-muted-foreground) + `dark:`
+   * variants. Kept as a safety net so un-migrated screens still theme in dark.
+   * Tracked for Phase 5 cleanup.
+   */
   .dark [class~="bg-white"] {
     background-color: rgb(15 23 42);
   }
@@ -190,6 +260,7 @@
     linear-gradient(to bottom, rgba(71, 85, 105, 0.55) 1px, transparent 1px);
 }
 
+/* TODO(design-system): drop this -4px override; sidebar is w-64 (256px). Phase 5. */
 .ml-64 {
   margin-left: 252px;
 }
@@ -328,7 +399,7 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -363,8 +434,43 @@ body {
   background: rgba(148, 163, 184, 0.58);
 }
 
+/*
+ * Global theme-switch easing. Scoped to color properties only — animating
+ * `transform` globally fought drag interactions (calendar entries) and hover
+ * scales. Components opt into transform transitions locally.
+ */
 * {
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Signature brand wash: teal-700 -> cyan-600 -> amber-500. Use for hero/active accents. */
+.bg-brand-gradient {
+  background-image: linear-gradient(
+    to right,
+    hsl(176 61% 26%),
+    hsl(190 80% 40%),
+    hsl(38 92% 50%)
+  );
+}
+
+.dark .bg-brand-gradient {
+  background-image: linear-gradient(
+    to right,
+    hsl(172 66% 40%),
+    hsl(190 80% 48%),
+    hsl(38 92% 55%)
+  );
 }
 
 .grid-pattern {
