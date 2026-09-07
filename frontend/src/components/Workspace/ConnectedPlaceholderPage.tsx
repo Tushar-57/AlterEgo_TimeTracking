@@ -1,5 +1,7 @@
-import { ArrowRight, Layers3, Link2, Sparkles } from 'lucide-react';
+import { ArrowRight, Compass, Layers3, Link2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+import { PageHeader } from '../ui/page-header';
 
 type QuickLink = {
   label: string;
@@ -23,52 +25,51 @@ const ConnectedPlaceholderPage = ({
   highlights,
 }: ConnectedPlaceholderPageProps) => {
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 md:px-8">
+    <div className="min-h-screen bg-background px-4 py-6 sm:px-6 md:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="relative bg-gradient-to-r from-amber-100 via-orange-50 to-rose-100 px-6 py-8 sm:px-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
-              <Sparkles className="h-3.5 w-3.5" />
-              {badge}
-            </div>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">{title}</h1>
-            <p className="mt-2 max-w-3xl text-sm text-slate-700 sm:text-base">{subtitle}</p>
-          </div>
-        </section>
+        <PageHeader eyebrow={badge} title={title} icon={Compass} subtitle={subtitle} />
+
+        <div className="flex items-start gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm text-surface-foreground">
+          <Compass className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <p>
+            This is a <span className="font-semibold">hub</span>, not the feature itself — it ties the
+            related areas together. Jump into a linked workspace below to do the actual work.
+          </p>
+        </div>
 
         <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="mb-4 flex items-center gap-2 text-sm font-medium text-slate-600">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <div className="mb-4 flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <Link2 className="h-4 w-4" />
-              Linked Workflows
+              Linked workflows
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {quickLinks.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
-                  className="group rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white"
+                  className="group rounded-lg border border-border bg-muted px-4 py-4 transition-colors hover:border-input hover:bg-accent"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-                      <p className="mt-1 text-xs text-slate-600">{item.description}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-slate-600" />
+                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                   </div>
                 </Link>
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="mb-4 flex items-center gap-2 text-sm font-medium text-slate-600">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <div className="mb-4 flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <Layers3 className="h-4 w-4" />
-              What You Can Do Here
+              What you can do here
             </div>
-            <ul className="space-y-3 text-sm text-slate-700">
+            <ul className="space-y-3 text-sm text-foreground">
               {highlights.map((highlight) => (
-                <li key={highlight} className="rounded-lg bg-slate-50 px-3 py-2">
+                <li key={highlight} className="rounded-lg bg-muted px-3 py-2">
                   {highlight}
                 </li>
               ))}
