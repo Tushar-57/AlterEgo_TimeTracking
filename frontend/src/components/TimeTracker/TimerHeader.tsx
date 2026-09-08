@@ -1,271 +1,45 @@
-// import { Button } from '../Calendar_updated/components/ui/button';
-// import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from '../Calendar_updated/components/ui/tooltip';
-// import { motion } from 'framer-motion';
-// import { Settings, HelpCircle, Clock } from 'lucide-react';
-// import { UserPreferences } from './types';
+import { Keyboard, Settings, Timer as TimerIcon } from 'lucide-react';
 
-// export const TimerHeader = ({
-//   preferences,
-//   setPreferences,
-//   user,
-//   setShowSettingsDialog,
-//   setShowKeyboardShortcutsDialog,
-// }: {
-//   preferences: UserPreferences;
-//   setPreferences: (fn: (prev: UserPreferences) => UserPreferences) => void;
-//   user: any;
-//   setShowSettingsDialog: (show: boolean) => void;
-//   setShowKeyboardShortcutsDialog: (show: boolean) => void;
-// }) => (
-//   <header className="bg-gradient-to-r from-[#FAF9F6] to-[#F5F5F4] dark:from-[#2D2D2D] dark:to-[#3A3A3A] shadow-sm py-4 px-6">
-//     <div className="max-w-7xl mx-auto flex justify-between items-center">
-//       <div className="flex items-center space-x-2">
-//         <motion.div
-//           initial={{ scale: 0.8, opacity: 0 }}
-//           animate={{ scale: 1, opacity: 1 }}
-//           transition={{ duration: 0.3 }}
-//         >
-//           <Clock className="text-[#FF6B6B]" size={28} />
-//         </motion.div>
-//         <h1 className="text-2xl font-bold text-[#1A202C] dark:text-[#E2E8F0] font-poppins">Timer</h1>
-//       </div>
-//       <div className="flex items-center gap-4">
-//         <TooltipProvider>
-//           <Tooltip>
-//             <TooltipTrigger asChild>
-//               <Button
-//                 variant="ghost"
-//                 size="icon"
-//                 className="rounded-full hover:bg-[#F8C8DC]/20 hover:shadow-sm transition-all"
-//                 onClick={() => setPreferences((prev) => ({ ...prev, darkMode: !prev.darkMode }))}
-//               >
-//                 {preferences.darkMode ? (
-//                   <motion.div initial={{ rotate: -30 }} animate={{ rotate: 0 }} transition={{ duration: 0.2 }}>
-//                     <svg
-//                       xmlns="http://www.w3.org/2000/svg"
-//                       className="h-5 w-5 text-[#A3BFFA]"
-//                       fill="none"
-//                       viewBox="0 0 24 24"
-//                       stroke="currentColor"
-//                     >
-//                       <path
-//                         strokeLinecap="round"
-//                         strokeLinejoin="round"
-//                         strokeWidth={2}
-//                         d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-//                       />
-//                     </svg>
-//                   </motion.div>
-//                 ) : (
-//                   <motion.div initial={{ rotate: 30 }} animate={{ rotate: 0 }} transition={{ duration: 0.2 }}>
-//                     <svg
-//                       xmlns="http://www.w3.org/2000/svg"
-//                       className="h-5 w-5 text-[#F4A261]"
-//                       fill="none"
-//                       viewBox="0 0 24 24"
-//                       stroke="currentColor"
-//                     >
-//                       <path
-//                         strokeLinecap="round"
-//                         strokeLinejoin="round"
-//                         strokeWidth={2}
-//                         d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-//                       />
-//                     </svg>
-//                   </motion.div>
-//                 )}
-//               </Button>
-//             </TooltipTrigger>
-//             <TooltipContent className="bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50">Toggle dark mode</TooltipContent>
-//           </Tooltip>
-//         </TooltipProvider>
-//         <TooltipProvider>
-//           <Tooltip>
-//             <TooltipTrigger asChild>
-//               <Button
-//                 variant="ghost"
-//                 size="icon"
-//                 className="rounded-full hover:bg-[#F8C8DC]/20 hover:shadow-sm transition-all"
-//                 onClick={() => setShowSettingsDialog(true)}
-//               >
-//                 <Settings className="h-5 w-5 text-[#A3BFFA]" />
-//               </Button>
-//             </TooltipTrigger>
-//             <TooltipContent className="bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50">Settings</TooltipContent>
-//           </Tooltip>
-//         </TooltipProvider>
-//         <TooltipProvider>
-//           <Tooltip>
-//             <TooltipTrigger asChild>
-//               <Button
-//                 variant="ghost"
-//                 size="icon"
-//                 className="rounded-full hover:bg-[#F8C8DC]/20 hover:shadow-sm transition-all"
-//                 onClick={() => setShowKeyboardShortcutsDialog(true)}
-//               >
-//                 <HelpCircle className="h-5 w-5 text-[#A3BFFA]" />
-//               </Button>
-//             </TooltipTrigger>
-//             <TooltipContent className="bg-[#FAF9F6] text-[#1A202C] dark:bg-[#3A3A3A] dark:text-[#E2E8F0] border-[#F8C8DC]/50">Keyboard shortcuts</TooltipContent>
-//           </Tooltip>
-//         </TooltipProvider>
-//         {user && (
-//           <motion.div
-//             className="flex items-center transition-transform hover:scale-110"
-//             whileHover={{ boxShadow: '0 0 10px rgba(248, 200, 220, 0.5)' }}
-//           >
-//             <div className="bg-gradient-to-br from-[#FF6B6B] to-[#F8C8DC] rounded-full h-8 w-8 flex items-center justify-center text-white font-medium shadow-sm">
-//               {user.name ? user.name[0] : user.email[0]}
-//             </div>
-//           </motion.div>
-//         )}
-//       </div>
-//     </div>
-//   </header>
-// );
-import { Button } from '../Calendar_updated/components/ui/button';
-import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from '../Calendar_updated/components/ui/tooltip';
-import { motion } from 'framer-motion';
-import { Settings, HelpCircle, Clock } from 'lucide-react';
-import { UserPreferences } from './types';
+import { PageHeader } from '../ui/page-header';
 
-type TimerHeaderUser = {
-  name?: string;
-  email: string;
-};
-
+/**
+ * Timer page header. Deliberately does NOT repeat the theme toggle or the user
+ * avatar — the app shell (sidebar on desktop, top bar on mobile) already owns
+ * both, and three theme toggles on one mobile screen was the most confusing
+ * thing on this page. Only page-scoped actions live here.
+ */
 export const TimerHeader = ({
-  preferences,
-  setPreferences,
-  user,
   setShowSettingsDialog,
   setShowKeyboardShortcutsDialog,
 }: {
-  preferences: UserPreferences;
-  setPreferences: (fn: (prev: UserPreferences) => UserPreferences) => void;
-  user: TimerHeaderUser | null;
   setShowSettingsDialog: (show: boolean) => void;
   setShowKeyboardShortcutsDialog: (show: boolean) => void;
 }) => (
-  <header className="sticky top-0 z-30 border-b border-[#D8BFD8]/30 bg-[#F7F7F7]/85 shadow-sm backdrop-blur-md dark:border-[#3C4A5E] dark:bg-[#1f2b3b]/90">
-    <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
-      <div className="flex items-center space-x-3">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
+  <PageHeader
+    eyebrow="Overview"
+    title="Timer"
+    icon={TimerIcon}
+    subtitle="Start tracking in one tap. Everything you log feeds your calendar and your Coach."
+    className="mb-6"
+    actions={
+      <>
+        <button
+          type="button"
+          onClick={() => setShowKeyboardShortcutsDialog(true)}
+          aria-label="Keyboard shortcuts"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-input text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         >
-          <Clock className="h-7 w-7 text-[#D8BFD8] sm:h-8 sm:w-8" />
-        </motion.div>
-        <div>
-          <h1 className="text-base font-serif font-bold text-[#2D3748] sm:text-2xl dark:text-[#E6E6FA]">Focus Timer</h1>
-          <p className="text-[11px] text-[#6B7280] sm:text-xs dark:text-[#B0C4DE]">Track quickly, stay in flow</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-1 sm:gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full hover:bg-[#D8BFD8]/20 hover:shadow-sm transition-all"
-                  onClick={() => setPreferences((prev) => ({ ...prev, darkMode: !prev.darkMode }))}
-                >
-                  {preferences.darkMode ? (
-                    <motion.div initial={{ rotate: -30 }} animate={{ rotate: 0 }} transition={{ duration: 0.3 }}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 text-[#B0C4DE]"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                        />
-                      </svg>
-                    </motion.div>
-                  ) : (
-                    <motion.div initial={{ rotate: 30 }} animate={{ rotate: 0 }} transition={{ duration: 0.3 }}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 text-[#D8BFD8]"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                        />
-                      </svg>
-                    </motion.div>
-                  )}
-                </Button>
-              </motion.div>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[#F7F7F7] text-[#2D3748] dark:bg-[#3C4A5E] dark:text-[#E6E6FA] border-[#D8BFD8]/50 shadow-sm">
-              Toggle dark mode
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full hover:bg-[#D8BFD8]/20 hover:shadow-sm transition-all"
-                  onClick={() => setShowSettingsDialog(true)}
-                >
-                  <Settings className="h-5 w-5 text-[#B0C4DE]" />
-                </Button>
-              </motion.div>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[#F7F7F7] text-[#2D3748] dark:bg-[#3C4A5E] dark:text-[#E6E6FA] border-[#D8BFD8]/50 shadow-sm">
-              Settings
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full hover:bg-[#D8BFD8]/20 hover:shadow-sm transition-all"
-                  onClick={() => setShowKeyboardShortcutsDialog(true)}
-                >
-                  <HelpCircle className="h-5 w-5 text-[#B0C4DE]" />
-                </Button>
-              </motion.div>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[#F7F7F7] text-[#2D3748] dark:bg-[#3C4A5E] dark:text-[#E6E6FA] border-[#D8BFD8]/50 shadow-sm">
-              Keyboard shortcuts
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        {user && (
-          <motion.div
-            className="flex items-center"
-            whileHover={{ scale: 1.1, boxShadow: '0 0 12px rgba(216, 191, 216, 0.4)' }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#D8BFD8] to-[#B0C4DE] text-sm font-medium text-white shadow-sm sm:h-9 sm:w-9">
-              {user.name ? user.name[0] : user.email[0]}
-            </div>
-          </motion.div>
-        )}
-      </div>
-    </div>
-  </header>
+          <Keyboard className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowSettingsDialog(true)}
+          className="inline-flex h-9 items-center gap-2 rounded-lg border border-input px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <Settings className="h-4 w-4" />
+          Timer settings
+        </button>
+      </>
+    }
+  />
 );

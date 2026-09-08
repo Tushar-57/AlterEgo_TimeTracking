@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Clock3, LogOut, RefreshCcw, Save, Sparkles, Target, UserRound } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../Calendar_updated/components/hooks/use-toast';
+import { PageHeader } from '../ui/page-header';
 
 type Frequency = 'daily' | 'weekly' | 'biweekly';
 
@@ -681,78 +682,72 @@ const ProfilePage = () => {
 
   if (loading || !formState || !snapshot) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 md:px-8">
+      <div className="min-h-screen bg-background px-4 py-6 sm:px-6 md:px-8">
         <div className="mx-auto max-w-6xl animate-pulse space-y-4">
-          <div className="h-28 rounded-3xl bg-slate-200" />
-          <div className="h-40 rounded-2xl bg-slate-200" />
-          <div className="h-72 rounded-2xl bg-slate-200" />
+          <div className="h-28 rounded-3xl bg-muted" />
+          <div className="h-40 rounded-2xl bg-muted" />
+          <div className="h-72 rounded-2xl bg-muted" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 md:px-8">
+    <div className="min-h-screen bg-background px-4 py-6 sm:px-6 md:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="bg-gradient-to-r from-sky-100 via-cyan-50 to-emerald-100 px-6 py-8 sm:px-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">
-              <Sparkles className="h-3.5 w-3.5" />
-              Profile Control Center
-            </div>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">{user?.name || 'Your Profile'}</h1>
-            <p className="mt-2 text-sm text-slate-700 sm:text-base">
-              Fine-tune your onboarding context so your coach and planner stay aligned with your current routine.
-            </p>
-          </div>
-        </section>
+        <PageHeader
+          eyebrow="Account"
+          title={user?.name || 'Your profile'}
+          icon={UserRound}
+          subtitle="Fine-tune the context your Coach and planner use to keep up with your routine."
+        />
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-2 text-slate-700">
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-muted p-2 text-foreground">
               <Target className="h-4 w-4" />
             </div>
-            <p className="text-2xl font-semibold text-slate-900">{snapshot.goals.length}</p>
-            <p className="text-sm text-slate-600">Active goals in your onboarding plan</p>
+            <p className="text-2xl font-semibold text-foreground">{snapshot.goals.length}</p>
+            <p className="text-sm text-muted-foreground">Active goals in your onboarding plan</p>
           </article>
 
-          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-2 text-slate-700">
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-muted p-2 text-foreground">
               <Clock3 className="h-4 w-4" />
             </div>
-            <p className="text-2xl font-semibold text-slate-900">{formState.checkInFrequency}</p>
-            <p className="text-sm text-slate-600">Check-in rhythm</p>
+            <p className="text-2xl font-semibold text-foreground">{formState.checkInFrequency}</p>
+            <p className="text-sm text-muted-foreground">Check-in rhythm</p>
           </article>
 
-          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-2 text-slate-700">
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-muted p-2 text-foreground">
               <UserRound className="h-4 w-4" />
             </div>
-            <p className="text-2xl font-semibold text-slate-900">{snapshot.mentor.archetype}</p>
-            <p className="text-sm text-slate-600">Mentor archetype</p>
+            <p className="text-2xl font-semibold text-foreground">{snapshot.mentor.archetype}</p>
+            <p className="text-sm text-muted-foreground">Mentor archetype</p>
           </article>
 
-          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-2 text-slate-700">
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-muted p-2 text-foreground">
               <Sparkles className="h-4 w-4" />
             </div>
-            <p className="truncate text-lg font-semibold text-slate-900">{formState.timezone}</p>
-            <p className="text-sm text-slate-600">Current planning timezone</p>
+            <p className="truncate text-lg font-semibold text-foreground">{formState.timezone}</p>
+            <p className="text-sm text-muted-foreground">Current planning timezone</p>
           </article>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="mb-6 flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+          <div className="mb-6 flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-slate-900">Update Onboarding Details</h2>
-              <p className="text-sm text-slate-600">Adjust role, tone, routine windows, and planner sync preferences.</p>
+              <h2 className="text-xl font-semibold text-foreground">Update Onboarding Details</h2>
+              <p className="text-sm text-muted-foreground">Adjust role, tone, routine windows, and planner sync preferences.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={handleLogoutAllDevices}
                 disabled={endingAllSessions}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-input bg-muted px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <LogOut className="h-4 w-4" />
                 {endingAllSessions ? 'Ending Sessions...' : 'Logout All Devices'}
@@ -761,10 +756,10 @@ const ProfilePage = () => {
                 type="button"
                 onClick={handleRedoOnboarding}
                 disabled={redoing}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-input px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCcw className="h-4 w-4" />
-                {redoing ? 'Preparing...' : 'Redo Onboarding'}
+                {redoing ? 'Preparing…' : 'Redo onboarding'}
               </button>
             </div>
           </div>
@@ -772,98 +767,98 @@ const ProfilePage = () => {
           <form className="space-y-6" onSubmit={handleSave}>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Role</span>
+                <span className="font-medium text-foreground">Role</span>
                 <input
                   value={formState.role}
                   onChange={(event) => setFormState((prev) => prev ? { ...prev, role: event.target.value } : prev)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                   placeholder="Professional"
                   required
                 />
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Preferred Tone</span>
+                <span className="font-medium text-foreground">Preferred Tone</span>
                 <input
                   value={formState.preferredTone}
                   onChange={(event) => setFormState((prev) => prev ? { ...prev, preferredTone: event.target.value } : prev)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                   placeholder="Encouraging"
                 />
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Mentor Style</span>
+                <span className="font-medium text-foreground">Mentor Style</span>
                 <input
                   value={formState.mentorStyle}
                   onChange={(event) => setFormState((prev) => prev ? { ...prev, mentorStyle: event.target.value } : prev)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                   placeholder="Friendly"
                 />
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Work Start</span>
+                <span className="font-medium text-foreground">Work Start</span>
                 <input
                   type="time"
                   value={formState.workStart}
                   onChange={(event) => setFormState((prev) => prev ? { ...prev, workStart: event.target.value } : prev)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                 />
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Work End</span>
+                <span className="font-medium text-foreground">Work End</span>
                 <input
                   type="time"
                   value={formState.workEnd}
                   onChange={(event) => setFormState((prev) => prev ? { ...prev, workEnd: event.target.value } : prev)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                 />
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Timezone</span>
+                <span className="font-medium text-foreground">Timezone</span>
                 <input
                   value={formState.timezone}
                   onChange={(event) => setFormState((prev) => prev ? { ...prev, timezone: event.target.value } : prev)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                   placeholder="America/New_York"
                 />
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">DND Start</span>
+                <span className="font-medium text-foreground">DND Start</span>
                 <input
                   type="time"
                   value={formState.dndStart}
                   onChange={(event) => setFormState((prev) => prev ? { ...prev, dndStart: event.target.value } : prev)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                 />
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">DND End</span>
+                <span className="font-medium text-foreground">DND End</span>
                 <input
                   type="time"
                   value={formState.dndEnd}
                   onChange={(event) => setFormState((prev) => prev ? { ...prev, dndEnd: event.target.value } : prev)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                 />
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Check-in Time</span>
+                <span className="font-medium text-foreground">Check-in Time</span>
                 <input
                   type="time"
                   value={formState.checkInTime}
                   onChange={(event) => setFormState((prev) => prev ? { ...prev, checkInTime: event.target.value } : prev)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                 />
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Check-in Frequency</span>
+                <span className="font-medium text-foreground">Check-in Frequency</span>
                 <select
                   value={formState.checkInFrequency}
                   onChange={(event) =>
@@ -876,7 +871,7 @@ const ProfilePage = () => {
                         : prev
                     )
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                 >
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
@@ -885,15 +880,15 @@ const ProfilePage = () => {
               </label>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="text-sm font-semibold text-slate-800">Coach Preferences</h3>
-              <p className="mt-1 text-xs text-slate-600">
+            <div className="rounded-xl border border-border bg-muted p-4">
+              <h3 className="text-sm font-semibold text-foreground">Coach Preferences</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
                 These settings shape how your coach communicates, challenges, and keeps you accountable.
               </p>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Communication Style</span>
+                  <span className="font-medium text-foreground">Communication Style</span>
                   <input
                     value={formState.coachCommunicationStyle}
                     onChange={(event) =>
@@ -901,13 +896,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, coachCommunicationStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="adaptive"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Challenge Level (1-10)</span>
+                  <span className="font-medium text-foreground">Challenge Level (1-10)</span>
                   <input
                     type="number"
                     min={1}
@@ -923,12 +918,12 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Accountability Mode</span>
+                  <span className="font-medium text-foreground">Accountability Mode</span>
                   <input
                     value={formState.coachAccountabilityMode}
                     onChange={(event) =>
@@ -936,13 +931,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, coachAccountabilityMode: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="balanced"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Decision Style</span>
+                  <span className="font-medium text-foreground">Decision Style</span>
                   <input
                     value={formState.coachDecisionStyle}
                     onChange={(event) =>
@@ -950,22 +945,22 @@ const ProfilePage = () => {
                         prev ? { ...prev, coachDecisionStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="data-driven"
                   />
                 </label>
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="text-sm font-semibold text-slate-800">Domain Preferences</h3>
-              <p className="mt-1 text-xs text-slate-600">
+            <div className="rounded-xl border border-border bg-muted p-4">
+              <h3 className="text-sm font-semibold text-foreground">Domain Preferences</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Tune productivity, health, finance, and journal preferences so Agentic suggestions stay personalized.
               </p>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Focus Style</span>
+                  <span className="font-medium text-foreground">Focus Style</span>
                   <input
                     value={formState.productivityFocusStyle}
                     onChange={(event) =>
@@ -973,13 +968,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, productivityFocusStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="deep-work"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Deep Work Target (h + m)</span>
+                  <span className="font-medium text-foreground">Deep Work Target (h + m)</span>
                   <input
                     type="number"
                     min={0}
@@ -994,12 +989,12 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Planning Cadence</span>
+                  <span className="font-medium text-foreground">Planning Cadence</span>
                   <input
                     value={formState.productivityPlanningCadence}
                     onChange={(event) =>
@@ -1007,13 +1002,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, productivityPlanningCadence: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="daily"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Priority System</span>
+                  <span className="font-medium text-foreground">Priority System</span>
                   <input
                     value={formState.productivityPrioritySystem}
                     onChange={(event) =>
@@ -1021,13 +1016,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, productivityPrioritySystem: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="impact-first"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Sleep Target (hours)</span>
+                  <span className="font-medium text-foreground">Sleep Target (hours)</span>
                   <input
                     type="number"
                     min={0}
@@ -1043,12 +1038,12 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Movement Goal (h + m)</span>
+                  <span className="font-medium text-foreground">Movement Goal (h + m)</span>
                   <input
                     type="number"
                     min={0}
@@ -1063,12 +1058,12 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Stress Approach</span>
+                  <span className="font-medium text-foreground">Stress Approach</span>
                   <input
                     value={formState.healthStressApproach}
                     onChange={(event) =>
@@ -1076,13 +1071,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, healthStressApproach: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="mindfulness"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Nutrition Style</span>
+                  <span className="font-medium text-foreground">Nutrition Style</span>
                   <input
                     value={formState.healthNutritionStyle}
                     onChange={(event) =>
@@ -1090,13 +1085,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, healthNutritionStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="balanced"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Budget Cadence</span>
+                  <span className="font-medium text-foreground">Budget Cadence</span>
                   <input
                     value={formState.financeBudgetCadence}
                     onChange={(event) =>
@@ -1104,13 +1099,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, financeBudgetCadence: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="weekly"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Savings Priority</span>
+                  <span className="font-medium text-foreground">Savings Priority</span>
                   <input
                     value={formState.financeSavingsPriority}
                     onChange={(event) =>
@@ -1118,13 +1113,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, financeSavingsPriority: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="steady"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Risk Profile</span>
+                  <span className="font-medium text-foreground">Risk Profile</span>
                   <input
                     value={formState.financeRiskProfile}
                     onChange={(event) =>
@@ -1132,13 +1127,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, financeRiskProfile: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="moderate"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Spending Guardrail (%)</span>
+                  <span className="font-medium text-foreground">Spending Guardrail (%)</span>
                   <input
                     type="number"
                     min={0}
@@ -1154,12 +1149,12 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Reflection Frequency</span>
+                  <span className="font-medium text-foreground">Reflection Frequency</span>
                   <input
                     value={formState.journalReflectionFrequency}
                     onChange={(event) =>
@@ -1167,13 +1162,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, journalReflectionFrequency: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="daily"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Reflection Depth</span>
+                  <span className="font-medium text-foreground">Reflection Depth</span>
                   <input
                     value={formState.journalReflectionDepth}
                     onChange={(event) =>
@@ -1181,13 +1176,13 @@ const ProfilePage = () => {
                         prev ? { ...prev, journalReflectionDepth: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="balanced"
                   />
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Gratitude Mode</span>
+                  <span className="font-medium text-foreground">Gratitude Mode</span>
                   <input
                     value={formState.journalGratitudeMode}
                     onChange={(event) =>
@@ -1195,15 +1190,15 @@ const ProfilePage = () => {
                         prev ? { ...prev, journalGratitudeMode: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
                     placeholder="3-things"
                   />
                 </label>
               </div>
             </div>
 
-            <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3">
-              <label className="flex items-center gap-2 text-sm text-slate-700">
+            <div className="grid gap-3 rounded-xl border border-border bg-muted p-4 sm:grid-cols-3">
+              <label className="flex items-center gap-2 text-sm text-foreground">
                 <input
                   type="checkbox"
                   checked={formState.remindersEnabled}
@@ -1215,7 +1210,7 @@ const ProfilePage = () => {
                 />
                 Reminders enabled
               </label>
-              <label className="flex items-center gap-2 text-sm text-slate-700">
+              <label className="flex items-center gap-2 text-sm text-foreground">
                 <input
                   type="checkbox"
                   checked={formState.calendarSync}
@@ -1227,7 +1222,7 @@ const ProfilePage = () => {
                 />
                 Calendar sync
               </label>
-              <label className="flex items-center gap-2 text-sm text-slate-700">
+              <label className="flex items-center gap-2 text-sm text-foreground">
                 <input
                   type="checkbox"
                   checked={formState.taskManagementSync}
@@ -1241,15 +1236,15 @@ const ProfilePage = () => {
               </label>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-              <div className="inline-flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+              <div className="inline-flex items-center gap-2 rounded-lg bg-surface px-3 py-2 text-xs text-warning">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 Updating onboarding details also refreshes your AI coach context.
               </div>
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Save className="h-4 w-4" />
                 {saving ? 'Saving...' : 'Save Profile Updates'}
