@@ -7,7 +7,8 @@ import {
   BellRing,
   FileText,
   LayoutDashboard,
-  LucideCalendarCheck2,
+  ListChecks,
+  LogOut,
   Settings,
   Sparkles,
   Tag,
@@ -25,12 +26,12 @@ type NavItemProps = {
   icon: LucideIcon;
   label: string;
   to: string;
-  onNavigate?: () => void;
-  /** Route hands off to the separate Agentic Coach app — show an affordance. */
+  /** Marks routes that hand off to the external Agentic Coach product. */
   external?: boolean;
+  onNavigate?: () => void;
 };
 
-const NavItem = ({ icon: Icon, label, to, onNavigate, external = false }: NavItemProps) => {
+const NavItem = ({ icon: Icon, label, to, external, onNavigate }: NavItemProps) => {
   const location = useLocation();
   const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
 
@@ -38,28 +39,32 @@ const NavItem = ({ icon: Icon, label, to, onNavigate, external = false }: NavIte
     <Link
       to={to}
       onClick={onNavigate}
+      aria-current={isActive ? 'page' : undefined}
       aria-label={external ? `${label} (opens Coach)` : undefined}
-      title={external ? `${label} — opens your AI Coach` : undefined}
-      className={`group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
+      title={external ? 'Opens the Coach workspace' : undefined}
+      className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
         isActive
-          ? 'bg-brand-gradient text-primary-foreground shadow-sm'
+          ? 'bg-primary text-primary-foreground shadow-sm'
           : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
       }`}
     >
-      <Icon className="h-5 w-5 shrink-0" />
+      <Icon className="h-[18px] w-[18px] shrink-0" />
       <span className="flex-1 truncate">{label}</span>
-      {external && (
+      {external ? (
         <ArrowUpRight
-          className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`}
+          className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-primary-foreground/80' : 'text-muted-foreground/60'}`}
         />
-      )}
+      ) : null}
     </Link>
   );
 };
 
-const GroupLabel = ({ children }: { children: string }) => (
-  <div className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-    {children}
+const NavGroup = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="mb-5">
+    <div className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+      {label}
+    </div>
+    <div className="space-y-0.5">{children}</div>
   </div>
 );
 
@@ -81,7 +86,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
   return (
     <>
       <div
-        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 md:hidden ${
+        className={`fixed inset-0 z-40 bg-foreground/40 transition-opacity duration-300 md:hidden ${
           mobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
         onClick={onMobileClose}
@@ -89,21 +94,21 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
       />
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-[100dvh] w-64 border-r border-border bg-card p-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+1rem)] shadow-xl backdrop-blur-xl transition-transform duration-300 md:z-20 md:translate-x-0 md:pt-6 md:shadow-none ${
+        className={`fixed left-0 top-0 z-50 flex h-[100dvh] w-64 flex-col border-r border-border bg-card p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-[calc(env(safe-area-inset-top)+1rem)] shadow-xl transition-transform duration-300 md:z-20 md:translate-x-0 md:shadow-none md:pt-4 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <WatchIcon className="h-8 w-8 text-primary" />
-            <span className="text-xl font-semibold text-foreground">Alter Ego</span>
+        <div className="mb-6 flex items-center justify-between px-1">
+          <div className="flex items-center gap-2.5">
+            <WatchIcon className="h-7 w-7 text-primary" />
+            <span className="text-lg font-semibold tracking-tight text-foreground">Alter Ego</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <ThemeToggle className="h-9 w-9 p-0" />
             <button
               type="button"
               onClick={onMobileClose}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground md:hidden"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground md:hidden"
               aria-label="Close navigation menu"
             >
               <X className="h-5 w-5" />
@@ -111,34 +116,30 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
           </div>
         </div>
 
-        <nav className="flex h-[calc(100%-5.5rem)] flex-col gap-1 overflow-y-auto pb-4">
-          <div className="mb-5">
-            <GroupLabel>Overview</GroupLabel>
+        <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto pr-1">
+          <NavGroup label="Overview">
             <NavItem icon={Timer} label="Timer" to="/timer" onNavigate={onMobileClose} />
-            <NavItem icon={LayoutDashboard} label="Calendar" to="/dashboard" onNavigate={onMobileClose} />
-          </div>
+            <NavItem icon={LayoutDashboard} label="Dashboard" to="/dashboard" onNavigate={onMobileClose} />
+          </NavGroup>
 
-          <div className="mb-5">
-            <GroupLabel>Planner</GroupLabel>
-            <NavItem icon={LucideCalendarCheck2} label="Tasks" to="/tasks" onNavigate={onMobileClose} />
-          </div>
+          <NavGroup label="Plan">
+            <NavItem icon={ListChecks} label="Tasks" to="/tasks" onNavigate={onMobileClose} />
+          </NavGroup>
 
-          <div className="mb-5">
-            <GroupLabel>Coach</GroupLabel>
-            <NavItem icon={Sparkles} label="Coach" to="/coach/knowledge" onNavigate={onMobileClose} external />
-            <NavItem icon={BarChart2} label="Analytics" to="/coach/analytics" onNavigate={onMobileClose} external />
-            <NavItem icon={BellRing} label="Notifications" to="/coach/notifications" onNavigate={onMobileClose} external />
-          </div>
+          <NavGroup label="Coach">
+            <NavItem icon={Sparkles} label="AI Coach" to="/coach/knowledge" external onNavigate={onMobileClose} />
+            <NavItem icon={BarChart2} label="Analytics" to="/coach/analytics" external onNavigate={onMobileClose} />
+            <NavItem icon={BellRing} label="AI Notifications" to="/coach/notifications" external onNavigate={onMobileClose} />
+          </NavGroup>
 
-          <div className="mb-5">
-            <GroupLabel>Manage</GroupLabel>
+          <NavGroup label="Manage">
             <NavItem icon={Users} label="Projects" to="/projects" onNavigate={onMobileClose} />
             <NavItem icon={UserPlus} label="Clients" to="/clients" onNavigate={onMobileClose} />
             <NavItem icon={FileText} label="Invoices" to="/invoices" onNavigate={onMobileClose} />
             <NavItem icon={Tag} label="Tags" to="/tags" onNavigate={onMobileClose} />
-          </div>
+          </NavGroup>
 
-          <div className="mt-auto space-y-1 border-t border-border pt-4">
+          <div className="mt-auto space-y-0.5 border-t border-border pt-3">
             <NavItem icon={UserRound} label="Profile" to="/profile" onNavigate={onMobileClose} />
             <NavItem icon={Settings} label="Settings" to="/settings" onNavigate={onMobileClose} />
             <button
@@ -147,12 +148,10 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
                 onMobileClose();
                 logout();
               }}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M5 22q-.825 0-1.413-.588T3 20V4q0-.825.588-1.413T5 2h7v2H5v16h7v2H5Zm11-4l-1.375-1.45l2.55-2.55H9v-2h8.175l-2.55-2.55L16 7l5 5l-5 5Z" />
-              </svg>
-              <span>Log Out</span>
+              <LogOut className="h-[18px] w-[18px] shrink-0" />
+              <span className="flex-1 text-left">Log Out</span>
             </button>
           </div>
         </nav>

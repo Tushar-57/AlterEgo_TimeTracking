@@ -1,344 +1,21 @@
-// import { ChevronLeftIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
-// import { useEffect, useState } from "react";
-// import { Button } from "../../../../components/ui/button";
-// import { Input } from "../../../../components/ui/input";
-// import {
-//   ToggleGroup,
-//   ToggleGroupItem,
-// } from "../../../../components/ui/toggle-group";
-// import { CalendarEvent } from "../../Fantastical";
-
-// const timeSlots = Array.from({ length: 24 }, (_, i) => {
-//   const hour = i % 12 || 12;
-//   const period = i < 12 ? 'AM' : 'PM';
-//   return `${hour} ${period}`;
-// });
-
-// const monthNames = [
-//   "January", "February", "March", "April", "May", "June",
-//   "July", "August", "September", "October", "November", "December"
-// ];
-
-// export const CalendarSection = ({ events }: { events: CalendarEvent[] }): JSX.Element => {
-//   const [view, setView] = useState<"day" | "week" | "month" | "year">("week");
-//   const [currentDate, setCurrentDate] = useState(new Date());
-
-//   const getWeekDays = (date: Date) => {
-//     const startOfWeek = new Date(date);
-//     startOfWeek.setDate(date.getDate() - date.getDay());
-//     return Array.from({ length: 7 }, (_, i) => {
-//       const day = new Date(startOfWeek);
-//       day.setDate(startOfWeek.getDate() + i);
-//       return {
-//         day: day.toLocaleString('en-US', { weekday: 'short' }).toUpperCase(),
-//         date: day.getDate().toString(),
-//         isWeekend: i === 0 || i === 6,
-//         isToday: day.toDateString() === new Date().toDateString()
-//       };
-//     });
-//   };
-
-//   const getMonthData = (date: Date) => {
-//     const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-//     const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-//     const startDay = firstDay.getDay();
-//     const daysInMonth = lastDay.getDate();
-//     const totalSlots = Math.ceil((daysInMonth + startDay) / 7) * 7;
-
-//     return Array.from({ length: totalSlots }, (_, i) => {
-//       const day = i - startDay + 1;
-//       const isCurrentMonth = day > 0 && day <= daysInMonth;
-//       const currentDate = isCurrentMonth ? day : i < startDay ? day + lastDay.getDate() - startDay : day - daysInMonth;
-//       return {
-//         date: currentDate.toString(),
-//         isCurrentMonth,
-//         isToday: isCurrentMonth && new Date(date.getFullYear(), date.getMonth(), day).toDateString() === new Date().toDateString(),
-//         isWeekend: (i % 7 === 0 || i % 7 === 6) && isCurrentMonth,
-//         events: isCurrentMonth ? events.filter(e => {
-//           const eventDate = new Date(`${e.time} ${e.period}`);
-//           return eventDate.getDate() === day && eventDate.getMonth() === date.getMonth() && eventDate.getFullYear() === date.getFullYear();
-//         }) : []
-//       };
-//     });
-//   };
-
-//   const getYearData = (date: Date) => {
-//     return monthNames.map((month, index) => {
-//       const lastDay = new Date(date.getFullYear(), index + 1, 0).getDate();
-//       return {
-//         month,
-//         days: Array.from({ length: 35 }, (_, i) => {
-//           const day = (i % lastDay) + 1;
-//           return {
-//             date: day.toString(),
-//             events: events.filter(e => {
-//               const eventDate = new Date(`${e.time} ${e.period}`);
-//               return eventDate.getMonth() === index && eventDate.getDate() === day;
-//             })
-//           };
-//         })
-//       };
-//     });
-//   };
-
-//   const handleNavigation = (direction: 'prev' | 'next') => {
-//     const newDate = new Date(currentDate);
-//     if (view === 'day') {
-//       newDate.setDate(currentDate.getDate() + (direction === 'prev' ? -1 : 1));
-//     } else if (view === 'week') {
-//       newDate.setDate(currentDate.getDate() + (direction === 'prev' ? -7 : 7));
-//     } else if (view === 'month') {
-//       newDate.setMonth(currentDate.getMonth() + (direction === 'prev' ? -1 : 1));
-//     } else if (view === 'year') {
-//       newDate.setFullYear(currentDate.getFullYear() + (direction === 'prev' ? -1 : 1));
-//     }
-//     setCurrentDate(newDate);
-//   };
-
-//   const weekDays = getWeekDays(currentDate);
-//   const monthData = getMonthData(currentDate);
-//   const yearData = getYearData(currentDate);
-
-//   const renderDayView = () => (
-//     <div className="flex flex-col w-full h-full items-start">
-//       <div className="flex w-full items-start pl-12 pr-0 py-0 gap-3">
-//         <div className="flex flex-1">
-//           <div className={`flex flex-col flex-1 items-start pt-1 pb-4 px-2 shadow-[inset_-1px_-1px_0px_#e0e0e0] ${weekDays.find(d => d.isToday)?.isToday ? "bg-blue-100" : "bg-white"}`}>
-//             <div className="relative self-stretch mt-[-1.00px] font-bold text-gray-500 text-[10px] tracking-[0] leading-3">
-//               {currentDate.toLocaleString('en-US', { weekday: 'short' }).toUpperCase()}
-//             </div>
-//             <div className="self-stretch font-medium text-black text-[22px] leading-8 tracking-[0]">
-//               {currentDate.getDate()}
-//             </div>
-//           </div>
-//         </div>
-//         <div className="w-12 mt-[-1.00px] text-xs font-medium text-gray-500">
-//           EST<br />GMT-5
-//         </div>
-//       </div>
-//       {timeSlots.map((time, timeIndex) => (
-//         <div key={timeIndex} className="flex w-full items-start gap-3">
-//           <div className="w-9 mt-[-1.00px] text-xs font-medium text-gray-500">
-//             {time}
-//           </div>
-//           <div className="flex flex-1 items-start">
-//             <div className="flex flex-col flex-1 items-start shadow-[inset_-1px_-1px_0px_#e0e0e0] bg-white">
-//               <div className="relative self-stretch w-full h-9 shadow-[inset_0px_-1px_0px_#f7f7f7]" />
-//               <div className="relative self-stretch w-full h-9" />
-//             </div>
-//           </div>
-//           <div className="w-9 mt-[-1.00px] text-xs font-medium text-gray-500">
-//             {time}
-//           </div>
-//         </div>
-//       ))}
-//     </div>
-//   );
-
-//   useEffect(() => {
-//     const todayColumn = document.querySelector('.day-column[data-today="true"]');
-//     todayColumn?.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-//   }, [currentDate]);
-  
-//   const renderWeekView = () => (
-//     <div className="flex flex-col w-full h-full items-start">
-//       <div className="flex w-full items-start pl-12 pr-0 py-0 gap-3">
-//         <div className="grid grid-cols-7 flex-1">
-//           {weekDays.map((dayInfo, index) => (
-//             <div
-//               key={index}
-//               className={`flex flex-col flex-1 items-start pt-1 pb-4 px-2 shadow-[inset_-1px_-1px_0px_#e0e0e0] ${
-//                 dayInfo.isWeekend ? "bg-gray-50" : dayInfo.isToday ? "bg-blue-100" : "bg-white"
-//               }`}
-//               data-today={dayInfo.isToday}
-//             >
-//               <div className="relative self-stretch mt-[-1.00px] font-bold text-gray-500 text-[10px] tracking-[0] leading-3">
-//                 {dayInfo.day}
-//               </div>
-//               <div className="self-stretch font-medium text-black text-[22px] leading-8 tracking-[0]">
-//                 {dayInfo.date}
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-//         <div className="w-12 mt-[-1.00px] text-xs font-medium text-gray-500">
-//           EST<br />GMT-5
-//         </div>
-//       </div>
-//       <div className="grid grid-cols-7 flex-1 items-start">
-//         {timeSlots.map((time, timeIndex) => (
-//           <div key={timeIndex} className="contents">
-//             <div className="w-9 mt-[-1.00px] text-xs font-medium text-gray-500">
-//               {time}
-//             </div>
-//             {weekDays.map((dayInfo, dayIndex) => (
-//               <div
-//                 key={dayIndex}
-//                 className={`flex flex-col flex-1 items-start shadow-[inset_-1px_-1px_0px_#e0e0e0] ${
-//                   dayInfo.isWeekend ? "bg-gray-50" : dayInfo.isToday ? "bg-blue-100 border-blue-300 border-2" : "bg-white"
-//                 }`}
-//               >
-//                 <div className="relative self-stretch w-full h-9 shadow-[inset_0px_-1px_0px_#f7f7f7]" />
-//                 <div className="relative self-stretch w-full h-9" />
-//               </div>
-//             ))}
-//           </div>
-//         ))}
-//         <div className="w-9 mt-[-1.00px] text-xs font-medium text-gray-500">
-//           {timeSlots[timeSlots.length - 1]}
-//         </div>
-//       </div>
-//     </div>
-//   );
-
-//   const renderMonthView = () => (
-//     <div className="flex flex-col w-full h-full">
-//       <div className="grid grid-cols-7 border-b">
-//         {weekDays.map((day) => (
-//           <div key={day.day} className="p-2 text-center border-r last:border-r-0">
-//             <span className="text-xs font-bold text-gray-500">{day.day}</span>
-//           </div>
-//         ))}
-//       </div>
-//       <div className="grid grid-cols-7 flex-1">
-//         {monthData.map((day, index) => (
-//           <div
-//             key={index}
-//             className={`min-h-[100px] p-2 border-b border-r last:border-r-0 ${
-//               day.isCurrentMonth
-//                 ? day.isToday
-//                   ? "bg-blue-100 border-blue-300 border-2"
-//                   : day.isWeekend
-//                     ? "bg-gray-50"
-//                     : "bg-white"
-//                 : "bg-gray-100"
-//             }`}
-//           >
-//             <span className={`text-sm ${day.isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}>
-//               {day.date}
-//             </span>
-//             <div className="flex gap-1 mt-1">
-//               {day.events.map(event => (
-//                 <div key={event.id} className={`w-2 h-2 rounded-full bg-${event.color}-500`} />
-//               ))}
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-
-//   const renderYearView = () => (
-//     <div className="grid grid-cols-4 gap-4 p-4">
-//       {yearData.map((month) => (
-//         <div key={month.month} className="border rounded-lg overflow-hidden">
-//           <div className="bg-gray-100 p-2 border-b">
-//             <h3 className="text-sm font-semibold text-gray-900">{month.month}</h3>
-//           </div>
-//           <div className="p-2">
-//             <div className="grid grid-cols-7 gap-1">
-//               {weekDays.map((day) => (
-//                 <div key={day.day} className="text-[10px] text-center text-gray-500">
-//                   {day.day[0]}
-//                 </div>
-//               ))}
-//               {month.days.map((day, i) => (
-//                 <div
-//                   key={i}
-//                   className="text-[10px] text-center text-gray-900 aspect-square flex items-center justify-center"
-//                 >
-//                   <div>
-//                     {day.date}
-//                     <div className="flex gap-0.5 justify-center">
-//                       {day.events.map(event => (
-//                         <div key={event.id} className={`w-1 h-1 rounded-full bg-${event.color}-500`} />
-//                       ))}
-//                     </div>
-//                   </div>
-//                 </div>
-//               ))}
-//             </div>
-//           </div>
-//         </div>
-//       ))}
-//     </div>
-//   );
-
-//   return (
-//     <section className="flex flex-col w-full h-full gap-4 p-4 overflow-auto">
-//       <div className="sticky top-0 z-10 bg-white pt-4 pb-2 px-4 border-b">
-//         <div className="flex items-start justify-between relative self-stretch w-full">
-//           <div className="flex items-start gap-px">
-//             <Button
-//               variant="ghost"
-//               size="icon"
-//               className="rounded-[6px_0px_0px_6px] p-1 bg-gray-100 h-auto"
-//               onClick={() => handleNavigation('prev')}
-//             >
-//               <ChevronLeftIcon className="h-5 w-5" />
-//             </Button>
-//             <Button
-//               variant="ghost"
-//               className="px-4 py-1.5 bg-gray-100 rounded-none h-auto"
-//               onClick={() => setCurrentDate(new Date())}
-//             >
-//               <span className="text-xs text-gray-900">Today</span>
-//             </Button>
-//             <Button
-//               variant="ghost"
-//               size="icon"
-//               className="rounded-[0px_6px_6px_0px] p-1 bg-gray-100 h-auto"
-//               onClick={() => handleNavigation('next')}
-//             >
-//               <ChevronRightIcon className="h-5 w-5" />
-//             </Button>
-//           </div>
-
-//           <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as any)}>
-//             <ToggleGroupItem value="day" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
-//               <span className="text-sm font-medium">Daily</span>
-//             </ToggleGroupItem>
-//             <ToggleGroupItem value="week" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
-//               <span className="text-sm font-medium">Weekly</span>
-//             </ToggleGroupItem>
-//             <ToggleGroupItem value="month" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
-//               <span className="text-sm font-medium">Monthly</span>
-//             </ToggleGroupItem>  
-//             <ToggleGroupItem value="year" className="px-4 py-1 rounded-lg h-auto data-[state=on]:bg-primary data-[state=on]:text-white">
-//               <span className="text-sm font-medium">Yearly</span>
-//             </ToggleGroupItem>
-//           </ToggleGroup>
-
-//           <div className="w-[184px] flex items-start">
-//             <div className="flex items-center gap-2 p-1 flex-1 bg-gray-100 rounded">
-//               <SearchIcon className="w-5 h-5" />
-//               <Input
-//                 className="flex-1 border-0 bg-transparent p-0 text-xs text-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0 h-auto"
-//                 placeholder="Search"
-//               />
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//       <div className="flex-1 overflow-auto">
-//         {view === "day" && renderDayView()}
-//         {view === "week" && renderWeekView()}
-//         {view === "month" && renderMonthView()}
-//         {view === "year" && renderYearView()}
-//       </div>
-//     </section>
-//   );
-// }
-
-import { ChevronLeftIcon, ChevronRightIcon, Clock3, Copy, Plus, SearchIcon } from "lucide-react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Clock3,
+  Copy,
+  Pencil,
+  Play,
+  Plus,
+  SearchIcon,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "../../../../components/ui/toggle-group";
-import { CalendarEvent } from "../../Fantastical";
+import { CalendarEvent } from "../../../../types";
 import { TaskPopup } from "./TaskPopup";
-import { ContextMenu } from "./ContextMenu";
-import { motion } from "framer-motion";
+import { ContextMenu, type ContextMenuItem } from "./ContextMenu";
 import Draggable, { DraggableData, DraggableEvent } from "react-draggable";
 import { formatSecondsAsHoursMinutes, parseDateTimeAsLocal } from "../../../../../../utils/utils";
 
@@ -369,25 +46,16 @@ const WEEKDAY_INITIALS = [
  *  the calendar and the Projects page agree on what colour a project is.
  *  Legacy palette names still resolve for entries with no project. */
 const eventColorClasses: Record<string, string> = {
-  lightblue: "border-blue-200 bg-blue-50 text-blue-700",
-  violet: "border-violet-200 bg-violet-50 text-violet-700",
-  amber: "border-amber-200 bg-amber-50 text-amber-700",
-  rose: "border-rose-200 bg-rose-50 text-rose-700",
-  emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  lightblue: "border-blue-300/60 bg-blue-100 text-blue-800 dark:border-blue-400/30 dark:bg-blue-500/15 dark:text-blue-200",
+  violet: "border-violet-300/60 bg-violet-100 text-violet-800 dark:border-violet-400/30 dark:bg-violet-500/15 dark:text-violet-200",
+  amber: "border-amber-300/60 bg-amber-100 text-amber-800 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200",
+  rose: "border-rose-300/60 bg-rose-100 text-rose-800 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200",
+  emerald: "border-emerald-300/60 bg-emerald-100 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200",
 };
 
-const isHexColor = (color: string) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(color ?? "");
-
-const getEventColorClasses = (color: string) => {
-  if (isHexColor(color)) {
-    // Neutral surface; the project hue lands as a left rule via inline style.
-    return "border-border border-l-[3px] bg-surface text-surface-foreground";
-  }
-  return eventColorClasses[color] ?? "border-border bg-muted text-foreground";
-};
-
-const getEventColorStyle = (color: string): React.CSSProperties =>
-  isHexColor(color) ? { borderLeftColor: color } : {};
+const getEventColorClasses = (color: string) =>
+  eventColorClasses[color] ??
+  "border-border bg-secondary text-secondary-foreground dark:bg-secondary";
 
 const isSameDay = (left: Date, right: Date) =>
   left.getFullYear() === right.getFullYear() &&
@@ -439,6 +107,7 @@ interface CalendarContextMenuState {
   x: number;
   y: number;
   selectedTime: Date;
+  event?: CalendarEvent;
 }
 
 export const CalendarSection = ({
@@ -471,13 +140,19 @@ export const CalendarSection = ({
   const weekGridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let wasMobile = window.innerWidth < 1024;
+
     const handleResize = () => {
       const nextIsMobile = window.innerWidth < 1024;
       setIsMobileLayout(nextIsMobile);
 
-      if (nextIsMobile) {
+      // Only reset the view when the layout actually crosses the mobile
+      // boundary — not on every resize while already narrow. Previously this
+      // stomped the user's chosen view on any mobile-width resize tick.
+      if (nextIsMobile && !wasMobile) {
         setView("month");
       }
+      wasMobile = nextIsMobile;
     };
 
     handleResize();
@@ -639,30 +314,71 @@ export const CalendarSection = ({
     setSelectedEvent(null);
   };
 
-  const handleTimeSlotClick = (hour: number, dayIndex?: number, event?: React.MouseEvent) => {
+  const resolveSlotDate = (hour: number, dayIndex?: number) => {
     const selectedDate = new Date(currentDate);
     if (view === "week" && dayIndex !== undefined) {
       selectedDate.setDate(currentDate.getDate() - currentDate.getDay() + dayIndex);
     }
     selectedDate.setHours(hour, 0, 0, 0);
+    return selectedDate;
+  };
 
-    if (event) {
-      const defaultAction = localStorage.getItem("defaultCalendarAction") || "addTimeEntry";
-      const isContextMenuEvent = event.type === "contextmenu";
+  const handleTimeSlotClick = (hour: number, dayIndex?: number, event?: React.MouseEvent) => {
+    const selectedDate = resolveSlotDate(hour, dayIndex);
 
-      if (isContextMenuEvent) {
-        event.preventDefault();
-        setContextMenu({ x: event.clientX, y: event.clientY, selectedTime: selectedDate });
-        return;
-      }
-
-      if (view === "week" && defaultAction !== "addTimeEntry") {
-        return;
-      }
+    if (event && event.type === "contextmenu") {
+      event.preventDefault();
+      setContextMenu({ x: event.clientX, y: event.clientY, selectedTime: selectedDate });
+      return;
     }
 
     openCreatePopupAt(selectedDate);
   };
+
+  const openEventContextMenu = (mouseEvent: React.MouseEvent, calendarEvent: CalendarEvent) => {
+    mouseEvent.preventDefault();
+    mouseEvent.stopPropagation();
+    setContextMenu({
+      x: mouseEvent.clientX,
+      y: mouseEvent.clientY,
+      selectedTime: parseDateTimeAsLocal(calendarEvent.startTime),
+      event: calendarEvent,
+    });
+  };
+
+  const contextMenuItems: ContextMenuItem[] = useMemo(() => {
+    if (!contextMenu) return [];
+
+    if (contextMenu.event) {
+      const target = contextMenu.event;
+      const items: ContextMenuItem[] = [
+        { label: "Edit entry", icon: Pencil, onClick: () => openEditPopup(target) },
+      ];
+      if (onDuplicateEvent) {
+        items.push({ label: "Duplicate", icon: Copy, onClick: () => void onDuplicateEvent(target.id) });
+      }
+      if (onContinueEvent) {
+        items.push({ label: "Continue as timer", icon: Play, onClick: () => void onContinueEvent(target.id) });
+      }
+      if (onDeleteEvent) {
+        items.push({
+          label: "Delete",
+          icon: Trash2,
+          destructive: true,
+          onClick: () => void onDeleteEvent(target.id),
+        });
+      }
+      return items;
+    }
+
+    return [
+      {
+        label: "Add time entry",
+        icon: Plus,
+        onClick: () => openCreatePopupAt(contextMenu.selectedTime),
+      },
+    ];
+  }, [contextMenu, onDuplicateEvent, onContinueEvent, onDeleteEvent]);
 
   const handleSave = async () => {
     await refreshEvents(getVisibleRange(currentDate, view));
@@ -912,14 +628,15 @@ export const CalendarSection = ({
 
   const renderMobileCalendar = () => {
     const selectedDayEvents = sortMobileEntries(applyMobileEntryFilter(getEventsForDate(mobileSelectedDate)));
+    const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     return (
       <div className="space-y-4 p-1">
-        <div className="rounded-2xl border border-[#D8BFD8]/40 bg-white/95 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/95">
+        <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8A88B2] dark:text-slate-400">Selected Day</p>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Selected Day</p>
+              <p className="text-sm font-semibold text-foreground">
                 {mobileSelectedDate.toLocaleDateString("en-US", {
                   weekday: "long",
                   month: "short",
@@ -927,22 +644,16 @@ export const CalendarSection = ({
                 })}
               </p>
             </div>
-            <Button
-              size="sm"
-              className="h-8 gap-1 bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] px-3 text-slate-900 hover:from-[#CFAEE4] hover:to-[#9DB7D8] dark:from-slate-700 dark:to-slate-600 dark:text-slate-100"
-              onClick={() => openTaskForDate(mobileSelectedDate)}
-            >
+            <Button size="sm" className="h-8 gap-1 px-3" onClick={() => openTaskForDate(mobileSelectedDate)}>
               <Plus className="h-3.5 w-3.5" />
               Add
             </Button>
           </div>
 
           <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-muted-foreground">
-            {/* Keyed by weekday name, not by the initial: 'T' and 'S' each
-                appear twice, which produced duplicate-key warnings. */}
-            {WEEKDAY_INITIALS.map(({ name, initial }) => (
-              <span key={name} className="py-1" aria-label={name}>
-                {initial}
+            {weekdayLabels.map((dayLabel) => (
+              <span key={dayLabel} className="py-1" aria-hidden="true">
+                {dayLabel.charAt(0)}
               </span>
             ))}
           </div>
@@ -955,18 +666,26 @@ export const CalendarSection = ({
                 <button
                   key={`${day.fullDate.toISOString()}-${index}`}
                   type="button"
+                  aria-label={day.fullDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                  aria-pressed={isSelected}
                   onClick={() => setMobileSelectedDate(new Date(day.fullDate))}
                   className={`relative flex h-10 items-center justify-center rounded-lg text-xs font-medium transition ${
                     isSelected
-                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : day.isToday
+                      ? "bg-today/15 text-today-foreground ring-1 ring-inset ring-today/40 dark:text-today"
                       : day.isCurrentMonth
-                      ? 'bg-white text-slate-700 hover:bg-[#F3EEFF] dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
-                      : 'bg-slate-100 text-slate-400 dark:bg-slate-900 dark:text-slate-500'
+                      ? "text-foreground hover:bg-accent hover:text-accent-foreground"
+                      : "text-muted-foreground/60 hover:bg-accent"
                   }`}
                 >
                   <span>{day.date}</span>
                   {day.events.length > 0 && (
-                    <span className="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-[#7C7AA6] dark:bg-[#B0C4DE]" />
+                    <span
+                      className={`absolute bottom-1 h-1.5 w-1.5 rounded-full ${
+                        isSelected ? "bg-primary-foreground" : "bg-primary"
+                      }`}
+                    />
                   )}
                 </button>
               );
@@ -974,10 +693,10 @@ export const CalendarSection = ({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#D8BFD8]/40 bg-white/95 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/95">
+        <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Entries For Day</p>
-            <span className="rounded-full bg-[#F3EEFF] px-2 py-1 text-[11px] font-medium text-[#7C7AA6] dark:bg-slate-800 dark:text-slate-300">
+            <p className="text-sm font-semibold text-foreground">Entries for day</p>
+            <span className="rounded-full bg-secondary px-2 py-1 text-[11px] font-medium text-secondary-foreground">
               {selectedDayEvents.length}
             </span>
           </div>
@@ -986,52 +705,34 @@ export const CalendarSection = ({
             <select
               value={mobileEntrySort}
               onChange={(event) => setMobileEntrySort(event.target.value as "newest" | "oldest" | "duration")}
-              className="rounded-lg border border-[#D8BFD8]/50 bg-[#FBFAFF] px-2 py-1.5 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+              aria-label="Sort entries"
+              className="rounded-lg border border-input bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
               <option value="duration">Longest</option>
             </select>
 
-            <div className="flex items-center gap-1 rounded-lg bg-[#F3EEFF] p-1 dark:bg-slate-800">
-              <button
-                type="button"
-                className={`rounded-md px-2 py-1 text-[11px] font-medium transition ${
-                  mobileEntryFilter === "all"
-                    ? "bg-white text-slate-800 shadow-sm dark:bg-slate-700 dark:text-slate-100"
-                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
-                }`}
-                onClick={() => setMobileEntryFilter("all")}
-              >
-                All
-              </button>
-              <button
-                type="button"
-                className={`rounded-md px-2 py-1 text-[11px] font-medium transition ${
-                  mobileEntryFilter === "billable"
-                    ? "bg-white text-slate-800 shadow-sm dark:bg-slate-700 dark:text-slate-100"
-                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
-                }`}
-                onClick={() => setMobileEntryFilter("billable")}
-              >
-                Billable
-              </button>
-              <button
-                type="button"
-                className={`rounded-md px-2 py-1 text-[11px] font-medium transition ${
-                  mobileEntryFilter === "non-billable"
-                    ? "bg-white text-slate-800 shadow-sm dark:bg-slate-700 dark:text-slate-100"
-                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
-                }`}
-                onClick={() => setMobileEntryFilter("non-billable")}
-              >
-                Non-Billable
-              </button>
+            <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+              {(["all", "billable", "non-billable"] as const).map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  className={`rounded-md px-2 py-1 text-[11px] font-medium capitalize transition ${
+                    mobileEntryFilter === filter
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setMobileEntryFilter(filter)}
+                >
+                  {filter === "non-billable" ? "Non-billable" : filter}
+                </button>
+              ))}
             </div>
           </div>
 
           {selectedDayEvents.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[#D8BFD8]/50 bg-[#FBFAFF] p-4 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+            <div className="rounded-xl border border-dashed border-border bg-surface p-4 text-center text-sm text-muted-foreground">
               No entries for this day yet.
             </div>
           ) : (
@@ -1040,22 +741,15 @@ export const CalendarSection = ({
                 <button
                   key={event.id}
                   type="button"
-                  className="w-full rounded-xl border border-[#D8BFD8]/40 bg-[#FBFAFF] p-3 text-left transition hover:bg-[#F3EEFF] dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+                  className="w-full rounded-xl border border-border bg-surface p-3 text-left transition hover:bg-accent"
                   onClick={() => openEditPopup(event)}
-                  onContextMenu={(mouseEvent) => {
-                    mouseEvent.preventDefault();
-                    if (onDuplicateEvent) {
-                      void onDuplicateEvent(event.id);
-                    }
-                  }}
+                  onContextMenu={(mouseEvent) => openEventContextMenu(mouseEvent, event)}
                 >
-                  <div className="text-xs font-semibold text-[#7C7AA6] dark:text-[#B0C4DE]">
-                    {formatEventTimeLabel(event)}
-                  </div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{event.title}</div>
-                  <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
+                  <div className="text-xs font-semibold text-primary">{formatEventTimeLabel(event)}</div>
+                  <div className="mt-1 text-sm font-semibold text-foreground">{event.title}</div>
+                  <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
                     <span>{formatSecondsAsHoursMinutes(getEventDurationSeconds(event))}</span>
-                    <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+                    <span className="h-1 w-1 rounded-full bg-border" />
                     <span>{event.billable ? "Billable" : "Non-billable"}</span>
                   </div>
                 </button>
@@ -1095,16 +789,10 @@ export const CalendarSection = ({
 
     return (
       <div className="space-y-4 p-1">
-        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+        <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="text-sm font-semibold text-gray-800">Mobile Agenda</div>
-            <Button
-              size="sm"
-              className="h-8 gap-1 bg-indigo-600 px-3 text-white hover:bg-indigo-700"
-              onClick={() => {
-                openTaskForDate(new Date());
-              }}
-            >
+            <div className="text-sm font-semibold text-foreground">Agenda</div>
+            <Button size="sm" className="h-8 gap-1 px-3" onClick={() => openTaskForDate(new Date())}>
               <Plus className="h-3.5 w-3.5" />
               Add
             </Button>
@@ -1113,7 +801,8 @@ export const CalendarSection = ({
             <select
               value={mobileEntrySort}
               onChange={(event) => setMobileEntrySort(event.target.value as "newest" | "oldest" | "duration")}
-              className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700"
+              aria-label="Sort entries"
+              className="rounded-lg border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
@@ -1122,26 +811,27 @@ export const CalendarSection = ({
             <select
               value={mobileEntryFilter}
               onChange={(event) => setMobileEntryFilter(event.target.value as "all" | "billable" | "non-billable")}
-              className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700"
+              aria-label="Filter entries"
+              className="rounded-lg border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="all">All</option>
               <option value="billable">Billable</option>
               <option value="non-billable">Non-billable</option>
             </select>
           </div>
-          <p className="text-xs text-gray-500">Optimized timeline for phone screens while keeping full add-entry functionality.</p>
+          <p className="text-xs text-muted-foreground">A compact list of every entry in the current range.</p>
         </div>
 
         {groupedEntries.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center text-sm text-gray-500">
+          <div className="rounded-xl border border-dashed border-border bg-surface p-6 text-center text-sm text-muted-foreground">
             No entries in this range yet.
           </div>
         ) : (
           groupedEntries.map(([dayKey, dayEvents]) => {
             const dayDate = new Date(`${dayKey}T00:00:00`);
             return (
-              <div key={dayKey} className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div key={dayKey} className="rounded-xl border border-border bg-card p-3 shadow-sm">
+                <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   <Clock3 className="h-3.5 w-3.5" />
                   {dayDate.toLocaleDateString("en-US", {
                     weekday: "long",
@@ -1154,23 +844,16 @@ export const CalendarSection = ({
                     <button
                       type="button"
                       key={event.id}
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-left transition hover:bg-indigo-50"
+                      className="w-full rounded-lg border border-border bg-surface p-3 text-left transition hover:bg-accent"
                       onClick={() => openEditPopup(event)}
-                      onContextMenu={(mouseEvent) => {
-                        mouseEvent.preventDefault();
-                        if (onDuplicateEvent) {
-                          void onDuplicateEvent(event.id);
-                        }
-                      }}
+                      onContextMenu={(mouseEvent) => openEventContextMenu(mouseEvent, event)}
                     >
-                      <div className="text-xs font-medium text-indigo-600">
-                        {event.time} {event.period}
-                      </div>
-                      <div className="mt-1 text-sm font-semibold text-gray-800">{event.title}</div>
-                      <div className="mt-2 flex items-center gap-2 text-[11px] text-gray-500">
+                      <div className="text-xs font-medium text-primary">{formatEventTimeLabel(event)}</div>
+                      <div className="mt-1 text-sm font-semibold text-foreground">{event.title}</div>
+                      <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
                         <span>{formatSecondsAsHoursMinutes(getEventDurationSeconds(event))}</span>
-                        <span className="h-1 w-1 rounded-full bg-gray-300" />
-                        <span>{event.billable ? 'Billable' : 'Non-billable'}</span>
+                        <span className="h-1 w-1 rounded-full bg-border" />
+                        <span>{event.billable ? "Billable" : "Non-billable"}</span>
                       </div>
                     </button>
                   ))}
@@ -1185,48 +868,48 @@ export const CalendarSection = ({
 
   const renderDayView = () => {
     const dayEvents = getPositionedEvents(getEventsForDate(currentDate));
+    const isToday = currentDate.toDateString() === now.toDateString();
 
     return (
       <div className="flex h-full w-full min-w-0 flex-col">
-        <div className="grid grid-cols-[56px_minmax(0,1fr)] border-b">
-          <div className="border-r bg-gray-50" />
-          <div
-            className={`px-3 py-2 ${currentDate.toDateString() === now.toDateString() ? "bg-indigo-50" : "bg-white"}`}
-          >
-            <div className="text-[11px] font-semibold tracking-wide text-gray-500">
+        <div className="grid grid-cols-[56px_minmax(0,1fr)] border-b border-border">
+          <div className="border-r border-border bg-muted/40" />
+          <div className={`px-3 py-2 ${isToday ? "bg-today/10" : "bg-card"}`}>
+            <div className="text-[11px] font-semibold tracking-wide text-muted-foreground">
               {currentDate.toLocaleString("en-US", { weekday: "long" }).toUpperCase()}
             </div>
-            <div className="text-2xl font-semibold text-gray-900">{currentDate.getDate()}</div>
+            <div className={`text-2xl font-semibold ${isToday ? "text-today-foreground dark:text-today" : "text-foreground"}`}>
+              {currentDate.getDate()}
+            </div>
           </div>
         </div>
 
         <div className="grid min-h-[1728px] grid-cols-[56px_minmax(0,1fr)]">
-          <div className="border-r bg-gray-50">
+          <div className="border-r border-border bg-muted/40">
             {timeSlots.map((time, timeIndex) => (
               <div
                 key={timeIndex}
-                className="flex h-[72px] items-start px-2 pt-1 text-[11px] font-medium text-gray-500"
+                className="flex h-[72px] items-start px-2 pt-1 text-[11px] font-medium text-muted-foreground"
               >
                 {time}
               </div>
             ))}
           </div>
 
-          <div className="relative overflow-hidden bg-white">
+          <div className="relative overflow-hidden bg-card">
             {timeSlots.map((_, timeIndex) => (
               <button
                 key={timeIndex}
                 type="button"
-                className="absolute left-0 right-0 border-b border-gray-100 text-transparent transition hover:bg-indigo-50/40"
+                aria-label={`Add entry at ${timeSlots[timeIndex]}`}
+                className="absolute left-0 right-0 border-b border-border/60 transition hover:bg-accent/60"
                 style={{
                   top: `${timeIndex * HOUR_ROW_HEIGHT}px`,
                   height: `${HOUR_ROW_HEIGHT}px`,
                 }}
                 onClick={(event) => handleTimeSlotClick(timeIndex, undefined, event)}
                 onContextMenu={(event) => handleTimeSlotClick(timeIndex, undefined, event)}
-              >
-                Add entry
-              </button>
+              />
             ))}
 
             {dayEvents.map((item) => {
@@ -1237,7 +920,7 @@ export const CalendarSection = ({
                 <button
                   key={item.event.id}
                   type="button"
-                  className={`absolute z-10 rounded-md border px-2 py-1 text-left text-xs shadow-sm ${getEventColorClasses(item.event.color)}`}
+                  className={`absolute z-10 rounded-md border px-2 py-1 text-left text-xs shadow-sm transition hover:brightness-105 ${getEventColorClasses(item.event.color)}`}
                   style={{
                     ...getEventColorStyle(item.event.color),
                     top: `${item.top + 2}px`,
@@ -1246,12 +929,7 @@ export const CalendarSection = ({
                     height: `${Math.max(20, item.height - 4)}px`,
                   }}
                   onClick={() => openEditPopup(item.event)}
-                  onContextMenu={(mouseEvent) => {
-                    mouseEvent.preventDefault();
-                    if (onDuplicateEvent) {
-                      void onDuplicateEvent(item.event.id);
-                    }
-                  }}
+                  onContextMenu={(mouseEvent) => openEventContextMenu(mouseEvent, item.event)}
                 >
                   <div className="truncate font-semibold">{item.event.title}</div>
                   <div className="truncate text-[10px] opacity-80">{formatEventTimeLabel(item.event)}</div>
@@ -1259,14 +937,11 @@ export const CalendarSection = ({
               );
             })}
 
-            {currentDate.toDateString() === now.toDateString() && (
-              <div
-                className="pointer-events-none absolute inset-x-0 z-20"
-                style={{ top: `${currentTimePosition}px` }}
-              >
+            {isToday && (
+              <div className="pointer-events-none absolute inset-x-0 z-20" style={{ top: `${currentTimePosition}px` }}>
                 <div className="relative flex items-center">
-                  <div className="h-2.5 w-2.5 rounded-full bg-rose-500 shadow-sm" />
-                  <div className="h-[2px] flex-1 bg-rose-500/90" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-today shadow-sm" />
+                  <div className="h-[2px] flex-1 bg-today/90" />
                 </div>
               </div>
             )}
@@ -1283,54 +958,59 @@ export const CalendarSection = ({
 
     return (
       <div className="flex h-full w-full min-w-0 flex-col">
-        <div className="grid grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b">
-          <div className="border-r bg-gray-50" />
+        <div className="grid grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b border-border">
+          <div className="border-r border-border bg-muted/40" />
           {weekDays.map((dayInfo, index) => (
             <div
               key={index}
-              className={`border-r px-2 py-2 text-center last:border-r-0 ${
-                dayInfo.isWeekend ? "bg-gray-50" : dayInfo.isToday ? "bg-indigo-50" : "bg-white"
+              className={`border-r border-border px-2 py-2 text-center last:border-r-0 ${
+                dayInfo.isToday ? "bg-today/10" : dayInfo.isWeekend ? "bg-muted/40" : "bg-card"
               }`}
             >
-              <div className="text-[11px] font-semibold text-gray-500">{dayInfo.day}</div>
-              <div className="text-xl font-semibold text-gray-900">{dayInfo.date}</div>
+              <div className="text-[11px] font-semibold text-muted-foreground">{dayInfo.day}</div>
+              <div
+                className={`text-xl font-semibold ${
+                  dayInfo.isToday ? "text-today-foreground dark:text-today" : "text-foreground"
+                }`}
+              >
+                {dayInfo.date}
+              </div>
             </div>
           ))}
         </div>
 
         <div className="grid min-h-[1728px] grid-cols-[56px_minmax(0,1fr)]">
-          <div className="border-r bg-gray-50">
+          <div className="border-r border-border bg-muted/40">
             {timeSlots.map((time, timeIndex) => (
               <div
                 key={timeIndex}
-                className="flex h-[72px] items-start px-2 pt-1 text-[11px] font-medium text-gray-500"
+                className="flex h-[72px] items-start px-2 pt-1 text-[11px] font-medium text-muted-foreground"
               >
                 {time}
               </div>
             ))}
           </div>
 
-          <div ref={weekGridRef} className="relative overflow-hidden bg-white">
+          <div ref={weekGridRef} className="relative overflow-hidden bg-card">
             <div className="absolute inset-0 grid grid-cols-7">
               {weekDays.map((dayInfo, dayIndex) => (
                 <div
                   key={dayIndex}
-                  className={`relative border-r last:border-r-0 ${dayInfo.isWeekend ? "bg-gray-50" : "bg-white"}`}
+                  className={`relative border-r border-border last:border-r-0 ${dayInfo.isWeekend ? "bg-muted/40" : "bg-card"}`}
                 >
                   {timeSlots.map((_, timeIndex) => (
                     <button
                       key={timeIndex}
                       type="button"
-                      className="absolute left-0 right-0 border-b border-gray-100 text-transparent transition hover:bg-indigo-50/40"
+                      aria-label={`Add entry on ${dayInfo.day} at ${timeSlots[timeIndex]}`}
+                      className="absolute left-0 right-0 border-b border-border/60 transition hover:bg-accent/60"
                       style={{
                         top: `${timeIndex * HOUR_ROW_HEIGHT}px`,
                         height: `${HOUR_ROW_HEIGHT}px`,
                       }}
                       onClick={(event) => handleTimeSlotClick(timeIndex, dayIndex, event)}
                       onContextMenu={(event) => handleTimeSlotClick(timeIndex, dayIndex, event)}
-                    >
-                      Add entry
-                    </button>
+                    />
                   ))}
                 </div>
               ))}
@@ -1348,40 +1028,19 @@ export const CalendarSection = ({
                   position={{ x: eventPosition.left, y: eventPosition.top }}
                   onDrag={(_, data) => handleWeeklyDrag(event.id, data)}
                   onStop={(dragEvent, data) => handleWeeklyDragStop(event.id, event, dragEvent, data)}
-                  cancel=".event-actions"
                 >
                   <div
-                    className={`absolute z-20 cursor-move rounded-md border px-2 py-1 text-xs shadow-sm ${getEventColorClasses(event.color)}`}
+                    className={`absolute z-20 cursor-grab rounded-md border px-2 py-1 text-xs shadow-sm transition hover:brightness-105 active:cursor-grabbing ${getEventColorClasses(event.color)}`}
                     style={{
                       ...getEventColorStyle(event.color),
                       width: `${Math.max(88, weekColumnWidth - 8)}px`,
                       height: `${eventHeight}px`,
                     }}
                     onClick={() => openEditPopup(event)}
-                    onContextMenu={(mouseEvent) => {
-                      mouseEvent.preventDefault();
-                      mouseEvent.stopPropagation();
-                      if (onDuplicateEvent) {
-                        void onDuplicateEvent(event.id);
-                      }
-                    }}
-                    title="Drag to move in weekly view"
+                    onContextMenu={(mouseEvent) => openEventContextMenu(mouseEvent, event)}
+                    title="Click to edit · drag to move · right-click for more"
                   >
-                    <button
-                      type="button"
-                      className="event-actions absolute right-1 top-1 rounded p-0.5 text-current/70 transition hover:bg-white/60 hover:text-current"
-                      onMouseDown={(mouseEvent) => mouseEvent.stopPropagation()}
-                      onClick={(mouseEvent) => {
-                        mouseEvent.stopPropagation();
-                        if (onDuplicateEvent) {
-                          void onDuplicateEvent(event.id);
-                        }
-                      }}
-                      title="Duplicate entry"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </button>
-                    <div className="truncate pr-5 font-semibold">{event.title}</div>
+                    <div className="truncate font-semibold">{event.title}</div>
                     <div className="truncate text-[10px] opacity-80">{formatEventTimeLabel(event)}</div>
                   </div>
                 </Draggable>
@@ -1398,76 +1057,76 @@ export const CalendarSection = ({
                 }}
               >
                 <div className="relative flex items-center">
-                  <div className="absolute -left-1.5 h-3 w-3 rounded-full bg-rose-500 shadow-sm" />
-                  <div className="h-[2px] w-full bg-rose-500/90" />
+                  <div className="absolute -left-1.5 h-3 w-3 rounded-full bg-today shadow-sm" />
+                  <div className="h-[2px] w-full bg-today/90" />
                 </div>
               </div>
             )}
           </div>
         </div>
-
-        {contextMenu && (
-          <ContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            onClose={() => setContextMenu(null)}
-            onAddTimeEntry={() => {
-              openCreatePopupAt(contextMenu.selectedTime);
-              setContextMenu(null);
-            }}
-          />
-        )}
       </div>
     );
   };
 
   const renderMonthView = () => (
-    <div className="flex flex-col w-full h-full">
-      <div className="grid grid-cols-7 border-b bg-gray-50">
+    <div className="flex h-full w-full flex-col">
+      <div className="grid grid-cols-7 border-b border-border bg-muted/40">
         {weekDays.map((day) => (
-          <div key={day.day} className="border-r p-2 text-center last:border-r-0">
-            <span className="text-xs font-bold text-gray-500">{day.day}</span>
+          <div key={day.day} className="border-r border-border p-2 text-center last:border-r-0">
+            <span className="text-xs font-bold text-muted-foreground">{day.day}</span>
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 auto-rows-[minmax(120px,1fr)]">
+      <div className="grid auto-rows-[minmax(120px,1fr)] grid-cols-7">
         {monthData.map((day, index) => (
           <div
             key={index}
-            className={`border-b border-r p-2 last:border-r-0 ${
-              day.isCurrentMonth
-                ? day.isToday
-                  ? "bg-indigo-50"
-                  : day.isWeekend
-                    ? "bg-gray-50"
-                    : "bg-white"
-                : "bg-gray-100"
+            className={`group relative border-b border-r border-border p-2 last:border-r-0 ${
+              !day.isCurrentMonth
+                ? "bg-muted/40"
+                : day.isToday
+                ? "bg-today/10"
+                : day.isWeekend
+                ? "bg-muted/30"
+                : "bg-card"
             }`}
           >
-            <span className={`text-sm font-medium ${day.isCurrentMonth ? "text-gray-900" : "text-gray-400"}`}>
-              {day.date}
-            </span>
+            <div className="flex items-center justify-between">
+              <span
+                className={`text-sm font-medium ${
+                  !day.isCurrentMonth
+                    ? "text-muted-foreground/50"
+                    : day.isToday
+                    ? "flex h-6 w-6 items-center justify-center rounded-full bg-today font-semibold text-today-foreground"
+                    : "text-foreground"
+                }`}
+              >
+                {day.date}
+              </span>
+              <button
+                type="button"
+                aria-label={`Add entry on ${day.fullDate.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`}
+                onClick={() => openTaskForDate(day.fullDate)}
+                className="rounded p-0.5 text-muted-foreground opacity-0 transition hover:bg-accent hover:text-accent-foreground focus:opacity-100 group-hover:opacity-100"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
             <div className="mt-2 space-y-1 overflow-hidden">
               {day.events.slice(0, 3).map((event) => (
                 <button
                   key={event.id}
                   type="button"
-                  className={`w-full truncate rounded-md border px-1.5 py-1 text-left text-[11px] ${getEventColorClasses(event.color)}`}
-                  style={getEventColorStyle(event.color)}
+                  className={`w-full truncate rounded-md border px-1.5 py-1 text-left text-[11px] transition hover:brightness-105 ${getEventColorClasses(event.color)}`}
                   title={`${formatEventTimeLabel(event)} ${event.title}`}
                   onClick={() => openEditPopup(event)}
-                  onContextMenu={(mouseEvent) => {
-                    mouseEvent.preventDefault();
-                    if (onDuplicateEvent) {
-                      void onDuplicateEvent(event.id);
-                    }
-                  }}
+                  onContextMenu={(mouseEvent) => openEventContextMenu(mouseEvent, event)}
                 >
                   <span className="font-medium">{formatEventTimeLabel(event)}</span> {event.title}
                 </button>
               ))}
               {day.events.length > 3 && (
-                <div className="px-1 text-[11px] font-medium text-gray-500">+{day.events.length - 3} more</div>
+                <div className="px-1 text-[11px] font-medium text-muted-foreground">+{day.events.length - 3} more</div>
               )}
             </div>
           </div>
@@ -1476,164 +1135,162 @@ export const CalendarSection = ({
     </div>
   );
 
-  const renderYearView = () => (
-    <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
-      {yearData.map((month) => (
-        <div key={month.month} className="border rounded-lg overflow-hidden">
-          <div className="bg-gray-100 p-2 border-b">
-            <h3 className="text-sm font-semibold text-gray-900">{month.month}</h3>
-          </div>
-          <div className="p-2">
-            <div className="grid grid-cols-7 gap-1">
-              {weekDays.map((day) => (
-                <div key={day.day} className="text-[10px] text-center text-gray-500">
-                  {day.day[0]}
-                </div>
-              ))}
-              {Array.from({
-                length: Math.ceil((month.firstWeekday + month.daysInMonth) / 7) * 7,
-              }).map((_, i) => {
-                const day = i - month.firstWeekday + 1;
-                const isInMonth = day > 0 && day <= month.daysInMonth;
+  const renderYearView = () => {
+    const eventCountByDay = new Map<string, number>();
+    for (const event of searchableEvents) {
+      const eventDate = parseDateTimeAsLocal(event.startTime);
+      if (Number.isNaN(eventDate.getTime()) || eventDate.getFullYear() !== currentDate.getFullYear()) {
+        continue;
+      }
+      const key = `${eventDate.getMonth()}-${eventDate.getDate()}`;
+      eventCountByDay.set(key, (eventCountByDay.get(key) ?? 0) + 1);
+    }
 
-                return (
-                <div
-                  key={i}
-                  className={`aspect-square flex items-center justify-center text-[10px] ${
-                    isInMonth ? "text-gray-900" : "text-transparent"
-                  }`}
-                >
-                  {isInMonth ? day : ""}
+    const openMonth = (monthIndex: number) => {
+      const next = new Date(currentDate.getFullYear(), monthIndex, 1);
+      setCurrentDate(next);
+      setView("month");
+    };
+
+    return (
+      <div className="grid grid-cols-1 gap-4 p-2 sm:grid-cols-2 sm:p-4 xl:grid-cols-4">
+        {yearData.map((month, monthIndex) => {
+          const isCurrentMonth =
+            monthIndex === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear();
+          return (
+            <button
+              key={month.month}
+              type="button"
+              onClick={() => openMonth(monthIndex)}
+              className={`overflow-hidden rounded-lg border text-left transition hover:border-primary/60 hover:shadow-sm ${
+                isCurrentMonth ? "border-primary/60 ring-1 ring-inset ring-primary/30" : "border-border"
+              }`}
+            >
+              <div className="border-b border-border bg-muted/40 p-2">
+                <h3 className="text-sm font-semibold text-foreground">{month.month}</h3>
+              </div>
+              <div className="p-2">
+                <div className="grid grid-cols-7 gap-1">
+                  {["S", "M", "T", "W", "T", "F", "S"].map((label, dayIndex) => (
+                    <div key={dayIndex} className="text-center text-[10px] text-muted-foreground">
+                      {label}
+                    </div>
+                  ))}
+                  {Array.from({
+                    length: Math.ceil((month.firstWeekday + month.daysInMonth) / 7) * 7,
+                  }).map((_, i) => {
+                    const day = i - month.firstWeekday + 1;
+                    const isInMonth = day > 0 && day <= month.daysInMonth;
+                    const count = isInMonth ? eventCountByDay.get(`${monthIndex}-${day}`) ?? 0 : 0;
+
+                    return (
+                      <div
+                        key={i}
+                        className={`relative flex aspect-square items-center justify-center text-[10px] ${
+                          isInMonth ? "text-foreground" : "text-transparent"
+                        }`}
+                      >
+                        {isInMonth ? day : ""}
+                        {count > 0 && (
+                          <span className="absolute bottom-0 h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <section className="flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden p-2 sm:gap-4 sm:p-4">
-      <motion.div
-        className="sticky top-0 z-10 rounded-b-lg border-b bg-gradient-to-r from-[#ECFEFF] via-[#F0F9FF] to-[#FFF7ED] px-3 pb-2 pt-3 shadow-sm dark:from-gray-800 dark:to-gray-900 sm:px-6 sm:pt-4"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
+      <div className="sticky top-0 z-10 rounded-b-lg border-b border-border bg-card/95 px-3 pb-3 pt-3 shadow-sm backdrop-blur sm:px-6 sm:pt-4">
         <div className="relative flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-1">
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center rounded-lg border border-border">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 rounded-l-lg bg-white p-2 shadow-sm hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 sm:h-10"
+                className="h-9 rounded-r-none border-r border-border"
+                aria-label="Previous"
                 onClick={() => handleNavigation("prev")}
               >
-                <ChevronLeftIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                <ChevronLeftIcon className="h-5 w-5" />
               </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="ghost"
-                className="h-9 rounded-none bg-white px-4 py-2 shadow-sm hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 sm:h-10 sm:px-6"
-                onClick={() => setCurrentDate(new Date())}
-              >
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100 sm:text-base">{getButtonText()}</span>
-              </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 rounded-r-lg bg-white p-2 shadow-sm hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 sm:h-10"
+                className="h-9 rounded-l-none"
+                aria-label="Next"
                 onClick={() => handleNavigation("next")}
               >
-                <ChevronRightIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                <ChevronRightIcon className="h-5 w-5" />
               </Button>
-            </motion.div>
+            </div>
+            <Button
+              variant="outline"
+              className="h-9"
+              onClick={() => setCurrentDate(new Date())}
+            >
+              Today
+            </Button>
+            <span className="text-sm font-semibold text-foreground sm:text-base">{getButtonText()}</span>
           </div>
 
           {isMobileLayout ? (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setMobileViewMode("calendar")}
-                className={`h-9 rounded-lg px-4 text-sm font-medium transition ${
-                  mobileViewMode === "calendar"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                }`}
-              >
-                Calendar
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileViewMode("agenda")}
-                className={`h-9 rounded-lg px-4 text-sm font-medium transition ${
-                  mobileViewMode === "agenda"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                }`}
-              >
-                Agenda
-              </button>
+            <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+              {(["calendar", "agenda"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setMobileViewMode(mode)}
+                  className={`h-8 rounded-md px-4 text-sm font-medium capitalize transition ${
+                    mobileViewMode === mode
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
             </div>
           ) : (
-            <ToggleGroup type="single" value={view} onValueChange={handleViewChange} className="flex overflow-x-auto pb-1">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <ToggleGroup
+              type="single"
+              value={view}
+              onValueChange={handleViewChange}
+              className="flex gap-1 rounded-lg bg-muted p-1"
+            >
+              {(["day", "week", "month", "year"] as const).map((viewValue) => (
                 <ToggleGroupItem
-                  value="day"
-                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:bg-accent hover:text-accent-foreground sm:h-10 sm:px-6 sm:text-base"
+                  key={viewValue}
+                  value={viewValue}
+                  className="h-8 rounded-md px-3 text-sm font-medium capitalize text-muted-foreground data-[state=on]:bg-card data-[state=on]:text-foreground data-[state=on]:shadow-sm sm:px-4"
                 >
-                  Daily
+                  {viewValue}
                 </ToggleGroupItem>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <ToggleGroupItem
-                  value="week"
-                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:bg-accent hover:text-accent-foreground sm:h-10 sm:px-6 sm:text-base"
-                >
-                  Weekly
-                </ToggleGroupItem>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <ToggleGroupItem
-                  value="month"
-                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:bg-accent hover:text-accent-foreground sm:h-10 sm:px-6 sm:text-base"
-                >
-                  Monthly
-                </ToggleGroupItem>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <ToggleGroupItem
-                  value="year"
-                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:bg-accent hover:text-accent-foreground sm:h-10 sm:px-6 sm:text-base"
-                >
-                  Yearly
-                </ToggleGroupItem>
-              </motion.div>
+              ))}
             </ToggleGroup>
           )}
 
-          <div className="flex w-full items-center lg:w-[200px]">
-            <motion.div
-              className="flex items-center gap-2 p-2 flex-1 rounded-lg border border-input bg-background"
-              whileHover={{ scale: 1.02 }}
-            >
-              <SearchIcon className="w-5 h-5 text-muted-foreground" />
+          <div className="flex w-full items-center lg:w-[220px]">
+            <div className="flex flex-1 items-center gap-2 rounded-lg border border-input bg-background px-3 py-2 focus-within:ring-2 focus-within:ring-ring">
+              <SearchIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
               <Input
-                className="flex-1 border-0 bg-transparent p-0 text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-auto"
-                placeholder="Search tasks..."
+                className="h-auto flex-1 border-0 bg-transparent p-0 text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+                placeholder="Search entries..."
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
-            </motion.div>
+            </div>
           </div>
         </div>
-      </motion.div>
-      <div ref={timelineScrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+      </div>
+      <div ref={timelineScrollRef} className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto rounded-lg border border-border bg-card">
         {isMobileLayout ? (
           mobileViewMode === "agenda" ? renderMobileAgenda() : renderMobileCalendar()
         ) : (
@@ -1654,6 +1311,15 @@ export const CalendarSection = ({
           onContinue={onContinueEvent}
         />
       </div>
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenuItems}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </section>
   );
 };

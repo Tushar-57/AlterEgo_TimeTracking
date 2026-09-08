@@ -237,7 +237,7 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         timeEntry.setIsActive(false);
 
         TimeEntry savedEntry = timeEntryRepository.save(timeEntry);
-        upsertEntryDetail(savedEntry, request);
+        upsertEntryDetail(savedEntry, request, false);
         logger.info("Successfully added time entry with ID: {} for user: {}", savedEntry.getId(), user.getEmail());
         return enrichWithDetail(savedEntry);
     }
@@ -282,7 +282,10 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         timeEntry.setIsActive(false);
 
         TimeEntry updatedEntry = timeEntryRepository.save(timeEntry);
-        upsertEntryDetail(updatedEntry, request);
+        // allowClear=true: an edit that empties focus/energy/blockers/notes must actually
+        // persist the clear. Gating on "has any value" made those fields impossible to
+        // remove once set — the old value silently reappeared on the next open.
+        upsertEntryDetail(updatedEntry, request, true);
         logger.info("Successfully updated time entry {} for user: {}", timerId, user.getEmail());
         return enrichWithDetail(updatedEntry);
     }
@@ -413,14 +416,23 @@ public class TimeEntryServiceImpl implements TimeEntryService {
         entry.setAiDetail(detail.getAiDetail());
     }
 
-    private void upsertEntryDetail(TimeEntry entry, addTimeEntryRequest request) {
-        if (entry == null || entry.getId() == null || !hasDetailPayload(request)) {
+    private void upsertEntryDetail(TimeEntry entry, addTimeEntryRequest request, boolean allowClear) {
+        if (entry == null || entry.getId() == null) {
             return;
         }
 
-        TimeEntryDetail detail = timeEntryDetailRepository
-                .findByTimeEntryId(entry.getId())
-                .orElseGet(TimeEntryDetail::new);
+        Optional<TimeEntryDetail> existing = timeEntryDetailRepository.findByTimeEntryId(entry.getId());
+
+        if (!hasDetailPayload(request)) {
+            // Nothing to write. On update, if a detail row already exists the user
+            // just cleared every field — fall through and blank it out. On create
+            // (or when no row exists), there's nothing to do.
+            if (!allowClear || existing.isEmpty()) {
+                return;
+            }
+        }
+
+        TimeEntryDetail detail = existing.orElseGet(TimeEntryDetail::new);
 
         detail.setTimeEntry(entry);
         detail.setLinkedGoal(normalizeText(request.getLinkedGoal()));

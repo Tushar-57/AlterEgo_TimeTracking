@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Hash, Palette, Pencil, Plus, Search, Tag, Trash2, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { PageHeader } from './ui/page-header';
+import { Button, EmptyState, PageHeader } from './ui';
 
 type UserTag = {
   id: number;
@@ -145,49 +145,38 @@ export const UserTagPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 py-6 sm:px-6 md:px-8">
+    <div className="min-h-full bg-background px-4 py-6 sm:px-6 md:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <PageHeader
-          eyebrow="Manage"
-          title="Tags"
           icon={Tag}
-          subtitle="A clean tag taxonomy keeps entries searchable and summarisable across your workflows."
+          title="Tags"
+          description="Build a clean tag taxonomy so entries can be searched, filtered, and summarized across your workflows."
         />
 
         <section className="grid gap-4 sm:grid-cols-3">
-          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-muted p-2 text-foreground">
-              <Hash className="h-4 w-4" />
-            </div>
-            <p className="text-2xl font-semibold text-foreground">{tags.length}</p>
-            <p className="text-sm text-muted-foreground">Total tags</p>
-          </article>
-
-          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-muted p-2 text-foreground">
-              <Palette className="h-4 w-4" />
-            </div>
-            <p className="text-2xl font-semibold text-foreground">{uniqueColorCount}</p>
-            <p className="text-sm text-muted-foreground">Color groups</p>
-          </article>
-
-          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-muted p-2 text-foreground">
-              <Search className="h-4 w-4" />
-            </div>
-            <p className="text-2xl font-semibold text-foreground">{filteredTags.length}</p>
-            <p className="text-sm text-muted-foreground">Filtered tags</p>
-          </article>
+          {[
+            { icon: Hash, value: tags.length, label: 'Total tags' },
+            { icon: Palette, value: uniqueColorCount, label: 'Color groups' },
+            { icon: Search, value: filteredTags.length, label: 'Filtered tags' },
+          ].map(({ icon: Icon, value, label }) => (
+            <article key={label} className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+              <div className="mb-3 inline-flex rounded-lg bg-accent p-2 text-accent-foreground">
+                <Icon className="h-4 w-4" />
+              </div>
+              <p className="text-2xl font-semibold text-foreground">{value}</p>
+              <p className="text-sm text-muted-foreground">{label}</p>
+            </article>
+          ))}
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <div className="mb-5 flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-xl font-semibold text-foreground">{editingTag ? 'Edit Tag' : 'Create Tag'}</h2>
+            <h2 className="text-lg font-semibold text-foreground">{editingTag ? 'Edit tag' : 'Create tag'}</h2>
             {editingTag && (
               <button
                 type="button"
                 onClick={() => setEditingTag(null)}
-                className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground transition hover:bg-accent"
+                className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
                 <X className="h-4 w-4" />
                 Cancel editing
@@ -204,22 +193,18 @@ export const UserTagPage = () => {
                   onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
                   required
                   placeholder="Deep Work"
-                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-success focus:outline-none"
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </label>
 
               <label className="space-y-1 text-sm">
                 <span className="font-medium text-foreground">Custom color</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={formState.color}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, color: event.target.value }))}
-                    aria-label="Pick a custom colour"
-                    className="h-9 w-12 shrink-0 cursor-pointer rounded-lg border border-input bg-background p-1"
-                  />
-                  <span className="font-mono text-xs uppercase text-muted-foreground">{formState.color}</span>
-                </div>
+                <input
+                  type="color"
+                  value={formState.color}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, color: event.target.value }))}
+                  className="h-11 w-full cursor-pointer rounded-xl border border-input bg-background p-1"
+                />
               </label>
             </div>
 
@@ -231,21 +216,19 @@ export const UserTagPage = () => {
                   onClick={() => setFormState((prev) => ({ ...prev, color }))}
                   aria-label={`Select color ${color}`}
                   className={`h-8 w-8 rounded-full border-2 transition ${
-                    formState.color.toLowerCase() === color.toLowerCase() ? 'border-primary scale-110' : 'border-transparent'
+                    formState.color.toLowerCase() === color.toLowerCase()
+                      ? 'scale-110 border-ring'
+                      : 'border-transparent'
                   }`}
                   style={{ backgroundColor: color }}
                 />
               ))}
             </div>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <Button type="submit" disabled={saving} className="gap-2">
               {editingTag ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {saving ? 'Saving...' : editingTag ? 'Update Tag' : 'Create Tag'}
-            </button>
+              {saving ? 'Saving...' : editingTag ? 'Update tag' : 'Create tag'}
+            </Button>
           </form>
         </section>
 
@@ -256,23 +239,25 @@ export const UserTagPage = () => {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search tags"
-              className="w-full rounded-xl border border-border bg-muted py-2.5 pl-10 pr-3 text-foreground focus:border-success focus:outline-none"
+              className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-3 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </label>
 
           {loading ? (
             <div className="flex items-center justify-center py-10">
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-success border-t-transparent" />
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
           ) : filteredTags.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-input bg-muted px-4 py-10 text-center text-sm text-muted-foreground">
-              No tags found. Create one above and use it while tracking time entries.
-            </div>
+            <EmptyState
+              icon={Tag}
+              title="No tags yet"
+              description="Create one above and use it while tracking time entries."
+            />
           ) : (
             <>
               <div className="hidden overflow-hidden rounded-xl border border-border md:block">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-muted/70 text-muted-foreground">
+                  <thead className="bg-muted text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 font-medium">Tag</th>
                       <th className="px-4 py-3 font-medium">Color</th>
@@ -281,11 +266,11 @@ export const UserTagPage = () => {
                   </thead>
                   <tbody>
                     {filteredTags.map((tag) => (
-                      <tr key={tag.id} className="border-t border-border bg-card">
+                      <tr key={tag.id} className="border-t border-border">
                         <td className="px-4 py-3 font-medium text-foreground">{tag.name}</td>
                         <td className="px-4 py-3">
                           <div
-                            className="h-6 w-6 rounded-full border border-input"
+                            className="h-6 w-6 rounded-full border border-border"
                             style={{ backgroundColor: tag.color || DEFAULT_COLOR }}
                           />
                         </td>
@@ -294,7 +279,7 @@ export const UserTagPage = () => {
                             <button
                               type="button"
                               onClick={() => setEditingTag(tag)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-muted"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                               aria-label={`Edit tag ${tag.name}`}
                             >
                               <Pencil className="h-4 w-4" />
@@ -302,7 +287,7 @@ export const UserTagPage = () => {
                             <button
                               type="button"
                               onClick={() => deleteTag(tag.id)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-destructive text-destructive transition hover:bg-destructive hover:text-destructive-foreground"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-destructive/30 text-destructive transition-colors hover:bg-destructive/10"
                               aria-label={`Delete tag ${tag.name}`}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -319,16 +304,17 @@ export const UserTagPage = () => {
                 {filteredTags.map((tag) => (
                   <article key={tag.id} className="rounded-xl border border-border bg-card p-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-semibold text-foreground">{tag.name}</h3>
-                      </div>
-                      <div className="h-7 w-7 rounded-full border border-input" style={{ backgroundColor: tag.color || DEFAULT_COLOR }} />
+                      <h3 className="font-semibold text-foreground">{tag.name}</h3>
+                      <div
+                        className="h-7 w-7 rounded-full border border-border"
+                        style={{ backgroundColor: tag.color || DEFAULT_COLOR }}
+                      />
                     </div>
                     <div className="mt-3 flex gap-2">
                       <button
                         type="button"
                         onClick={() => setEditingTag(tag)}
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                       >
                         <Pencil className="h-4 w-4" />
                         Edit
@@ -336,7 +322,7 @@ export const UserTagPage = () => {
                       <button
                         type="button"
                         onClick={() => deleteTag(tag.id)}
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-destructive px-3 py-2 text-sm text-destructive"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
                         Delete
