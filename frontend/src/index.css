@@ -11,44 +11,39 @@
  * border-input, bg-primary) — never raw teal, slate, gray or pink ramps in components.
  */
 @layer base {
+  /*
+   * Design tokens — single source of truth for the AlterEgo UI.
+   * Neutrals: slate. Primary: indigo. `--today`: amber (calendar "today" marker
+   * and streak highlights only). Flip the brand by editing --primary / --ring here.
+   * Every component should consume these via `bg-card`, `text-muted-foreground`,
+   * `border-border`, etc. — never raw palette classes or hex literals.
+   */
   :root {
-    /* Surfaces */
-    --background: 180 25% 99%;
+    --background: 0 0% 100%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-    --surface: 190 40% 96%;
-    --surface-foreground: 222 47% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-
-    /* Brand — teal primary, amber accent pop */
-    --primary: 176 61% 26%;
-    --primary-foreground: 166 76% 97%;
-    --brand: 38 92% 50%;
-    --brand-foreground: 26 83% 14%;
-
-    /* Neutral roles (slate ramp) */
-    --secondary: 197 37% 94%;
-    --secondary-foreground: 222 40% 20%;
+    --surface: 210 40% 98%;
+    --surface-foreground: 222 47% 11%;
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 42%;
-    --accent: 190 45% 92%;
-    --accent-foreground: 200 45% 18%;
-
-    /* Status */
-    --success: 160 84% 30%;
-    --success-foreground: 152 76% 96%;
-    --warning: 32 95% 44%;
-    --warning-foreground: 30 90% 96%;
-    --destructive: 0 72% 45%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 226 100% 97%;
+    --accent-foreground: 243 63% 42%;
+    --destructive: 350 89% 60%;
     --destructive-foreground: 0 0% 100%;
-
-    /* Lines & focus */
-    --border: 214 32% 89%;
-    --input: 214 32% 86%;
-    --ring: 176 61% 32%;
-
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 243 75% 59%;
+    --today: 38 92% 50%;
+    --today-foreground: 26 83% 14%;
     --radius: 0.75rem;
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     color-scheme: light;
@@ -57,38 +52,31 @@
   }
 
   .dark {
-    --background: 222 47% 7%;
+    --background: 222 47% 11%;
     --foreground: 210 40% 96%;
-    --card: 222 44% 11%;
+    --card: 217 33% 14%;
     --card-foreground: 210 40% 96%;
+    --popover: 217 33% 14%;
+    --popover-foreground: 210 40% 96%;
     --surface: 217 33% 17%;
     --surface-foreground: 210 40% 96%;
-    --popover: 222 44% 11%;
-    --popover-foreground: 210 40% 96%;
-
-    --primary: 172 66% 50%;
-    --primary-foreground: 222 47% 11%;
-    --brand: 38 92% 55%;
-    --brand-foreground: 26 83% 10%;
-
-    --secondary: 217 33% 18%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 20%;
     --secondary-foreground: 210 40% 96%;
-    --muted: 217 33% 17%;
+    --muted: 217 33% 20%;
     --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 22%;
+    --accent: 217 33% 24%;
     --accent-foreground: 210 40% 96%;
-
-    --success: 160 70% 42%;
-    --success-foreground: 152 76% 8%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 26 83% 10%;
-    --destructive: 0 63% 47%;
+    --destructive: 350 75% 55%;
     --destructive-foreground: 0 0% 100%;
-
-    --border: 217 33% 22%;
+    --success: 160 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --border: 217 33% 24%;
     --input: 217 33% 24%;
-    --ring: 172 66% 45%;
-
+    --ring: 239 84% 67%;
+    --today: 38 92% 55%;
+    --today-foreground: 26 83% 14%;
     color-scheme: dark;
   }
 
@@ -101,10 +89,12 @@
   }
 
   /*
-   * TODO(design-system): remove this dark-mode override block as components
-   * migrate to tokens (bg-card / border-border / text-muted-foreground) + `dark:`
-   * variants. Kept as a safety net so un-migrated screens still theme in dark.
-   * Tracked for Phase 5 cleanup.
+   * Dark-mode safety net. Global attribute selectors that patch components still
+   * carrying hardcoded bg-white / gray text / gray borders. The calendar,
+   * sidebar, shell, and the Projects/Tags/Reports pages have been migrated to
+   * tokens + real `dark:` variants and no longer depend on this. Still
+   * load-bearing for: TaskPopup, ProfilePage form controls, CheckupPrompt,
+   * TimeTracker, AIChat. Retire per-component, then delete this block.
    */
   .dark [class~="bg-white"] {
     background-color: rgb(15 23 42);
@@ -435,47 +425,23 @@ body {
 }
 
 /*
- * Theme-switch easing. Applied ONLY while `.theme-transition` is on <html>,
- * which ThemeContext adds for the duration of a light/dark switch.
+ * There used to be a universal `* { transition: background-color 0.3s ease }`
+ * here. It broke dark mode app-wide.
  *
- * It used to be an unconditional `* { transition: ... }`. That made every
- * colour change anywhere ease over 300ms, so surfaces that re-render often
- * (the calendar's live time indicator, for one) visibly lagged behind their
- * real colours — entries rendered a stale hue for a beat after every tick.
+ * On a theme flip only the custom property changes; the declared value
+ * `hsl(var(--background))` is textually identical before and after, so the
+ * engine never starts a background-color transition and leaves every
+ * already-painted element frozen at its first-paint (light) colour. Text
+ * recoloured (no transition declared on `color`), backgrounds did not — which
+ * is why the token migration looked like a no-op in dark mode. Elements created
+ * *after* the flip rendered correctly, which made it look intermittent.
+ *
+ * It also attached a transition to every node in the tree — a real cost on the
+ * calendar and task grids.
+ *
+ * Theme-change transitions are opt-in per component now: use Tailwind's
+ * `transition-colors` on the interactive surfaces that actually want them.
  */
-.theme-transition * {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* Signature brand wash: teal-700 -> cyan-600 -> amber-500. Use for hero/active accents. */
-.bg-brand-gradient {
-  background-image: linear-gradient(
-    to right,
-    hsl(176 61% 26%),
-    hsl(190 80% 40%),
-    hsl(38 92% 50%)
-  );
-}
-
-.dark .bg-brand-gradient {
-  background-image: linear-gradient(
-    to right,
-    hsl(172 66% 40%),
-    hsl(190 80% 48%),
-    hsl(38 92% 55%)
-  );
-}
 
 .grid-pattern {
   background-size: 40px 40px;

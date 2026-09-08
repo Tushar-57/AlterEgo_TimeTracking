@@ -901,19 +901,51 @@ const TaskManager = () => {
   const isTaskMode = activeMode === 'todo';
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
+    <div className="min-h-full bg-background p-4 sm:p-6 md:p-8">
       <div className="mx-auto max-w-6xl">
-        <PageHeader
-          eyebrow="Planner"
-          title={theme.title}
-          icon={isTaskMode ? ListChecks : Repeat}
-          subtitle={theme.subtitle}
-          className="mb-4"
-          actions={
+        <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className={`bg-gradient-to-r ${theme.glow} px-4 py-3 text-white sm:px-5`}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/80">Task + Habit Workspace</p>
+            <h1 className="mt-1 text-xl font-semibold sm:text-2xl">{theme.title}</h1>
+            <p className="mt-1 text-sm text-white/85">{theme.subtitle}</p>
+          </div>
+
+          <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="inline-flex w-full max-w-[360px] rounded-2xl border border-slate-200 bg-slate-100 p-1 shadow-inner">
+              <button
+                type="button"
+                onClick={() => {
+                  setHasUserSelectedMode(true);
+                  setActiveMode('todo');
+                }}
+                className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                  isTaskMode
+                    ? 'bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow'
+                    : 'text-slate-600 hover:bg-white/70'
+                }`}
+              >
+                Tasks
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setHasUserSelectedMode(true);
+                  setActiveMode('habit');
+                }}
+                className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                  !isTaskMode
+                    ? 'bg-gradient-to-r from-fuchsia-600 to-violet-600 text-white shadow'
+                    : 'text-slate-600 hover:bg-white/70'
+                }`}
+              >
+                Habits
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={() => openCreate(activeMode)}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
             >
               <Plus className="h-4 w-4" />
               {isTaskMode ? 'New task' : 'New habit'}
@@ -1128,7 +1160,7 @@ const TaskManager = () => {
         )}
 
         <div className="mb-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-slate-500">
             <ListTodo className="h-4 w-4" />
             <span className="text-sm font-medium">Filtered View</span>
           </div>
@@ -1165,7 +1197,7 @@ const TaskManager = () => {
             <button
               type="button"
               onClick={() => openCreate(activeMode)}
-              className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               Create {isTaskMode ? 'Task' : 'Habit'}
             </button>
@@ -1238,9 +1270,9 @@ const TaskManager = () => {
                       )}
 
                       {task.noteToAI && (
-                        <div className="mt-3 rounded-xl border border-border bg-surface p-3 text-xs text-muted-foreground">
-                          <p className="inline-flex items-center gap-1 font-medium text-foreground">
-                            <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        <div className="mt-3 rounded-xl border border-primary/20 bg-accent p-3 text-xs text-muted-foreground">
+                          <p className="inline-flex items-center gap-1 font-medium text-slate-700">
+                            <Sparkles className="h-3.5 w-3.5 text-violet-600" />
                             Note To AI
                           </p>
                           <p className="mt-1 whitespace-pre-wrap">{task.noteToAI}</p>
@@ -1321,8 +1353,8 @@ const TaskManager = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-0 sm:p-4">
             <div className="flex h-[100dvh] w-full flex-col overflow-hidden rounded-none border border-border bg-card shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:max-w-2xl sm:rounded-2xl">
               <div className="border-b border-border px-5 py-4 sm:px-6">
-                <h2 className="text-xl font-semibold text-foreground">{editingTaskId ? 'Edit' : 'Create'} {draft.type === 'todo' ? 'Task' : 'Habit'}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <h2 className="text-xl font-semibold text-slate-900">{editingTaskId ? 'Edit' : 'Create'} {draft.type === 'todo' ? 'Task' : 'Habit'}</h2>
+                <p className="mt-1 text-sm text-slate-500">
                   Keep it minimal now, then expand advanced details only if needed.
                 </p>
               </div>
@@ -1335,7 +1367,7 @@ const TaskManager = () => {
                       type="text"
                       value={draft.title}
                       onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
-                      className="w-full rounded-lg border border-input bg-background px-3 py-2"
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                       placeholder={draft.type === 'todo' ? 'Ship onboarding popup UX' : 'Evening reflection check-in'}
                       required
                     />
@@ -1348,7 +1380,7 @@ const TaskManager = () => {
                         <select
                           value={draft.priority}
                           onChange={(event) => setDraft((prev) => ({ ...prev, priority: event.target.value as TaskPriority }))}
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                         >
                           <option value="low">Low</option>
                           <option value="medium">Medium</option>
@@ -1363,7 +1395,7 @@ const TaskManager = () => {
                           min={1}
                           value={draft.streakTarget}
                           onChange={(event) => setDraft((prev) => ({ ...prev, streakTarget: Number(event.target.value) || 1 }))}
-                          className="w-full rounded-lg border border-input bg-background px-3 py-2"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                       </label>
                     )}
@@ -1375,7 +1407,7 @@ const TaskManager = () => {
                         min={0}
                         value={draft.estimatedDuration}
                         onChange={(event) => setDraft((prev) => ({ ...prev, estimatedDuration: Number(event.target.value) || 0 }))}
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                       />
                       <p className="text-xs text-muted-foreground">Preview: {formatDuration(draft.estimatedDuration)}</p>
                     </label>
@@ -1385,7 +1417,7 @@ const TaskManager = () => {
                       <select
                         value={draft.projectId}
                         onChange={(event) => setDraft((prev) => ({ ...prev, projectId: event.target.value }))}
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                       >
                         <option value="">No project</option>
                         {availableProjects.map((project) => (
@@ -1407,7 +1439,7 @@ const TaskManager = () => {
                         type="date"
                         value={draft.deadline}
                         onChange={(event) => setDraft((prev) => ({ ...prev, deadline: event.target.value }))}
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                       />
                     </label>
                   )}
@@ -1427,7 +1459,7 @@ const TaskManager = () => {
                         <textarea
                           value={draft.description}
                           onChange={(event) => setDraft((prev) => ({ ...prev, description: event.target.value }))}
-                          className="w-full rounded-lg border border-input bg-card px-3 py-2"
+                          className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                           rows={3}
                           placeholder="Optional implementation detail"
                         />
@@ -1440,7 +1472,7 @@ const TaskManager = () => {
                             type="text"
                             value={draft.tagsInput}
                             onChange={(event) => setDraft((prev) => ({ ...prev, tagsInput: event.target.value }))}
-                            className="w-full rounded-lg border border-input bg-card px-3 py-2"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                             placeholder="focus, sprint"
                             list="task-tag-suggestions"
                           />
@@ -1471,7 +1503,7 @@ const TaskManager = () => {
                             type="date"
                             value={draft.followUpDate}
                             onChange={(event) => setDraft((prev) => ({ ...prev, followUpDate: event.target.value }))}
-                            className="w-full rounded-lg border border-input bg-card px-3 py-2"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                           />
                         </label>
                       </div>
@@ -1482,7 +1514,7 @@ const TaskManager = () => {
                           <select
                             value={draft.status}
                             onChange={(event) => setDraft((prev) => ({ ...prev, status: event.target.value as TaskStatus }))}
-                            className="w-full rounded-lg border border-input bg-card px-3 py-2"
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                           >
                             <option value="todo">Todo</option>
                             <option value="in-progress">In Progress</option>
@@ -1499,7 +1531,7 @@ const TaskManager = () => {
                         <textarea
                           value={draft.noteToAI}
                           onChange={(event) => setDraft((prev) => ({ ...prev, noteToAI: event.target.value }))}
-                          className="w-full rounded-lg border border-border bg-surface px-3 py-2"
+                          className="w-full rounded-lg border border-primary/20 bg-accent px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                           rows={3}
                           placeholder="Optional context to steer AI assistance"
                         />
@@ -1518,7 +1550,7 @@ const TaskManager = () => {
                   </button>
                   <button
                     type="submit"
-                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                   >
                     {editingTaskId ? 'Save Changes' : 'Save Item'}
                   </button>

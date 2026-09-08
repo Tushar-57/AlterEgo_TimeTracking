@@ -10,7 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { PageHeader } from '../ui/page-header';
+import { Button, EmptyState, PageHeader } from '../ui';
 
 type Project = {
   id: number;
@@ -171,59 +171,39 @@ const ProjectPage = () => {
   const activeColorCount = new Set(projects.map((project) => project.color || DEFAULT_COLOR)).size;
 
   return (
-    <div className="min-h-screen bg-background px-4 py-6 sm:px-6 md:px-8">
+    <div className="min-h-full bg-background px-4 py-6 sm:px-6 md:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <PageHeader
-          eyebrow="Manage"
-          title="Projects"
           icon={FolderKanban}
-          subtitle="Colour-code your focus areas and group client work so time logging stays fast."
+          title="Projects"
+          description="Manage your projects, color-code focus areas, and keep client work grouped for faster time logging."
         />
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-muted p-2 text-foreground">
-              <FolderKanban className="h-4 w-4" />
-            </div>
-            <p className="text-2xl font-semibold text-foreground">{projects.length}</p>
-            <p className="text-sm text-muted-foreground">Total projects</p>
-          </article>
-
-          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-muted p-2 text-foreground">
-              <BriefcaseBusiness className="h-4 w-4" />
-            </div>
-            <p className="text-2xl font-semibold text-foreground">{totalClients}</p>
-            <p className="text-sm text-muted-foreground">Client accounts</p>
-          </article>
-
-          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-muted p-2 text-foreground">
-              <Palette className="h-4 w-4" />
-            </div>
-            <p className="text-2xl font-semibold text-foreground">{activeColorCount}</p>
-            <p className="text-sm text-muted-foreground">Unique color tracks</p>
-          </article>
-
-          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-muted p-2 text-foreground">
-              <Search className="h-4 w-4" />
-            </div>
-            <p className="text-2xl font-semibold text-foreground">{filteredProjects.length}</p>
-            <p className="text-sm text-muted-foreground">Filtered results</p>
-          </article>
+          {[
+            { icon: FolderKanban, value: projects.length, label: 'Total projects' },
+            { icon: BriefcaseBusiness, value: totalClients, label: 'Client accounts' },
+            { icon: Palette, value: activeColorCount, label: 'Unique color tracks' },
+            { icon: Search, value: filteredProjects.length, label: 'Filtered results' },
+          ].map(({ icon: Icon, value, label }) => (
+            <article key={label} className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+              <div className="mb-3 inline-flex rounded-lg bg-accent p-2 text-accent-foreground">
+                <Icon className="h-4 w-4" />
+              </div>
+              <p className="text-2xl font-semibold text-foreground">{value}</p>
+              <p className="text-sm text-muted-foreground">{label}</p>
+            </article>
+          ))}
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <div className="mb-5 flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-xl font-semibold text-foreground">
-              {editingProject ? 'Edit Project' : 'Create Project'}
-            </h2>
+            <h2 className="text-lg font-semibold text-foreground">{editingProject ? 'Edit project' : 'Create project'}</h2>
             {editingProject && (
               <button
                 type="button"
                 onClick={() => setEditingProject(null)}
-                className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground transition hover:bg-accent"
+                className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
                 <X className="h-4 w-4" />
                 Cancel editing
@@ -240,7 +220,7 @@ const ProjectPage = () => {
                   onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
                   required
                   placeholder="Launch prep sprint"
-                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </label>
 
@@ -250,22 +230,18 @@ const ProjectPage = () => {
                   value={formState.client}
                   onChange={(event) => setFormState((prev) => ({ ...prev, client: event.target.value }))}
                   placeholder="Acme Labs"
-                  className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </label>
 
               <label className="space-y-1 text-sm">
                 <span className="font-medium text-foreground">Custom color</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={formState.color}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, color: event.target.value }))}
-                    aria-label="Pick a custom colour"
-                    className="h-9 w-12 shrink-0 cursor-pointer rounded-lg border border-input bg-background p-1"
-                  />
-                  <span className="font-mono text-xs uppercase text-muted-foreground">{formState.color}</span>
-                </div>
+                <input
+                  type="color"
+                  value={formState.color}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, color: event.target.value }))}
+                  className="h-11 w-full cursor-pointer rounded-xl border border-input bg-background p-1"
+                />
               </label>
             </div>
 
@@ -277,21 +253,19 @@ const ProjectPage = () => {
                   aria-label={`Select color ${color}`}
                   onClick={() => setFormState((prev) => ({ ...prev, color }))}
                   className={`h-8 w-8 rounded-full border-2 transition ${
-                    formState.color.toLowerCase() === color.toLowerCase() ? 'border-primary scale-110' : 'border-transparent'
+                    formState.color.toLowerCase() === color.toLowerCase()
+                      ? 'scale-110 border-ring'
+                      : 'border-transparent'
                   }`}
                   style={{ backgroundColor: color }}
                 />
               ))}
             </div>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <Button type="submit" disabled={saving} className="gap-2">
               {editingProject ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {saving ? 'Saving...' : editingProject ? 'Update Project' : 'Create Project'}
-            </button>
+              {saving ? 'Saving...' : editingProject ? 'Update project' : 'Create project'}
+            </Button>
           </form>
         </section>
 
@@ -303,14 +277,14 @@ const ProjectPage = () => {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search by project or client"
-                className="w-full rounded-xl border border-border bg-muted py-2.5 pl-10 pr-3 text-foreground focus:border-ring focus:outline-none"
+                className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-3 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </label>
 
             <select
               value={clientFilter}
               onChange={(event) => setClientFilter(event.target.value)}
-              className="w-full rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="all">All clients</option>
               {clientOptions.map((client) => (
@@ -326,14 +300,16 @@ const ProjectPage = () => {
               <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
           ) : filteredProjects.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-input bg-muted px-4 py-10 text-center text-sm text-muted-foreground">
-              No projects match your filters yet. Create one above to get started.
-            </div>
+            <EmptyState
+              icon={FolderKanban}
+              title="No projects match your filters"
+              description="Create one above to get started."
+            />
           ) : (
             <>
               <div className="hidden overflow-hidden rounded-xl border border-border md:block">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-muted/70 text-muted-foreground">
+                  <thead className="bg-muted text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 font-medium">Project</th>
                       <th className="px-4 py-3 font-medium">Client</th>
@@ -343,12 +319,12 @@ const ProjectPage = () => {
                   </thead>
                   <tbody>
                     {filteredProjects.map((project) => (
-                      <tr key={project.id} className="border-t border-border bg-card">
+                      <tr key={project.id} className="border-t border-border">
                         <td className="px-4 py-3 font-medium text-foreground">{project.name}</td>
-                        <td className="px-4 py-3 text-foreground">{project.client || '-'}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{project.client || '-'}</td>
                         <td className="px-4 py-3">
                           <div
-                            className="h-6 w-6 rounded-full border border-input"
+                            className="h-6 w-6 rounded-full border border-border"
                             style={{ backgroundColor: project.color || DEFAULT_COLOR }}
                           />
                         </td>
@@ -357,7 +333,7 @@ const ProjectPage = () => {
                             <button
                               type="button"
                               onClick={() => setEditingProject(project)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-muted"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                               aria-label={`Edit project ${project.name}`}
                             >
                               <Pencil className="h-4 w-4" />
@@ -365,7 +341,7 @@ const ProjectPage = () => {
                             <button
                               type="button"
                               onClick={() => deleteProject(project.id)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-destructive text-destructive transition hover:bg-destructive hover:text-destructive-foreground"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-destructive/30 text-destructive transition-colors hover:bg-destructive/10"
                               aria-label={`Delete project ${project.name}`}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -387,7 +363,7 @@ const ProjectPage = () => {
                         <p className="text-sm text-muted-foreground">{project.client || 'No client assigned'}</p>
                       </div>
                       <div
-                        className="h-7 w-7 rounded-full border border-input"
+                        className="h-7 w-7 rounded-full border border-border"
                         style={{ backgroundColor: project.color || DEFAULT_COLOR }}
                       />
                     </div>
@@ -395,7 +371,7 @@ const ProjectPage = () => {
                       <button
                         type="button"
                         onClick={() => setEditingProject(project)}
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                       >
                         <Pencil className="h-4 w-4" />
                         Edit
@@ -403,7 +379,7 @@ const ProjectPage = () => {
                       <button
                         type="button"
                         onClick={() => deleteProject(project.id)}
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-destructive px-3 py-2 text-sm text-destructive"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-destructive/30 px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
                         Delete

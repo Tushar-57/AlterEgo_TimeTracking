@@ -1,31 +1,36 @@
 /**
- * Canonical UI primitive barrel. Import primitives from `@/components/ui`
- * (never reach into `Calendar_updated/components/ui/*` from new code).
+ * Shared UI primitive barrel for the AlterEgo app.
  *
- * The shadcn-style set currently lives under Calendar_updated/ for historical
- * reasons; this barrel is the stable public path. Physical consolidation into
- * this folder is a Phase 5 cleanup — see DESIGN_SYSTEM.md.
+ * The canonical shadcn-style primitives currently live under
+ * `components/Calendar_updated/components/ui/` (token-based: Button, Card, Input,
+ * Badge, …). Re-exported here so app code can pull them from one place:
+ *
+ *   import { Button, Card, PageHeader } from '../ui';
+ *
+ * Existing deep relative imports keep working; new code should prefer this barrel.
  */
+export { Button, buttonVariants } from '../Calendar_updated/components/ui/button';
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '../Calendar_updated/components/ui/card';
+export { Input } from '../Calendar_updated/components/ui/input';
+export { Badge, badgeVariants } from '../Calendar_updated/components/ui/badge';
 
-// shadcn-style set (token-based)
-export * from "../Calendar_updated/components/ui/badge";
-export * from "../Calendar_updated/components/ui/button";
-export * from "../Calendar_updated/components/ui/card";
-export * from "../Calendar_updated/components/ui/dialog";
-export * from "../Calendar_updated/components/ui/input";
-export * from "../Calendar_updated/components/ui/scroll-area";
-export * from "../Calendar_updated/components/ui/separator";
-export * from "../Calendar_updated/components/ui/slider";
-export * from "../Calendar_updated/components/ui/switch";
-export * from "../Calendar_updated/components/ui/tabs";
-export * from "../Calendar_updated/components/ui/toggle";
-export * from "../Calendar_updated/components/ui/toggle-group";
-export * from "../Calendar_updated/components/ui/tooltip";
-
-// local primitives
-export * from "./select";
-export * from "./toast";
-export * from "./textarea";
-export * from "./icon-button";
-export * from "./page-header";
-export { Skeleton } from "./Skeleton";
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectLabel,
+  SelectItem,
+  SelectSeparator,
+} from './select';
+export { Skeleton } from './Skeleton';
+export { PageHeader } from './PageHeader';
+export { EmptyState } from './EmptyState';

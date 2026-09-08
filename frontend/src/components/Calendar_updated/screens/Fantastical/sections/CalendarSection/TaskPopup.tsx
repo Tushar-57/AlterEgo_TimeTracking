@@ -469,7 +469,7 @@ import { X, Clock, ChevronDown, ChevronUp, Sparkles, Trash2 } from 'lucide-react
 import { motion, AnimatePresence } from 'framer-motion';
 import { Switch } from '../../../../components/ui/switch';
 import { calculatePosition } from '../../../../../Dashboard';
-import type { CalendarEvent } from '../../../../components/DraggableEvent';
+import type { CalendarEvent } from '../../../../types';
 import { formatMinutesAsHoursMinutes } from '../../../../../../utils/utils';
 // import { Label } from '../../../../components/ui/label';
 

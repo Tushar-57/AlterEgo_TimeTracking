@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
 import { useBodyScrollLock } from './hooks/useBodyScrollLock';
-import { Clock, LayoutDashboard, ListChecks, Menu, MoreHorizontal, Sparkles } from 'lucide-react';
+import { Brain, Clock, LayoutDashboard, ListChecks, Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import TimeTracker from './components/TimeTracker/TimeTracker';
 import LoginClassic from './components/LoginFunctionality';
@@ -66,21 +66,21 @@ const ProtectedOnboarding = () => {
   return <ChatOnboarding onComplete={() => setOnboardingCompleted(true)} />;
 };
 
+const MOBILE_TABS = [
+  { label: 'Timer', to: '/timer', icon: Clock },
+  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+  { label: 'Tasks', to: '/tasks', icon: ListChecks },
+  { label: 'Coach', to: '/coach/knowledge', icon: Brain },
+];
+
 const ProtectedRoutes = () => {
   const { isAuthenticated, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const mobileTabs = [
-    { label: 'Timer', to: '/timer', icon: Clock, external: false },
-    { label: 'Calendar', to: '/dashboard', icon: LayoutDashboard, external: false },
-    { label: 'Tasks', to: '/tasks', icon: ListChecks, external: false },
-    { label: 'Coach', to: '/coach/knowledge', icon: Sparkles, external: true },
-  ];
-
   const activeMobileTab = useMemo(
-    () => mobileTabs.find((tab) => location.pathname === tab.to || location.pathname.startsWith(`${tab.to}/`)),
+    () => MOBILE_TABS.find((tab) => location.pathname === tab.to || location.pathname.startsWith(`${tab.to}/`)),
     [location.pathname]
   );
 
@@ -159,11 +159,11 @@ const ProtectedRoutes = () => {
   return (
     <ChatProvider>
       <div className="relative flex min-h-[100dvh] overflow-x-hidden bg-background text-foreground">
-        <div className="fixed left-0 right-0 top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between border-b border-border bg-card px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:hidden">
+        <div className="fixed left-0 right-0 top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between border-b border-border bg-card/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl md:hidden">
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             aria-label="Open navigation menu"
           >
             <Menu className="h-5 w-5" />
@@ -318,8 +318,8 @@ const ProtectedRoutes = () => {
           </Routes>
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-border bg-card px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur-xl md:hidden">
-          {mobileTabs.map((tab) => {
+        <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-border bg-card/95 px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur-xl md:hidden">
+          {MOBILE_TABS.map((tab) => {
             const isActive = location.pathname === tab.to || location.pathname.startsWith(`${tab.to}/`);
             return (
               <button
@@ -329,14 +329,13 @@ const ProtectedRoutes = () => {
                   navigate(tab.to);
                   setMobileNavOpen(false);
                 }}
-                aria-label={tab.external ? `${tab.label} (opens Coach)` : tab.label}
-                className={`flex flex-col items-center justify-center rounded-lg py-2 text-[11px] font-medium transition-colors ${
+                className={`flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-[11px] font-medium transition-colors ${
                   isActive
-                    ? 'bg-brand-gradient text-primary-foreground shadow-sm'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 }`}
               >
-                <tab.icon className="mb-1 h-4 w-4" />
+                <tab.icon className="h-4 w-4" />
                 {tab.label}
               </button>
             );
@@ -344,10 +343,9 @@ const ProtectedRoutes = () => {
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
-            aria-label="More — open full navigation"
-            className="flex flex-col items-center justify-center rounded-lg py-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            <MoreHorizontal className="mb-1 h-4 w-4" />
+            <Menu className="h-4 w-4" />
             More
           </button>
         </nav>

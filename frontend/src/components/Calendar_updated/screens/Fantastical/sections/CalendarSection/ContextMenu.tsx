@@ -1,21 +1,27 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '../../../../components/ui/button';
-import { Checkbox } from '@radix-ui/react-checkbox';
+import type { LucideIcon } from 'lucide-react';
+
+export type ContextMenuItem = {
+  label: string;
+  icon?: LucideIcon;
+  onClick: () => void;
+  destructive?: boolean;
+  disabled?: boolean;
+};
 
 interface ContextMenuProps {
   x: number;
   y: number;
+  items: ContextMenuItem[];
   onClose: () => void;
-  onAddTimeEntry: () => void;
 }
 
-export const ContextMenu = ({ x, y, onClose, onAddTimeEntry }: ContextMenuProps) => {
-  const [defaultAction, setDefaultAction] = useState<string>(
-    localStorage.getItem('defaultCalendarAction') || 'addTimeEntry'
-  );
-  const navigate = useNavigate();
+/**
+ * Generic right-click menu for the calendar. Positioned at (x, y), clamped to the
+ * viewport, dismissed on outside-click or Escape. Fully token-themed.
+ */
+export const ContextMenu = ({ x, y, items, onClose }: ContextMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,13 +30,11 @@ export const ContextMenu = ({ x, y, onClose, onAddTimeEntry }: ContextMenuProps)
         onClose();
       }
     };
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose();
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -40,81 +44,51 @@ export const ContextMenu = ({ x, y, onClose, onAddTimeEntry }: ContextMenuProps)
   }, [onClose]);
 
   useEffect(() => {
-    if (menuRef.current) {
-      const menu = menuRef.current;
-      const { innerWidth, innerHeight } = window;
-      const menuWidth = menu.offsetWidth;
-      const menuHeight = menu.offsetHeight;
-      let adjustedX = x;
-      let adjustedY = y;
-
-      if (x + menuWidth > innerWidth) {
-        adjustedX = innerWidth - menuWidth - 10;
-      }
-      if (y + menuHeight > innerHeight) {
-        adjustedY = innerHeight - menuHeight - 10;
-      }
-
-      menu.style.left = `${adjustedX}px`;
-      menu.style.top = `${adjustedY}px`;
-    }
+    const menu = menuRef.current;
+    if (!menu) return;
+    const { innerWidth, innerHeight } = window;
+    const rect = menu.getBoundingClientRect();
+    const adjustedX = x + rect.width > innerWidth ? Math.max(8, innerWidth - rect.width - 8) : x;
+    const adjustedY = y + rect.height > innerHeight ? Math.max(8, innerHeight - rect.height - 8) : y;
+    menu.style.left = `${adjustedX}px`;
+    menu.style.top = `${adjustedY}px`;
   }, [x, y]);
-
-  const handleDefaultChange = (action: string) => {
-    setDefaultAction(action);
-    localStorage.setItem('defaultCalendarAction', action);
-  };
 
   return (
     <motion.div
       ref={menuRef}
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      exit={{ opacity: 0, scale: 0.96 }}
       transition={{ duration: 0.1 }}
-      className="absolute bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2 z-50"
+      className="fixed z-50 min-w-[11rem] overflow-hidden rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+      style={{ left: x, top: y }}
       role="menu"
-      aria-label="Calendar context menu"
+      aria-label="Calendar menu"
     >
-      <div className="flex flex-col gap-1 w-48">
-        <Button
-          variant="ghost"
-          className="px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex justify-start"
-          onClick={() => {
-            onAddTimeEntry();
-            onClose();
-          }}
-          role="menuitem"
-        >
-          Add Time Entry
-        </Button>
-        <Button
-          variant="ghost"
-          className="px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex justify-start"
-          onClick={() => {
-            navigate('/aiplanner');
-            onClose();
-          }}
-          role="menuitem"
-        >
-          Open Planner
-        </Button>
-        <div className="flex items-center gap-2 px-3 py-2">
-          <Checkbox
-            id="default-action"
-            checked={defaultAction === 'addTimeEntry'}
-            onCheckedChange={(checked) =>
-              handleDefaultChange(checked ? 'addTimeEntry' : 'openPlanner')
-            }
-          />
-          <label
-            htmlFor="default-action"
-            className="text-sm text-gray-600 dark:text-gray-300"
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <button
+            key={item.label}
+            type="button"
+            role="menuitem"
+            disabled={item.disabled}
+            className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50 ${
+              item.destructive
+                ? 'text-destructive hover:bg-destructive/10'
+                : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+            }`}
+            onClick={() => {
+              item.onClick();
+              onClose();
+            }}
           >
-            Set as default (left-click)
-          </label>
-        </div>
-      </div>
+            {Icon ? <Icon className="h-4 w-4 shrink-0" /> : null}
+            {item.label}
+          </button>
+        );
+      })}
     </motion.div>
   );
 };

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, LogOut, RefreshCcw, Save, Target, UserRound } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { PageHeader } from '../ui';
 import { useToast } from '../Calendar_updated/components/hooks/use-toast';
 import { PageHeader } from '../ui/page-header';
 
@@ -682,7 +683,7 @@ const ProfilePage = () => {
 
   if (loading || !formState || !snapshot) {
     return (
-      <div className="min-h-screen bg-background px-4 py-6 sm:px-6 md:px-8">
+      <div className="min-h-full bg-background px-4 py-6 sm:px-6 md:px-8">
         <div className="mx-auto max-w-6xl animate-pulse space-y-4">
           <div className="h-28 rounded-3xl bg-muted" />
           <div className="h-40 rounded-2xl bg-muted" />
@@ -693,31 +694,52 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-6 sm:px-6 md:px-8">
+    <div className="min-h-full bg-background px-4 py-6 sm:px-6 md:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <PageHeader
-          eyebrow="Account"
-          title={user?.name || 'Your profile'}
-          icon={UserRound}
-          subtitle="Fine-tune the context your Coach and planner use to keep up with your routine."
+          icon={Sparkles}
+          title={user?.name || 'Your Profile'}
+          description="Fine-tune your onboarding context so your coach and planner stay aligned with your current routine."
         />
 
-        {/* Check-in rhythm, mentor archetype and timezone used to sit here as
-            big stat cards — but all three are editable fields a few hundred
-            pixels below, so the numbers just restated the form. Only the goal
-            count isn't repeated, so that's all that stays. */}
-        <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-surface-foreground">
-          <Target className="h-4 w-4 shrink-0 text-primary" />
-          <p>
-            <span className="font-semibold">{snapshot.goals.length}</span>{' '}
-            {snapshot.goals.length === 1 ? 'goal' : 'goals'} in your onboarding plan feed your Coach.
-          </p>
-        </div>
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-accent p-2 text-accent-foreground">
+              <Target className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-semibold text-foreground">{snapshot.goals.length}</p>
+            <p className="text-sm text-muted-foreground">Active goals in your onboarding plan</p>
+          </article>
+
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-accent p-2 text-accent-foreground">
+              <Clock3 className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-semibold text-foreground">{formState.checkInFrequency}</p>
+            <p className="text-sm text-muted-foreground">Check-in rhythm</p>
+          </article>
+
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-accent p-2 text-accent-foreground">
+              <UserRound className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-semibold text-foreground">{snapshot.mentor.archetype}</p>
+            <p className="text-sm text-muted-foreground">Mentor archetype</p>
+          </article>
+
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-accent p-2 text-accent-foreground">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <p className="truncate text-lg font-semibold text-slate-900">{formState.timezone}</p>
+            <p className="text-sm text-muted-foreground">Current planning timezone</p>
+          </article>
+        </section>
 
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <div className="mb-6 flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Update Onboarding Details</h2>
+              <h2 className="text-lg font-semibold text-foreground">Update Onboarding Details</h2>
               <p className="text-sm text-muted-foreground">Adjust role, tone, routine windows, and planner sync preferences.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -874,7 +896,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, coachCommunicationStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="adaptive"
                   />
                 </label>
@@ -896,7 +918,7 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                   />
                 </label>
 
@@ -909,7 +931,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, coachAccountabilityMode: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="balanced"
                   />
                 </label>
@@ -923,7 +945,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, coachDecisionStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="data-driven"
                   />
                 </label>
@@ -946,7 +968,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, productivityFocusStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="deep-work"
                   />
                 </label>
@@ -967,7 +989,7 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                   />
                 </label>
 
@@ -980,7 +1002,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, productivityPlanningCadence: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="daily"
                   />
                 </label>
@@ -994,7 +1016,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, productivityPrioritySystem: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="impact-first"
                   />
                 </label>
@@ -1016,7 +1038,7 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                   />
                 </label>
 
@@ -1036,7 +1058,7 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                   />
                 </label>
 
@@ -1049,7 +1071,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, healthStressApproach: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="mindfulness"
                   />
                 </label>
@@ -1063,7 +1085,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, healthNutritionStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="balanced"
                   />
                 </label>
@@ -1077,7 +1099,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, financeBudgetCadence: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="weekly"
                   />
                 </label>
@@ -1091,7 +1113,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, financeSavingsPriority: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="steady"
                   />
                 </label>
@@ -1105,7 +1127,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, financeRiskProfile: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="moderate"
                   />
                 </label>
@@ -1127,7 +1149,7 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                   />
                 </label>
 
@@ -1140,7 +1162,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, journalReflectionFrequency: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="daily"
                   />
                 </label>
@@ -1154,7 +1176,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, journalReflectionDepth: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="balanced"
                   />
                 </label>
@@ -1168,7 +1190,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, journalGratitudeMode: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-foreground focus:border-ring focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="3-things"
                   />
                 </label>

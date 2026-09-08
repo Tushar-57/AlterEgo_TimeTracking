@@ -7,6 +7,7 @@ import com.tushar.demo.timetracker.exception.ResourceNotFoundException;
 import com.tushar.demo.timetracker.model.Project;
 import com.tushar.demo.timetracker.model.Users;
 import com.tushar.demo.timetracker.repository.ProjectRepository;
+import com.tushar.demo.timetracker.repository.TimeEntryRepository;
 import com.tushar.demo.timetracker.service.ProjectService;
 
 import java.util.List;
@@ -18,9 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final TimeEntryRepository timeEntryRepository;
 
-    public ProjectServiceImpl(ProjectRepository projectRepository) {
+    public ProjectServiceImpl(ProjectRepository projectRepository, TimeEntryRepository timeEntryRepository) {
         this.projectRepository = projectRepository;
+        this.timeEntryRepository = timeEntryRepository;
     }
     
     @Override
@@ -96,6 +99,10 @@ public class ProjectServiceImpl implements ProjectService {
         if (project.isDefault()) {
             throw new ConflictException("Cannot delete default project");
         }
+
+        // Detach existing entries first — deleting a project that still has tracked
+        // time otherwise fails on the FK constraint and surfaces as a bare 500.
+        timeEntryRepository.clearProjectReferences(id);
 
         projectRepository.delete(project);
     }
