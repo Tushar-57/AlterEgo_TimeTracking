@@ -1,6 +1,7 @@
-import { ArrowUpRight, Eye, ExternalLink } from 'lucide-react';
+import { ArrowUpRight, CalendarClock, Eye, ExternalLink, LineChart, Sparkles, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getStoredAuthToken } from '../../utils/auth';
+import { PageHeader } from '../ui/page-header';
 
 const BUILTIN_COACH_URL_CANDIDATES = [
   'https://agenticlyf.vercel.app/coach/',
@@ -365,62 +366,97 @@ const CoachWorkspace = ({
       ? 'Knowledge Base'
       : 'Coach';
 
+  const capabilities = [
+    {
+      icon: CalendarClock,
+      title: 'Repairs your schedule',
+      body: 'When a block runs over, it reshuffles the rest of your day and proposes new focus times.',
+    },
+    {
+      icon: Wand2,
+      title: 'Nudges your focus',
+      body: 'Watches your Pomodoro rhythm and idle time, and steps in with a calming or motivating prompt.',
+    },
+    {
+      icon: LineChart,
+      title: 'Recaps your week',
+      body: 'Turns your tracked time into a plain-language read on where the hours went and what changed.',
+    },
+  ];
+
   return (
-    <div ref={containerRef} className="flex min-h-screen w-full flex-col bg-gradient-to-b from-slate-50 via-white to-blue-50/40 p-4 sm:p-6">
-      <div className="mx-auto w-full max-w-5xl rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
-        <div className="mb-6 flex flex-col gap-2">
-          <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">AI Coach Workspace</h1>
-          <p className="text-sm text-gray-600">
-            Launch Agentic {viewLabel} as an AlterEgo extension with return navigation and background context sync.
-          </p>
-          {autoLaunch && (
-            <p className="text-xs text-gray-500">
-              Redirecting you to Agentic {viewLabel}...
-            </p>
-          )}
-        </div>
+    <div ref={containerRef} className="min-h-screen w-full bg-background p-4 sm:p-6">
+      <div className="mx-auto w-full max-w-4xl space-y-6">
+        <PageHeader
+          eyebrow="AI Coach"
+          title={`Meet your Coach${viewLabel === 'Coach' ? '' : ` · ${viewLabel}`}`}
+          icon={Sparkles}
+          subtitle={
+            autoLaunch
+              ? `Opening the ${viewLabel} view of your Coach…`
+              : 'Your Coach is a deeper workspace than the in-app chat — it plans, watches, and reflects across everything you track. It opens as its own view and brings you back here when you are done.'
+          }
+        />
 
         {coachSrc ? (
           <>
-            <div className="mb-5 grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
+              {capabilities.map((cap) => (
+                <div key={cap.title} className="rounded-xl border border-border bg-card p-4">
+                  <span className="mb-2 grid h-9 w-9 place-items-center rounded-lg bg-surface text-primary">
+                    <cap.icon className="h-5 w-5" />
+                  </span>
+                  <p className="text-sm font-semibold text-foreground">{cap.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{cap.body}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={() => openCoach(false)}
-                className="flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
                 <ArrowUpRight className="h-4 w-4" />
-                Open Coach Full Window
+                Open Coach
               </button>
-
               <button
                 type="button"
                 onClick={() => openCoach(true)}
-                className="flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-input bg-card px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
                 <ExternalLink className="h-4 w-4" />
-                Open in New Tab
+                Open in a new tab
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowEmbeddedPreview((prev) => !prev)}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              <Eye className="h-3.5 w-3.5" />
-              {showEmbeddedPreview ? 'Hide Embedded Preview' : 'Show Embedded Preview'}
-            </button>
-
-            {showEmbeddedPreview && coachEmbedSrc && (
-              <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
-                <iframe title="AI Coach Preview" src={coachEmbedSrc} className="h-[70vh] w-full border-0" />
+            <details className="group rounded-xl border border-border bg-card">
+              <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+                <Eye className="h-3.5 w-3.5" />
+                Advanced — preview the Coach inline
+              </summary>
+              <div className="border-t border-border p-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEmbeddedPreview((prev) => !prev)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-input bg-card px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  {showEmbeddedPreview ? 'Hide preview' : 'Show embedded preview'}
+                </button>
+                {showEmbeddedPreview && coachEmbedSrc && (
+                  <div className="mt-3 overflow-hidden rounded-xl border border-border">
+                    <iframe title="AI Coach preview" src={coachEmbedSrc} className="h-[70vh] w-full border-0" />
+                  </div>
+                )}
               </div>
-            )}
+            </details>
           </>
         ) : (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            Coach endpoint resolves to this same route. Configure VITE_AGENTIC_COACH_URL (preferred) and keep
-            VITE_ALLOWED_COACH_HOSTS updated so this launcher can open the dedicated Coach application safely.
+          <div className="rounded-xl border border-warning bg-surface p-4 text-sm text-surface-foreground">
+            The Coach endpoint resolves back to this route. Set <code className="font-mono text-xs">VITE_AGENTIC_COACH_URL</code>{' '}
+            (preferred) and keep <code className="font-mono text-xs">VITE_ALLOWED_COACH_HOSTS</code> current so this
+            launcher can open the dedicated Coach app safely.
           </div>
         )}
       </div>

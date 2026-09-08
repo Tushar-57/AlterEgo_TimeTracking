@@ -172,9 +172,19 @@ The barrel re-exports:
   label), `ThemeToggle` tokens, new `PageHeader`, `ConnectedPlaceholderPage` tokens +
   "this is a hub" reframing. The `.dark [class~="…"]` block stays until Phase 5 — other
   un-migrated screens still lean on it.
-- **Phase 3 — One "Coach" identity:** unify the floating chat, the `/coach/*` launcher,
-  and daily checkups under one name + avatar + accent + theme; kill the pink/lavender
-  palette and the per-message success toast; fix invisible typing dots / `z-60`.
+- **Phase 3 — One "Coach" identity (done):** chat primitives (`ChatBubble` /
+  `ChatContainer` / `TypingIndicator`) + `FullScreenChat` + `ChatToggleButton` +
+  `CoachWorkspace` rebuilt on tokens. Killed the pink/`lavender-*` palette (undefined
+  classes → invisible borders), the `z-60` non-class, the invisible typing dots, the
+  per-message success toast, `onKeyPress`. Added a docked/compact chat mode
+  (localStorage `alterego_chat_docked`), a persistent **Examples** toggle, a **Retry**
+  action, and consistent action-confirm verbs. `ChatToggleButton` is now a labelled
+  "Coach" pill clear of the mobile nav. `CoachWorkspace` is a "Meet your Coach" screen
+  (what it does, one primary action, embedded preview behind an Advanced disclosure) —
+  all `resolveCoachSrc` / bridge-token / sync logic untouched.
+  **Deferred — Phase 3.1:** `CheckupPrompt.tsx` (~107 raw colour classes, 1375 lines)
+  and `checkup.css` (already has its own dark theme; it is a backend HTML contract).
+  Per-message copy + timestamps in the chat also deferred.
 - **Phase 4 — POC screens:** token pass, honest empty states, per-agent hue reduced to a
   dot/ring.
 - **Phase 5 — Cleanup:** delete dead files, remove the `.dark [class~="…"]` override

@@ -1,4 +1,3 @@
-// import React from 'react';
 import { motion } from 'framer-motion';
 
 interface ChatBubbleProps {
@@ -6,20 +5,20 @@ interface ChatBubbleProps {
   children?: React.ReactNode;
   isUser: boolean;
   isAnimated?: boolean;
-  coachAvatar?: string; // Added coachAvatar prop
+  coachAvatar?: string;
 }
 
 const UserAvatar = () => (
-  <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center ml-2 shrink-0">
-    <span className="text-white text-sm">U</span>
+  <div className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
+    You
   </div>
 );
 
 const BotAvatar = ({ coachAvatar }: { coachAvatar?: string }) => (
   <img
     src={coachAvatar || '/avatars/default.svg'}
-    alt="Coach Avatar"
-    className="w-8 h-8 rounded-full border border-lavender-300 mr-2 shrink-0"
+    alt="Coach avatar"
+    className="mr-2 h-8 w-8 shrink-0 rounded-full border border-border object-cover"
     onError={(e) => (e.currentTarget.src = '/avatars/default.svg')}
   />
 );
@@ -31,38 +30,19 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   isAnimated = true,
   coachAvatar,
 }) => {
-  const baseClasses = 'max-w-[80%] rounded-2xl p-4 shadow-sm';
-
-  const userBubbleClasses = `
-    ${baseClasses}
-    ml-auto
-    bg-gradient-to-r
-    from-blue-400
-    to-cyan-500
-    text-white
-    border
-    border-blue-200
-    text-shadow-sm
-  `;
-
-  const assistantBubbleClasses = `
-    ${baseClasses}
-    mr-auto
-    bg-white
-    border
-    border-purple-200
-    text-gray-800
-  `;
+  const bubbleClasses = isUser
+    ? 'ml-auto max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-3 text-primary-foreground shadow-sm'
+    : 'mr-auto max-w-[80%] rounded-2xl rounded-bl-sm border border-border bg-card px-4 py-3 text-card-foreground shadow-sm';
 
   return (
     <motion.div
       initial={isAnimated ? { opacity: 0, y: 10 } : { opacity: 1, y: 0 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`flex ${isUser ? 'justify-end' : 'justify-start'} gap-2 mb-4`}
+      className={`mb-4 flex gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}
     >
       {!isUser && <BotAvatar coachAvatar={coachAvatar} />}
-      <div className={isUser ? userBubbleClasses : assistantBubbleClasses}>
+      <div className={`whitespace-pre-wrap break-words text-sm leading-relaxed ${bubbleClasses}`}>
         {content || children}
       </div>
       {isUser && <UserAvatar />}
