@@ -415,9 +415,24 @@ body {
   background: rgba(148, 163, 184, 0.58);
 }
 
-* {
-  transition: background-color 0.3s ease, transform 0.3s ease;
-}
+/*
+ * There used to be a universal `* { transition: background-color 0.3s ease }`
+ * here. It broke dark mode app-wide.
+ *
+ * On a theme flip only the custom property changes; the declared value
+ * `hsl(var(--background))` is textually identical before and after, so the
+ * engine never starts a background-color transition and leaves every
+ * already-painted element frozen at its first-paint (light) colour. Text
+ * recoloured (no transition declared on `color`), backgrounds did not — which
+ * is why the token migration looked like a no-op in dark mode. Elements created
+ * *after* the flip rendered correctly, which made it look intermittent.
+ *
+ * It also attached a transition to every node in the tree — a real cost on the
+ * calendar and task grids.
+ *
+ * Theme-change transitions are opt-in per component now: use Tailwind's
+ * `transition-colors` on the interactive surfaces that actually want them.
+ */
 
 .grid-pattern {
   background-size: 40px 40px;
