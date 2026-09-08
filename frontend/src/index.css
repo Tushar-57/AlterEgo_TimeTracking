@@ -81,10 +81,12 @@
   }
 
   /*
-   * TODO(overhaul): temporary dark-mode safety net. These global attribute
-   * selectors patch components that still hardcode bg-white / gray text / gray
-   * borders. Delete this whole block in Phase 6 once components consume tokens
-   * (bg-card, text-muted-foreground, border-border) with real `dark:` variants.
+   * Dark-mode safety net. Global attribute selectors that patch components still
+   * carrying hardcoded bg-white / gray text / gray borders. The calendar,
+   * sidebar, shell, and the Projects/Tags/Reports pages have been migrated to
+   * tokens + real `dark:` variants and no longer depend on this. Still
+   * load-bearing for: TaskPopup, ProfilePage form controls, CheckupPrompt,
+   * TimeTracker, AIChat. Retire per-component, then delete this block.
    */
   .dark [class~="bg-white"] {
     background-color: rgb(15 23 42);

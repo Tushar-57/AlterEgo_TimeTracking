@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Clock3, LogOut, RefreshCcw, Save, Sparkles, Target, UserRound } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { PageHeader } from '../ui';
 import { useToast } from '../Calendar_updated/components/hooks/use-toast';
 
 type Frequency = 'daily' | 'weekly' | 'biweekly';
@@ -681,71 +682,64 @@ const ProfilePage = () => {
 
   if (loading || !formState || !snapshot) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 md:px-8">
+      <div className="min-h-full bg-background px-4 py-6 sm:px-6 md:px-8">
         <div className="mx-auto max-w-6xl animate-pulse space-y-4">
-          <div className="h-28 rounded-3xl bg-slate-200" />
-          <div className="h-40 rounded-2xl bg-slate-200" />
-          <div className="h-72 rounded-2xl bg-slate-200" />
+          <div className="h-28 rounded-3xl bg-muted" />
+          <div className="h-40 rounded-2xl bg-muted" />
+          <div className="h-72 rounded-2xl bg-muted" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 md:px-8">
+    <div className="min-h-full bg-background px-4 py-6 sm:px-6 md:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="bg-gradient-to-r from-sky-100 via-cyan-50 to-emerald-100 px-6 py-8 sm:px-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">
-              <Sparkles className="h-3.5 w-3.5" />
-              Profile Control Center
-            </div>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">{user?.name || 'Your Profile'}</h1>
-            <p className="mt-2 text-sm text-slate-700 sm:text-base">
-              Fine-tune your onboarding context so your coach and planner stay aligned with your current routine.
-            </p>
-          </div>
-        </section>
+        <PageHeader
+          icon={Sparkles}
+          title={user?.name || 'Your Profile'}
+          description="Fine-tune your onboarding context so your coach and planner stay aligned with your current routine."
+        />
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-2 text-slate-700">
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-accent p-2 text-accent-foreground">
               <Target className="h-4 w-4" />
             </div>
-            <p className="text-2xl font-semibold text-slate-900">{snapshot.goals.length}</p>
-            <p className="text-sm text-slate-600">Active goals in your onboarding plan</p>
+            <p className="text-2xl font-semibold text-foreground">{snapshot.goals.length}</p>
+            <p className="text-sm text-muted-foreground">Active goals in your onboarding plan</p>
           </article>
 
-          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-2 text-slate-700">
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-accent p-2 text-accent-foreground">
               <Clock3 className="h-4 w-4" />
             </div>
-            <p className="text-2xl font-semibold text-slate-900">{formState.checkInFrequency}</p>
-            <p className="text-sm text-slate-600">Check-in rhythm</p>
+            <p className="text-2xl font-semibold text-foreground">{formState.checkInFrequency}</p>
+            <p className="text-sm text-muted-foreground">Check-in rhythm</p>
           </article>
 
-          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-2 text-slate-700">
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-accent p-2 text-accent-foreground">
               <UserRound className="h-4 w-4" />
             </div>
-            <p className="text-2xl font-semibold text-slate-900">{snapshot.mentor.archetype}</p>
-            <p className="text-sm text-slate-600">Mentor archetype</p>
+            <p className="text-2xl font-semibold text-foreground">{snapshot.mentor.archetype}</p>
+            <p className="text-sm text-muted-foreground">Mentor archetype</p>
           </article>
 
-          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-2 text-slate-700">
+          <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+            <div className="mb-3 inline-flex rounded-lg bg-accent p-2 text-accent-foreground">
               <Sparkles className="h-4 w-4" />
             </div>
             <p className="truncate text-lg font-semibold text-slate-900">{formState.timezone}</p>
-            <p className="text-sm text-slate-600">Current planning timezone</p>
+            <p className="text-sm text-muted-foreground">Current planning timezone</p>
           </article>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="mb-6 flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+          <div className="mb-6 flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-slate-900">Update Onboarding Details</h2>
-              <p className="text-sm text-slate-600">Adjust role, tone, routine windows, and planner sync preferences.</p>
+              <h2 className="text-lg font-semibold text-foreground">Update Onboarding Details</h2>
+              <p className="text-sm text-muted-foreground">Adjust role, tone, routine windows, and planner sync preferences.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -901,7 +895,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, coachCommunicationStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="adaptive"
                   />
                 </label>
@@ -923,7 +917,7 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                   />
                 </label>
 
@@ -936,7 +930,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, coachAccountabilityMode: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="balanced"
                   />
                 </label>
@@ -950,7 +944,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, coachDecisionStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="data-driven"
                   />
                 </label>
@@ -973,7 +967,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, productivityFocusStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="deep-work"
                   />
                 </label>
@@ -994,7 +988,7 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                   />
                 </label>
 
@@ -1007,7 +1001,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, productivityPlanningCadence: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="daily"
                   />
                 </label>
@@ -1021,7 +1015,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, productivityPrioritySystem: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="impact-first"
                   />
                 </label>
@@ -1043,7 +1037,7 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                   />
                 </label>
 
@@ -1063,7 +1057,7 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                   />
                 </label>
 
@@ -1076,7 +1070,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, healthStressApproach: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="mindfulness"
                   />
                 </label>
@@ -1090,7 +1084,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, healthNutritionStyle: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="balanced"
                   />
                 </label>
@@ -1104,7 +1098,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, financeBudgetCadence: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="weekly"
                   />
                 </label>
@@ -1118,7 +1112,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, financeSavingsPriority: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="steady"
                   />
                 </label>
@@ -1132,7 +1126,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, financeRiskProfile: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="moderate"
                   />
                 </label>
@@ -1154,7 +1148,7 @@ const ProfilePage = () => {
                           : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                   />
                 </label>
 
@@ -1167,7 +1161,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, journalReflectionFrequency: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="daily"
                   />
                 </label>
@@ -1181,7 +1175,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, journalReflectionDepth: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="balanced"
                   />
                 </label>
@@ -1195,7 +1189,7 @@ const ProfilePage = () => {
                         prev ? { ...prev, journalGratitudeMode: event.target.value } : prev
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-slate-900 focus:border-sky-300 focus:outline-none"
                     placeholder="3-things"
                   />
                 </label>
