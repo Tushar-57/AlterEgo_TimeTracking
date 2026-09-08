@@ -21,6 +21,8 @@ export interface TimeEntry {
   endTime?: string;
   duration: number;
   project?: Project;
+  /** The API sometimes returns only the id rather than a nested project. */
+  projectId?: number | string | null;
   tags?: Tag[];
   billable: boolean;
 }

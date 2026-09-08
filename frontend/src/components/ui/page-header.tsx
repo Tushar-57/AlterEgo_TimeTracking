@@ -27,18 +27,20 @@ export function PageHeader({ title, subtitle, eyebrow, icon: Icon, actions, clas
       )}
     >
       <div className="min-w-0">
+        {/* The mobile app bar already names the section, so the eyebrow is
+            desktop-only to avoid saying the same thing twice. */}
         {eyebrow && (
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+          <p className="mb-1 hidden text-[11px] font-semibold uppercase tracking-[0.14em] text-primary md:block">
             {eyebrow}
           </p>
         )}
         <div className="flex items-center gap-2.5">
           {Icon && (
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface text-primary">
-              <Icon className="h-5 w-5" />
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-surface text-primary md:h-9 md:w-9">
+              <Icon className="h-4 w-4 md:h-5 md:w-5" />
             </span>
           )}
-          <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
+          <h1 className="truncate text-xl font-semibold tracking-tight text-foreground md:text-2xl">{title}</h1>
         </div>
         {subtitle && <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{subtitle}</p>}
       </div>

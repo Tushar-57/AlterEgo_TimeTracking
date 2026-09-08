@@ -932,7 +932,7 @@ export const CalendarSection = ({
                   onClick={() => setMobileSelectedDate(new Date(day.fullDate))}
                   className={`relative flex h-10 items-center justify-center rounded-lg text-xs font-medium transition ${
                     isSelected
-                      ? 'bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] text-slate-900 shadow-sm dark:from-slate-700 dark:to-slate-600 dark:text-slate-100'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
                       : day.isCurrentMonth
                       ? 'bg-white text-slate-700 hover:bg-[#F3EEFF] dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
                       : 'bg-slate-100 text-slate-400 dark:bg-slate-900 dark:text-slate-500'
@@ -1533,8 +1533,8 @@ export const CalendarSection = ({
                 onClick={() => setMobileViewMode("calendar")}
                 className={`h-9 rounded-lg px-4 text-sm font-medium transition ${
                   mobileViewMode === "calendar"
-                    ? "bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] text-slate-900 shadow-sm dark:from-slate-700 dark:to-slate-600 dark:text-slate-100"
-                    : "bg-white text-slate-600 hover:bg-[#F3EEFF] dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 }`}
               >
                 Calendar
@@ -1544,8 +1544,8 @@ export const CalendarSection = ({
                 onClick={() => setMobileViewMode("agenda")}
                 className={`h-9 rounded-lg px-4 text-sm font-medium transition ${
                   mobileViewMode === "agenda"
-                    ? "bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] text-slate-900 shadow-sm dark:from-slate-700 dark:to-slate-600 dark:text-slate-100"
-                    : "bg-white text-slate-600 hover:bg-[#F3EEFF] dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 }`}
               >
                 Agenda
@@ -1556,7 +1556,7 @@ export const CalendarSection = ({
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <ToggleGroupItem
                   value="day"
-                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
+                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:bg-accent hover:text-accent-foreground sm:h-10 sm:px-6 sm:text-base"
                 >
                   Daily
                 </ToggleGroupItem>
@@ -1564,7 +1564,7 @@ export const CalendarSection = ({
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <ToggleGroupItem
                   value="week"
-                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
+                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:bg-accent hover:text-accent-foreground sm:h-10 sm:px-6 sm:text-base"
                 >
                   Weekly
                 </ToggleGroupItem>
@@ -1572,7 +1572,7 @@ export const CalendarSection = ({
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <ToggleGroupItem
                   value="month"
-                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
+                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:bg-accent hover:text-accent-foreground sm:h-10 sm:px-6 sm:text-base"
                 >
                   Monthly
                 </ToggleGroupItem>
@@ -1580,7 +1580,7 @@ export const CalendarSection = ({
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <ToggleGroupItem
                   value="year"
-                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium data-[state=on]:bg-indigo-600 data-[state=on]:text-white hover:bg-gray-100 dark:hover:bg-gray-600 sm:h-10 sm:px-6 sm:text-base"
+                  className="h-9 rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground hover:bg-accent hover:text-accent-foreground sm:h-10 sm:px-6 sm:text-base"
                 >
                   Yearly
                 </ToggleGroupItem>
@@ -1590,12 +1590,12 @@ export const CalendarSection = ({
 
           <div className="flex w-full items-center lg:w-[200px]">
             <motion.div
-              className="flex items-center gap-2 p-2 flex-1 bg-white dark:bg-gray-700 rounded-lg shadow-sm"
+              className="flex items-center gap-2 p-2 flex-1 rounded-lg border border-input bg-background"
               whileHover={{ scale: 1.02 }}
             >
-              <SearchIcon className="w-5 h-5 text-gray-500" />
+              <SearchIcon className="w-5 h-5 text-muted-foreground" />
               <Input
-                className="flex-1 border-0 bg-transparent p-0 text-sm text-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0 h-auto"
+                className="flex-1 border-0 bg-transparent p-0 text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-auto"
                 placeholder="Search tasks..."
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
