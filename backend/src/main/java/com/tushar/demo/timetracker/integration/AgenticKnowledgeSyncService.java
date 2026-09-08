@@ -35,7 +35,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
+import jakarta.annotation.PreDestroy;
 
 @Service
 public class AgenticKnowledgeSyncService {
@@ -69,6 +75,55 @@ public class AgenticKnowledgeSyncService {
     private final long upstreamCooldownMillis;
 
     private final AtomicLong upstreamCooldownUntilEpochMillis = new AtomicLong(0L);
+
+    /**
+     * Fire-and-forget worker for "catalog" syncs (projects, tags, onboarding) that
+     * sit directly on a user-facing request path. These used to run inline, so a
+     * cold or unreachable Agentic_Lyf could block "Create project" / "Finish
+     * onboarding" for up to (request-timeout x max-attempts) seconds. They are
+     * best-effort by nature — {@code postJson} already swallows failures — so we
+     * hand them to a small bounded pool and return immediately. Durable syncs
+     * (time entries) go through the DB-backed outbox and are unaffected.
+     */
+    private final ThreadPoolExecutor catalogSyncExecutor = new ThreadPoolExecutor(
+            1, 2, 60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(500),
+            runnable -> {
+                Thread thread = new Thread(runnable, "agentic-catalog-sync");
+                thread.setDaemon(true);
+                return thread;
+            }
+    );
+
+    @PreDestroy
+    void shutdownCatalogSyncExecutor() {
+        catalogSyncExecutor.shutdown();
+        try {
+            if (!catalogSyncExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                catalogSyncExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            catalogSyncExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void dispatchCatalogSync(String label, Runnable task) {
+        try {
+            catalogSyncExecutor.execute(() -> {
+                try {
+                    task.run();
+                } catch (Exception e) {
+                    logger.warn("Agentic {} async sync failed: {}", label, e.getMessage());
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            // Queue full (Agentic down for a long stretch + heavy edit activity).
+            // Drop it: the next successful sync re-sends the current state via the
+            // deterministic sync_event_key, so nothing is permanently lost.
+            logger.warn("Agentic {} sync dropped — catalog sync queue saturated", label);
+        }
+    }
 
     public static final class SyncBackfillResult {
         private final boolean configured;
@@ -167,7 +222,12 @@ public class AgenticKnowledgeSyncService {
         if (!isConfigured()) {
             return;
         }
+        // Off the request thread: onboarding completion must not wait on Agentic_Lyf,
+        // which is often mid-cold-start at exactly the moment a new user finishes.
+        dispatchCatalogSync("onboarding", () -> syncOnboardingBlocking(request, user));
+    }
 
+    private void syncOnboardingBlocking(OnboardingRequestDTO request, Users user) {
         try {
             List<Map<String, Object>> goals = mapGoals(request.getGoals());
             List<String> preferences = mapPreferences(request.getAnswers());
@@ -775,7 +835,9 @@ public class AgenticKnowledgeSyncService {
 
         String projectName = safeText(project.getName(), "Untitled Project");
         String responseText = "Project \"" + projectName + "\" synced.";
-        return syncInteractionEvent("project_catalog", "Project update: " + projectName, responseText, context, user);
+        dispatchCatalogSync("project_catalog", () ->
+                syncInteractionEvent("project_catalog", "Project update: " + projectName, responseText, context, user));
+        return true;
     }
 
     public boolean syncProjectDeletion(Long projectId, String projectName, Users user, String sourceAction) {
@@ -796,7 +858,9 @@ public class AgenticKnowledgeSyncService {
         context.put("user_email", user != null ? user.getEmail() : null);
 
         String responseText = "Project \"" + safeProjectName + "\" was deleted.";
-        return syncInteractionEvent("project_catalog", "Delete project: " + safeProjectName, responseText, context, user);
+        dispatchCatalogSync("project_catalog", () ->
+                syncInteractionEvent("project_catalog", "Delete project: " + safeProjectName, responseText, context, user));
+        return true;
     }
 
     public boolean syncTag(Tags tag, Users user, String sourceAction) {
@@ -818,7 +882,9 @@ public class AgenticKnowledgeSyncService {
         context.put("user_email", user != null ? user.getEmail() : null);
 
         String responseText = "Tag \"" + tagName + "\" synced.";
-        return syncInteractionEvent("tag_catalog", "Tag update: " + tagName, responseText, context, user);
+        dispatchCatalogSync("tag_catalog", () ->
+                syncInteractionEvent("tag_catalog", "Tag update: " + tagName, responseText, context, user));
+        return true;
     }
 
     public boolean syncTagDeletion(Long tagId, String tagName, Users user, String sourceAction) {
@@ -839,7 +905,9 @@ public class AgenticKnowledgeSyncService {
         context.put("user_email", user != null ? user.getEmail() : null);
 
         String responseText = "Tag \"" + safeTagName + "\" was deleted.";
-        return syncInteractionEvent("tag_catalog", "Delete tag: " + safeTagName, responseText, context, user);
+        dispatchCatalogSync("tag_catalog", () ->
+                syncInteractionEvent("tag_catalog", "Delete tag: " + safeTagName, responseText, context, user));
+        return true;
     }
 
     public boolean syncTimeEntryDeletion(TimeEntry entry, Users user, String sourceAction) {

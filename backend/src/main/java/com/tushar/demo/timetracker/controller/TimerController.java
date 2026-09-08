@@ -250,8 +250,10 @@ public class TimerController {
             return ResponseEntity.ok(ApiResponse.success(activeTimer, "Active timer fetched successfully"));
         } catch (NoActiveTimerException e) {
             logger.info("No active timer found for user: {}", authName(authentication));
-            return ResponseEntity.status(HttpStatus.NO_CONTENT)
-                    .body(ApiResponse.success(null, "No active timer found"));
+            // 200 with an empty-data envelope rather than 204-with-body (which is
+            // non-standard — the servlet layer strips the body and any client that
+            // calls res.json() on it throws on the empty payload).
+            return ResponseEntity.ok(ApiResponse.success(null, "No active timer found"));
         } catch (Exception e) {
             logger.error("Failed to fetch active timer for user: {}", authName(authentication), e);
             return ResponseEntity.internalServerError()
