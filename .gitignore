@@ -1,6 +1,9 @@
 .DS_Store
 node_modules
 dist/
+
+# Claude Code local state / agent worktrees — never commit
+.claude/
 application.properties
 backend/src/main/resources/application.properties
 

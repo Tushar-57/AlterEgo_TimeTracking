@@ -3,6 +3,7 @@ package com.tushar.demo.timetracker.repository;
 import com.tushar.demo.timetracker.model.TimeEntry;
 import com.tushar.demo.timetracker.model.Users;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -35,6 +36,17 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
     long countByUserIdAndStartTimeAfter(@Param("userId") Long userId, @Param("horizon") LocalDateTime horizon);
 
     long countByUserId(Long userId);
+
+    long countByProjectId(Long projectId);
+
+    /**
+     * Detach every time entry from a project so the project row can be deleted
+     * without tripping the FK constraint. Entries keep their history and simply
+     * become "No Project" (project = null) in the UI.
+     */
+    @Modifying
+    @Query("UPDATE TimeEntry t SET t.project = null WHERE t.project.id = :projectId")
+    int clearProjectReferences(@Param("projectId") Long projectId);
 
     Optional<TimeEntry> findByIdAndUser(Long timerId, Users user);
 //    Optional<TimeEntry> findActiveTimerByUser(Users user);

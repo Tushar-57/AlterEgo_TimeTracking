@@ -75,9 +75,20 @@ public class TaskBoardController {
             Authentication authentication) {
         try {
             Users user = resolveUser(authentication);
-            List<Object> tasks = payload != null && payload.get("tasks") instanceof List<?> list
-                    ? List.copyOf(list)
-                    : List.of();
+
+            // Guard against silent data loss: a missing/malformed "tasks" key used to
+            // fall through to an empty list and overwrite the whole board. Only an
+            // explicit JSON array (including an explicit []) may replace the state.
+            if (payload == null || !(payload.get("tasks") instanceof List<?>)) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of(
+                                "success", false,
+                                "error", "Validation failed",
+                                "message", "Request body must include a \"tasks\" array"
+                        ));
+            }
+
+            List<Object> tasks = List.copyOf((List<?>) payload.get("tasks"));
 
             if (tasks.size() > MAX_TASK_ITEMS) {
                 return ResponseEntity.badRequest()
