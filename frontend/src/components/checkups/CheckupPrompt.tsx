@@ -7,9 +7,11 @@ import {
   Clock3,
   Flame,
   ListChecks,
+  Minimize2,
   NotebookText,
   SkipForward,
   Target,
+  X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -435,6 +437,10 @@ const CheckupPrompt = () => {
   const [selfRating, setSelfRating] = useState(7);
   const [topPriorityCompleted, setTopPriorityCompleted] = useState(false);
   const [perspectiveNotes, setPerspectiveNotes] = useState('');
+  // The prompt used to auto-open at full height and cover ~40% of the
+  // workspace. It now announces itself as a compact bar and only expands
+  // when the user asks for it.
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const configRef = useRef<CheckupConfig | null>(null);
   const stateRef = useRef<PersistedPromptState>(persistedState);
@@ -1001,7 +1007,6 @@ const CheckupPrompt = () => {
 
   const promptType = activePrompt.type;
   const headline = promptType === 'morning' ? 'Morning Checkup' : 'Evening Checkup';
-  const badgeTone = promptType === 'morning' ? 'from-amber-500 to-orange-500' : 'from-indigo-600 to-violet-600';
   const focusTasks = checkupContext?.focusTasks ?? [];
   const upcomingDeadlines = checkupContext?.upcomingDeadlines ?? [];
   const habits = checkupContext?.habits ?? [];
@@ -1014,42 +1019,80 @@ const CheckupPrompt = () => {
       ? 'What one behavior will make today a win, even if everything else changes?'
       : 'What did you learn about your working style today, and what will you adjust tomorrow?';
 
+  if (!isExpanded) {
+    return (
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-3 pt-[calc(4.25rem+env(safe-area-inset-top))] md:justify-end md:px-4 md:pt-4">
+        <div className="pointer-events-auto flex w-full max-w-[420px] items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-lg">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-surface text-primary">
+            <BellRing className="h-4 w-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-foreground">{headline} ready</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {promptType === 'morning' ? 'Plan the day with your Coach.' : 'Reflect on how today went.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsExpanded(true)}
+            className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            Open
+          </button>
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={!nowForPrompt?.canSkip || isSubmitting}
+            aria-label="Dismiss this check-in for today"
+            title={nowForPrompt?.canSkip ? 'Skip for today' : 'Available once the postpone limit is reached'}
+            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pointer-events-none fixed inset-0 z-40 flex items-start justify-center px-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-[calc(4.25rem+env(safe-area-inset-top))] md:justify-end md:px-4 md:pb-4 md:pt-4">
-      <div className="pointer-events-auto flex max-h-[min(82vh,760px)] w-full max-w-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-sm">
-        <div className={`rounded-t-2xl bg-gradient-to-r ${badgeTone} px-4 py-3 text-white`}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <BellRing className="h-4 w-4" />
-              <p className="text-sm font-semibold">{headline}</p>
-            </div>
-            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide">
-              check-in
-            </span>
+      <div className="pointer-events-auto flex max-h-[min(82vh,760px)] w-full max-w-[420px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+        <div className="flex items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <BellRing className="h-4 w-4 shrink-0 text-primary" />
+            <p className="truncate text-sm font-semibold text-surface-foreground">{headline}</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setIsExpanded(false)}
+            aria-label="Collapse check-in"
+            className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <Minimize2 className="h-4 w-4" />
+          </button>
         </div>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-          <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-100 px-3 py-3">
-            <p className="text-sm font-semibold text-slate-900">
+          <div className="rounded-xl border border-border bg-surface px-3 py-3">
+            <p className="text-sm font-semibold text-foreground">
               {promptType === 'morning' ? 'Plan with intention' : 'Reflect with clarity'}
             </p>
-            <p className="mt-1 text-xs text-slate-600">
+            <p className="mt-1 text-xs text-muted-foreground">
               {promptType === 'morning'
                 ? 'Shape your day around top goals, real deadlines, and focused effort.'
                 : 'Review what moved, where friction showed up, and what tomorrow needs first.'}
             </p>
 
-            <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-600 sm:grid-cols-2">
-              <div className="rounded-lg bg-white px-3 py-2 shadow-sm">
-                <div className="flex items-center gap-1 font-medium text-slate-700">
+            <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+              <div className="rounded-lg bg-card px-3 py-2 shadow-sm">
+                <div className="flex items-center gap-1 font-medium text-foreground">
                   <Clock3 className="h-3.5 w-3.5" />
                   Scheduled
                 </div>
                 <p className="mt-1">{formatTime(config.preferredTime)}</p>
               </div>
-              <div className="rounded-lg bg-white px-3 py-2 shadow-sm">
-                <div className="flex items-center gap-1 font-medium text-slate-700">
+              <div className="rounded-lg bg-card px-3 py-2 shadow-sm">
+                <div className="flex items-center gap-1 font-medium text-foreground">
                   <CalendarClock className="h-3.5 w-3.5" />
                   Frequency
                 </div>
@@ -1058,7 +1101,7 @@ const CheckupPrompt = () => {
             </div>
 
             {config.preferredTone || config.mentorArchetype || config.mentorStyle ? (
-              <p className="mt-2 rounded-lg bg-white px-3 py-2 text-xs text-slate-600 shadow-sm">
+              <p className="mt-2 rounded-lg bg-card px-3 py-2 text-xs text-muted-foreground shadow-sm">
                 Style: {config.preferredTone || 'Adaptive'}
                 {config.mentorArchetype ? ` | ${config.mentorArchetype}` : ''}
                 {config.mentorStyle ? ` | ${config.mentorStyle}` : ''}
@@ -1068,63 +1111,63 @@ const CheckupPrompt = () => {
 
           {checkupContext ? (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="inline-flex items-center gap-1 font-medium text-slate-700">
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div className="rounded-lg border border-border bg-muted px-3 py-2">
+                  <p className="inline-flex items-center gap-1 font-medium text-foreground">
                     <ListChecks className="h-3.5 w-3.5" />
                     Due Today
                   </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.deadlineTasks.dueToday}</p>
+                  <p className="mt-1 text-lg font-semibold text-foreground">{checkupContext.deadlineTasks.dueToday}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="inline-flex items-center gap-1 font-medium text-slate-700">
+                <div className="rounded-lg border border-border bg-muted px-3 py-2">
+                  <p className="inline-flex items-center gap-1 font-medium text-foreground">
                     <Target className="h-3.5 w-3.5" />
                     Overdue
                   </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.deadlineTasks.overdue}</p>
+                  <p className="mt-1 text-lg font-semibold text-foreground">{checkupContext.deadlineTasks.overdue}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="font-medium text-slate-700">Completed Today</p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">{checkupContext.completedTasksToday}</p>
+                <div className="rounded-lg border border-border bg-muted px-3 py-2">
+                  <p className="font-medium text-foreground">Completed Today</p>
+                  <p className="mt-1 text-lg font-semibold text-foreground">{checkupContext.completedTasksToday}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="inline-flex items-center gap-1 font-medium text-slate-700">
+                <div className="rounded-lg border border-border bg-muted px-3 py-2">
+                  <p className="inline-flex items-center gap-1 font-medium text-foreground">
                     <BarChart3 className="h-3.5 w-3.5" />
                     Deep Work Coverage
                   </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">{deepWorkCoveragePercent}%</p>
+                  <p className="mt-1 text-lg font-semibold text-foreground">{deepWorkCoveragePercent}%</p>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-700">
+              <div className="rounded-xl border border-border bg-card px-3 py-3 text-xs text-foreground">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="inline-flex items-center gap-1.5 font-semibold text-slate-900">
+                  <p className="inline-flex items-center gap-1.5 font-semibold text-foreground">
                     <Target className="h-3.5 w-3.5" />
                     Focus Arc
                   </p>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
                     {checkupContext.priorityFocus || 'Set one focus'}
                   </span>
                 </div>
 
                 <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <div className="rounded-lg bg-slate-50 px-2.5 py-2">
-                    <p className="font-medium text-slate-800">Top Goals</p>
+                  <div className="rounded-lg bg-muted px-2.5 py-2">
+                    <p className="font-medium text-foreground">Top Goals</p>
                     {checkupContext.topGoals.length > 0 ? (
-                      <ul className="mt-1 space-y-1 text-slate-600">
+                      <ul className="mt-1 space-y-1 text-muted-foreground">
                         {checkupContext.topGoals.slice(0, 3).map((goal) => (
                           <li key={goal} className="truncate">- {goal}</li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="mt-1 text-slate-500">No goals captured yet.</p>
+                      <p className="mt-1 text-muted-foreground">No goals captured yet.</p>
                     )}
                   </div>
 
-                  <div className="rounded-lg bg-slate-50 px-2.5 py-2">
-                    <p className="font-medium text-slate-800">Focus Tasks</p>
+                  <div className="rounded-lg bg-muted px-2.5 py-2">
+                    <p className="font-medium text-foreground">Focus Tasks</p>
                     {focusTasks.length > 0 ? (
-                      <ul className="mt-1 space-y-1 text-slate-600">
+                      <ul className="mt-1 space-y-1 text-muted-foreground">
                         {focusTasks.slice(0, 3).map((task) => (
                           <li key={task.id} className="truncate">
                             - {task.title}
@@ -1133,19 +1176,19 @@ const CheckupPrompt = () => {
                         ))}
                       </ul>
                     ) : (
-                      <p className="mt-1 text-slate-500">No active tasks. Set one meaningful task now.</p>
+                      <p className="mt-1 text-muted-foreground">No active tasks. Set one meaningful task now.</p>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-3 text-xs text-sky-900">
+              <div className="rounded-xl border border-border bg-surface px-3 py-3 text-xs text-surface-foreground">
                 <p className="inline-flex items-center gap-1.5 font-semibold">
                   <CalendarClock className="h-3.5 w-3.5" />
                   Deadlines Next 7 Days
                 </p>
                 {upcomingDeadlines.length > 0 ? (
-                  <ul className="mt-2 space-y-1 text-sky-900/90">
+                  <ul className="mt-2 space-y-1 text-muted-foreground">
                     {upcomingDeadlines.slice(0, 4).map((item) => (
                       <li key={item.id} className="truncate">
                         - {item.title} | {item.deadline} | {item.priority}
@@ -1153,17 +1196,17 @@ const CheckupPrompt = () => {
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sky-900/80">No near-term deadlines detected.</p>
+                  <p className="mt-2 text-muted-foreground">No near-term deadlines detected.</p>
                 )}
               </div>
 
-              <div className="rounded-xl border border-orange-200 bg-orange-50/70 px-3 py-3 text-xs text-orange-900">
+              <div className="rounded-xl border border-border bg-surface px-3 py-3 text-xs text-surface-foreground">
                 <div className="flex items-start justify-between gap-2">
                   <p className="inline-flex items-center gap-1.5 font-semibold">
                     <Flame className="h-3.5 w-3.5" />
                     Habit Consistency
                   </p>
-                  <span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-medium">
+                  <span className="rounded-full bg-card px-2 py-0.5 text-[11px] font-medium">
                     {completedHabits}/{totalHabits} today
                   </span>
                 </div>
@@ -1171,7 +1214,7 @@ const CheckupPrompt = () => {
                   Avg streak: {checkupContext.habitMetrics.avgStreak} days | 7-day completion: {checkupContext.habitMetrics.completionRate7d}%
                 </p>
                 {habits.length > 0 ? (
-                  <ul className="mt-2 space-y-1 text-orange-900/90">
+                  <ul className="mt-2 space-y-1 text-muted-foreground">
                     {habits.slice(0, 3).map((habit) => (
                       <li key={habit.id} className="truncate">
                         - {habit.title} | streak {habit.currentStreak}/{habit.streakTarget || 0}
@@ -1179,14 +1222,14 @@ const CheckupPrompt = () => {
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-orange-900/80">No habits tracked yet.</p>
+                  <p className="mt-2 text-muted-foreground">No habits tracked yet.</p>
                 )}
               </div>
             </div>
           ) : null}
 
           {ragInsights ? (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+            <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground">
               <p className="font-medium">Knowledge Pulse</p>
               <p className="mt-1">
                 Agent: {ragInsights.mostUsedAgent || 'n/a'} | Category: {ragInsights.topKnowledgeCategory || 'n/a'}
@@ -1200,15 +1243,15 @@ const CheckupPrompt = () => {
             </div>
           ) : null}
 
-          <div className="space-y-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-3 text-xs text-slate-700">
-            <p className="inline-flex items-center gap-1.5 font-semibold text-slate-900">
+          <div className="space-y-2 rounded-xl border border-input bg-muted px-3 py-3 text-xs text-foreground">
+            <p className="inline-flex items-center gap-1.5 font-semibold text-foreground">
               <NotebookText className="h-3.5 w-3.5" />
               Journal Your Perspective
             </p>
-            <p className="text-[11px] text-slate-600">{journalingPrompt}</p>
+            <p className="text-[11px] text-muted-foreground">{journalingPrompt}</p>
 
             <div className="grid grid-cols-2 gap-2">
-              <label className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5">
+              <label className="flex items-center justify-between gap-2 rounded-lg bg-card px-2 py-1.5">
                 <span>Confidence</span>
                 <input
                   type="number"
@@ -1216,25 +1259,25 @@ const CheckupPrompt = () => {
                   max={10}
                   value={confidence}
                   onChange={(event) => setConfidence(clamp(Number(event.target.value) || 1, 1, 10))}
-                  className="w-14 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
+                  className="w-14 rounded border border-input bg-card px-2 py-1 text-right text-xs"
                 />
               </label>
 
-              <label className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5">
+              <label className="flex items-center justify-between gap-2 rounded-lg bg-card px-2 py-1.5">
                 <span>Deep work (m)</span>
                 <input
                   type="number"
                   min={0}
                   value={plannedDeepWorkMinutes}
                   onChange={(event) => setPlannedDeepWorkMinutes(Math.max(0, Number(event.target.value) || 0))}
-                  className="w-16 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
+                  className="w-16 rounded border border-input bg-card px-2 py-1 text-right text-xs"
                 />
               </label>
             </div>
 
             {promptType === 'evening' ? (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <label className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5">
+                <label className="flex items-center justify-between gap-2 rounded-lg bg-card px-2 py-1.5">
                   <span>Self-rating</span>
                   <input
                     type="number"
@@ -1242,11 +1285,11 @@ const CheckupPrompt = () => {
                     max={10}
                     value={selfRating}
                     onChange={(event) => setSelfRating(clamp(Number(event.target.value) || 1, 1, 10))}
-                    className="w-14 rounded border border-slate-300 bg-white px-2 py-1 text-right text-xs"
+                    className="w-14 rounded border border-input bg-card px-2 py-1 text-right text-xs"
                   />
                 </label>
 
-                <label className="flex items-center gap-2 rounded-lg bg-white px-2 py-1.5">
+                <label className="flex items-center gap-2 rounded-lg bg-card px-2 py-1.5">
                   <input
                     type="checkbox"
                     checked={topPriorityCompleted}
@@ -1258,24 +1301,24 @@ const CheckupPrompt = () => {
             ) : null}
 
             <label className="block">
-              <span className="mb-1 block font-medium text-slate-800">Journal note</span>
+              <span className="mb-1 block font-medium text-foreground">Journal note</span>
               <textarea
                 value={perspectiveNotes}
                 onChange={(event) => setPerspectiveNotes(event.target.value)}
                 placeholder={journalingPrompt}
-                className="h-20 w-full resize-none rounded border border-slate-300 bg-white px-2 py-1 text-xs"
+                className="h-20 w-full resize-none rounded border border-input bg-card px-2 py-1 text-xs"
               />
             </label>
           </div>
 
           {errorMessage ? (
-            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+            <p className="rounded-lg border border-destructive bg-surface px-3 py-2 text-xs text-destructive">
               {errorMessage}
             </p>
           ) : null}
 
           {successPayload?.coach_message ? (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+            <div className="rounded-xl border border-border bg-surface px-3 py-2 text-xs text-foreground">
               <p className="inline-flex items-center gap-1 font-medium">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Checkup saved
@@ -1293,7 +1336,7 @@ const CheckupPrompt = () => {
               )}
 
               {Array.isArray(successPayload.wins) && successPayload.wins.length > 0 ? (
-                <div className="mt-2 rounded-lg bg-emerald-100/70 px-2 py-1.5 text-[11px]">
+                <div className="mt-2 rounded-lg bg-muted px-2 py-1.5 text-[11px]">
                   <p className="font-semibold">Wins</p>
                   <ul className="mt-1 space-y-0.5">
                     {successPayload.wins.slice(0, 2).map((item) => (
@@ -1304,7 +1347,7 @@ const CheckupPrompt = () => {
               ) : null}
 
               {successPayload.performance?.score !== undefined && successPayload.performance?.score !== null ? (
-                <p className="mt-2 rounded bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-900">
+                <p className="mt-2 rounded bg-muted px-2 py-1 text-[11px] font-semibold text-foreground">
                   Performance score: {successPayload.performance.score}/10
                 </p>
               ) : null}
@@ -1312,14 +1355,14 @@ const CheckupPrompt = () => {
               <button
                 type="button"
                 onClick={() => navigate('/coach/knowledge')}
-                className="mt-2 rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-medium text-white transition hover:bg-emerald-500"
+                className="mt-2 rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground transition hover:opacity-90"
               >
                 Open Coach
               </button>
             </div>
           ) : null}
 
-          <div className="sticky bottom-0 z-10 -mx-4 mt-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm">
+          <div className="sticky bottom-0 z-10 -mx-4 mt-2 border-t border-border bg-card px-4 py-3 backdrop-blur-sm">
             <div className="flex flex-wrap items-center justify-end gap-2">
             <button
               type="button"
@@ -1327,8 +1370,8 @@ const CheckupPrompt = () => {
               disabled={!nowForPrompt?.canSkip || isSubmitting}
               className={`inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium transition ${
                 nowForPrompt?.canSkip && !isSubmitting
-                  ? 'border-slate-300 text-slate-700 hover:bg-slate-100'
-                  : 'cursor-not-allowed border-slate-200 text-slate-400'
+                  ? 'border-input text-foreground hover:bg-accent'
+                  : 'cursor-not-allowed border-border text-muted-foreground'
               }`}
             >
               <SkipForward className="h-3.5 w-3.5" />
@@ -1341,8 +1384,8 @@ const CheckupPrompt = () => {
               disabled={!nowForPrompt?.canPostpone || isSubmitting}
               className={`rounded-lg px-3 py-2 text-xs font-medium transition ${
                 nowForPrompt?.canPostpone && !isSubmitting
-                  ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  : 'cursor-not-allowed bg-slate-100 text-slate-400'
+                  ? 'bg-muted text-foreground hover:bg-accent'
+                  : 'cursor-not-allowed bg-muted text-muted-foreground'
               }`}
             >
               Postpone {formatMinutesLabel(POSTPONE_STEP_MINUTES)}
@@ -1352,15 +1395,15 @@ const CheckupPrompt = () => {
               type="button"
               onClick={handleReady}
               disabled={isSubmitting}
-              className={`rounded-lg px-3 py-2 text-xs font-semibold text-white transition ${
-                isSubmitting ? 'cursor-not-allowed bg-slate-500' : 'bg-slate-900 hover:bg-slate-700'
+              className={`rounded-lg px-3 py-2 text-xs font-semibold text-primary-foreground transition ${
+                isSubmitting ? 'cursor-not-allowed bg-muted0' : 'bg-primary hover:opacity-90'
               }`}
             >
               {isSubmitting ? 'Starting...' : 'Run checkup'}
             </button>
             </div>
 
-            <p className="mt-2 text-[11px] text-slate-500">
+            <p className="mt-2 text-[11px] text-muted-foreground">
               {nowForPrompt?.canPostpone
                 ? `You can postpone up to ${formatMinutesLabel(nowForPrompt.remainingPostpone)} more.`
                 : 'Postpone limit reached (1 hour). You can skip for today if needed.'}

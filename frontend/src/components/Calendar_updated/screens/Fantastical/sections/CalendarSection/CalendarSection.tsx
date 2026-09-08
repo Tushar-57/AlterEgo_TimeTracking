@@ -355,6 +355,9 @@ const monthNames = [
 
 const HOUR_ROW_HEIGHT = 72;
 
+/** An entry's `color` is now the owning project's own hex (see Dashboard), so
+ *  the calendar and the Projects page agree on what colour a project is.
+ *  Legacy palette names still resolve for entries with no project. */
 const eventColorClasses: Record<string, string> = {
   lightblue: "border-blue-200 bg-blue-50 text-blue-700",
   violet: "border-violet-200 bg-violet-50 text-violet-700",
@@ -363,7 +366,18 @@ const eventColorClasses: Record<string, string> = {
   emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
 };
 
-const getEventColorClasses = (color: string) => eventColorClasses[color] ?? "border-slate-200 bg-slate-50 text-slate-700";
+const isHexColor = (color: string) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(color ?? "");
+
+const getEventColorClasses = (color: string) => {
+  if (isHexColor(color)) {
+    // Neutral surface; the project hue lands as a left rule via inline style.
+    return "border-border border-l-[3px] bg-surface text-surface-foreground";
+  }
+  return eventColorClasses[color] ?? "border-border bg-muted text-foreground";
+};
+
+const getEventColorStyle = (color: string): React.CSSProperties =>
+  isHexColor(color) ? { borderLeftColor: color } : {};
 
 const isSameDay = (left: Date, right: Date) =>
   left.getFullYear() === right.getFullYear() &&
@@ -1213,6 +1227,7 @@ export const CalendarSection = ({
                   type="button"
                   className={`absolute z-10 rounded-md border px-2 py-1 text-left text-xs shadow-sm ${getEventColorClasses(item.event.color)}`}
                   style={{
+                    ...getEventColorStyle(item.event.color),
                     top: `${item.top + 2}px`,
                     left: `calc(${leftPercent}% + 6px)`,
                     width: `calc(${laneWidth}% - 12px)`,
@@ -1326,6 +1341,7 @@ export const CalendarSection = ({
                   <div
                     className={`absolute z-20 cursor-move rounded-md border px-2 py-1 text-xs shadow-sm ${getEventColorClasses(event.color)}`}
                     style={{
+                      ...getEventColorStyle(event.color),
                       width: `${Math.max(88, weekColumnWidth - 8)}px`,
                       height: `${eventHeight}px`,
                     }}
@@ -1425,6 +1441,7 @@ export const CalendarSection = ({
                   key={event.id}
                   type="button"
                   className={`w-full truncate rounded-md border px-1.5 py-1 text-left text-[11px] ${getEventColorClasses(event.color)}`}
+                  style={getEventColorStyle(event.color)}
                   title={`${formatEventTimeLabel(event)} ${event.title}`}
                   onClick={() => openEditPopup(event)}
                   onContextMenu={(mouseEvent) => {

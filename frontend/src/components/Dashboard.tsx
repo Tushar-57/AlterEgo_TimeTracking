@@ -71,6 +71,11 @@ export const calculatePosition = (startTime: string) => {
   return { top, left };
 };
 
+/**
+ * Fallback only. A project's real colour (from /api/projects) is preferred so
+ * the calendar and the Projects page agree; this palette is used when an entry
+ * has no project or the project list hasn't loaded.
+ */
 export const getColorForProject = (projectId: number | null): string => {
   const palette = ["lightblue", "violet", "amber", "rose", "emerald"];
   if (projectId === null || projectId === undefined) {
@@ -83,8 +88,38 @@ export const getColorForProject = (projectId: number | null): string => {
 
 export const Dashboard = () => {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [projectColors, setProjectColors] = useState<Record<number, string>>({});
   const { toast } = useToast();
   const { token, isAuthenticated } = useAuth();
+
+  // Entries are coloured by their project's own colour so the calendar matches
+  // the Projects page. Best-effort: on failure we fall back to the id palette.
+  useEffect(() => {
+    if (!token) return;
+
+    let cancelled = false;
+    void fetch('/api/projects/userProjects', { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((payload: unknown) => {
+        const list = Array.isArray(payload)
+          ? payload
+          : Array.isArray((payload as { data?: unknown })?.data)
+          ? ((payload as { data: unknown[] }).data)
+          : [];
+        const map: Record<number, string> = {};
+        (list as Array<{ id?: number; color?: string }>).forEach((project) => {
+          if (typeof project?.id === 'number' && typeof project?.color === 'string') {
+            map[project.id] = project.color;
+          }
+        });
+        if (!cancelled) setProjectColors(map);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const fetchTimeEntriesDirect = useCallback(async (start: Date, end: Date) => {
     try {
@@ -146,7 +181,9 @@ export const Dashboard = () => {
           period: hours >= 12 ? "PM" : "AM",
           title: entry.description || "Untitled",
           startTime: entry.startTime,
-          color: getColorForProject(projectId),
+          color:
+            (projectId !== null && projectId !== undefined ? projectColors[projectId] : undefined)
+            ?? getColorForProject(projectId),
           position,
           width: "143px",
           height: `${Math.max(30, (entry.duration / 3600) * 60)}px`,
@@ -175,7 +212,7 @@ export const Dashboard = () => {
       });
       return [];
     }
-  }, [toast, token]);
+  }, [toast, token, projectColors]);
 
   const fetchData = useCallback(async (range?: CalendarRange) => {
     if (!isAuthenticated) {
