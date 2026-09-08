@@ -1,20 +1,22 @@
 import React from 'react';
-import { MessageCircle } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useChat } from './ChatContext';
 
 const ChatToggleButton: React.FC = () => {
   const { isChatOpen, toggleChat } = useChat();
 
+  // The full-screen chat carries its own close control.
+  if (isChatOpen) return null;
+
   return (
     <button
+      type="button"
       onClick={toggleChat}
-      className={`fixed bottom-24 right-4 z-50 rounded-full p-3 shadow-lg transition-all duration-300 md:bottom-8 md:right-8 md:p-4 ${
-        isChatOpen
-          ? 'bg-gradient-to-r from-blue-400 to-cyan-500 scale-110'
-          : 'bg-gray-900 hover:bg-gray-800'
-      }`}
+      aria-label="Open Coach"
+      className="fixed right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition-opacity hover:opacity-90 md:right-8 md:bottom-8"
     >
-      <MessageCircle className="h-5 w-5 text-white md:h-6 md:w-6" />
+      <Sparkles className="h-5 w-5" />
+      <span className="hidden sm:inline">Coach</span>
     </button>
   );
 };

@@ -3,7 +3,7 @@ import { Message } from '../utils/onboardingUtils';
 import ChatBubble from './ChatBubble';
 import TypingIndicator from './TypingIndicator';
 
-interface ChatContainerProps { 
+interface ChatContainerProps {
   messages: Message[];
   isTyping: boolean;
   className?: string;
@@ -20,15 +20,9 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // useEffect(() => {
-  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  // }, [messages, isTyping]);
-
   useEffect(() => {
-  if (messagesEndRef.current) {
-    messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-}, [messages, isTyping]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages, isTyping]);
 
   return (
     <div className={className}>
@@ -39,11 +33,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
           isUser={msg.sender === 'user'}
           isAnimated={msg.isRendered}
           coachAvatar={msg.sender === 'assistant' ? coachAvatar : undefined}
-        >
-          {msg.additionalContent && import.meta.env.DEV && (
-            <div className="text-sm text-gray-600 mt-1">{msg.additionalContent}</div>
-          )}
-        </ChatBubble>
+        />
       ))}
       {isTyping && <TypingIndicator />}
       {children}
