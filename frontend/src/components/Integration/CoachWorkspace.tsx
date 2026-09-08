@@ -1,7 +1,7 @@
 import { ArrowUpRight, CalendarClock, Eye, ExternalLink, LineChart, Sparkles, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getStoredAuthToken } from '../../utils/auth';
-import { PageHeader } from '../ui/page-header';
+import { PageHeader } from '../ui/PageHeader';
 
 const BUILTIN_COACH_URL_CANDIDATES = [
   'https://agenticlyf.vercel.app/coach/',
@@ -388,10 +388,9 @@ const CoachWorkspace = ({
     <div ref={containerRef} className="min-h-screen w-full bg-background p-4 sm:p-6">
       <div className="mx-auto w-full max-w-4xl space-y-6">
         <PageHeader
-          eyebrow="AI Coach"
           title={`Meet your Coach${viewLabel === 'Coach' ? '' : ` · ${viewLabel}`}`}
           icon={Sparkles}
-          subtitle={
+          description={
             autoLaunch
               ? `Opening the ${viewLabel} view of your Coach…`
               : 'Your Coach is a deeper workspace than the in-app chat — it plans, watches, and reflects across everything you track. It opens as its own view and brings you back here when you are done.'

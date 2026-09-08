@@ -1,6 +1,6 @@
 import { Keyboard, Settings, Timer as TimerIcon } from 'lucide-react';
 
-import { PageHeader } from '../ui/page-header';
+import { PageHeader } from '../ui/PageHeader';
 
 /**
  * Timer page header. Deliberately does NOT repeat the theme toggle or the user
@@ -16,10 +16,9 @@ export const TimerHeader = ({
   setShowKeyboardShortcutsDialog: (show: boolean) => void;
 }) => (
   <PageHeader
-    eyebrow="Overview"
     title="Timer"
     icon={TimerIcon}
-    subtitle="Start tracking in one tap. Everything you log feeds your calendar and your Coach."
+    description="Start tracking in one tap. Everything you log feeds your calendar and your Coach."
     className="mb-6"
     actions={
       <>

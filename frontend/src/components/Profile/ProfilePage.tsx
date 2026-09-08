@@ -4,7 +4,7 @@ import { AlertTriangle, LogOut, RefreshCcw, Save, Target, UserRound } from 'luci
 import { useAuth } from '../../context/AuthContext';
 import { PageHeader } from '../ui';
 import { useToast } from '../Calendar_updated/components/hooks/use-toast';
-import { PageHeader } from '../ui/page-header';
+import { PageHeader } from '../ui/PageHeader';
 
 type Frequency = 'daily' | 'weekly' | 'biweekly';
 

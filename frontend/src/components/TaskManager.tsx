@@ -26,7 +26,7 @@ import { useTaskStore } from '../store/taskStore';
 import { useAuth } from '../context/AuthContext';
 import type { Task, TaskPriority, TaskStatus, TaskType } from '../store/taskStore';
 import { formatMinutesAsHoursMinutes } from '../utils/utils';
-import { PageHeader } from './ui/page-header';
+import { PageHeader } from './ui/PageHeader';
 
 type DraftTask = {
   type: TaskType;
