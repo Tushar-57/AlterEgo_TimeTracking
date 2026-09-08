@@ -13,8 +13,7 @@ import TaskManager from './components/TaskManager';
 import { AuthProvider, useAuth, LoadingSpinner } from './context/AuthContext';
 import { Dashboard } from './components/Dashboard';
 import { UserTagPage } from './components/UserTags';
-import { ToastProvider } from './components/ui/toast';
-import { ToastViewport } from './components/ui/toast';
+import { Toaster } from './components/ui/toaster';
 import ChatOnboarding from './components/Onboarding/ChatOnboarding';
 import CoachWorkspace from './components/Integration/CoachWorkspace';
 import ProfilePage from './components/Profile/ProfilePage';
@@ -31,17 +30,15 @@ const App = () => (
   <Router>
     <ThemeProvider>
       <AuthProvider>
-        <ToastProvider>
-          <Routes>
-            <Route path="/login" element={<LoginClassic />} />
-            <Route path="/signup" element={<SignupClassic />} />
-            <Route path="/verify-email" element={<EmailVerificationPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/onboarding" element={<ProtectedOnboarding />} />
-            <Route path="/*" element={<ProtectedRoutes />} />
-          </Routes>
-          <ToastViewport className="[--viewport-padding:_25px] fixed bottom-0 right-0 flex flex-col p-[var(--viewport-padding)] gap-[25px] w-[390px] max-w-[100vw] m-0 list-none z-[2147483647] outline-none" />
-        </ToastProvider>
+        <Routes>
+          <Route path="/login" element={<LoginClassic />} />
+          <Route path="/signup" element={<SignupClassic />} />
+          <Route path="/verify-email" element={<EmailVerificationPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/onboarding" element={<ProtectedOnboarding />} />
+          <Route path="/*" element={<ProtectedRoutes />} />
+        </Routes>
+        <Toaster />
       </AuthProvider>
     </ThemeProvider>
   </Router>
