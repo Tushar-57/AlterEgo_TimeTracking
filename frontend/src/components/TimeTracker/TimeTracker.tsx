@@ -359,7 +359,8 @@ export default function TimeTracker() {
  localStorage.setItem('cached_projects', JSON.stringify(projectsData));
  })
  .catch((error) => {
- errors.push(error instanceof Error ? `Projects: ${error.message}` : 'Projects: Unknown error');
+ console.error('Failed to load projects', error);
+            errors.push('projects');
  });
 
  const tagsPromise = fetchWithToken<Tag[]>('/api/tags')
@@ -368,7 +369,8 @@ export default function TimeTracker() {
  localStorage.setItem('cached_tags', JSON.stringify(tagsData));
  })
  .catch((error) => {
- errors.push(error instanceof Error ? `Tags: ${error.message}` : 'Tags: Unknown error');
+ console.error('Failed to load tags', error);
+            errors.push('tags');
  });
 
  const entriesPromise = fetchWithToken<ApiEnvelope<TimeEntry[]>>('/api/timers?limit=5')
@@ -379,13 +381,16 @@ export default function TimeTracker() {
  setTimeEntries(entriesResponse.data.filter((entry: TimeEntry) => entry.endTime !== null));
  })
  .catch((error) => {
- errors.push(error instanceof Error ? `Entries: ${error.message}` : 'Entries: Unknown error');
+ console.error('Failed to load time entries', error);
+            errors.push('recent entries');
  });
 
  await Promise.allSettled([projectsPromise, tagsPromise, entriesPromise]);
 
  if (errors.length > 0) {
- const errorMessage = errors.join(' | ');
+ // Name what's missing in plain language; the raw fetch error is only
+          // useful in the console, not in the banner.
+          const errorMessage = `Couldn't load ${errors.length === 1 ? errors[0] : `${errors.slice(0, -1).join(', ')} and ${errors[errors.length - 1]}`}.`;
  setFetchError(errorMessage);
  toast({
  title: 'Data Loading Error',

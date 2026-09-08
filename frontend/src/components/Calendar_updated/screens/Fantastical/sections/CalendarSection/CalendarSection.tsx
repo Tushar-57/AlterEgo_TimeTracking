@@ -355,6 +355,16 @@ const monthNames = [
 
 const HOUR_ROW_HEIGHT = 72;
 
+const WEEKDAY_INITIALS = [
+  { name: 'Sunday', initial: 'S' },
+  { name: 'Monday', initial: 'M' },
+  { name: 'Tuesday', initial: 'T' },
+  { name: 'Wednesday', initial: 'W' },
+  { name: 'Thursday', initial: 'T' },
+  { name: 'Friday', initial: 'F' },
+  { name: 'Saturday', initial: 'S' },
+] as const;
+
 /** An entry's `color` is now the owning project's own hex (see Dashboard), so
  *  the calendar and the Projects page agree on what colour a project is.
  *  Legacy palette names still resolve for entries with no project. */
@@ -927,10 +937,12 @@ export const CalendarSection = ({
             </Button>
           </div>
 
-          <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel) => (
-              <span key={dayLabel} className="py-1">
-                {dayLabel}
+          <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-muted-foreground">
+            {/* Keyed by weekday name, not by the initial: 'T' and 'S' each
+                appear twice, which produced duplicate-key warnings. */}
+            {WEEKDAY_INITIALS.map(({ name, initial }) => (
+              <span key={name} className="py-1" aria-label={name}>
+                {initial}
               </span>
             ))}
           </div>
