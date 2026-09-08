@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Edit3,
   Flag,
-  ListChecks,
   ListTodo,
   Plus,
   Repeat,
@@ -26,7 +25,6 @@ import { useTaskStore } from '../store/taskStore';
 import { useAuth } from '../context/AuthContext';
 import type { Task, TaskPriority, TaskStatus, TaskType } from '../store/taskStore';
 import { formatMinutesAsHoursMinutes } from '../utils/utils';
-import { PageHeader } from './ui/PageHeader';
 
 type DraftTask = {
   type: TaskType;
@@ -113,29 +111,29 @@ type HabitSyncPayload = {
 };
 
 const priorityStyles: Record<TaskPriority, string> = {
-  low: 'bg-muted text-muted-foreground',
-  medium: 'bg-surface text-warning',
-  high: 'bg-surface text-destructive',
+  low: 'bg-blue-50 text-blue-700',
+  medium: 'bg-amber-50 text-amber-700',
+  high: 'bg-rose-50 text-rose-700',
 };
 
 const statusStyles: Record<TaskStatus, string> = {
-  todo: 'bg-muted text-muted-foreground',
-  'in-progress': 'bg-surface text-primary',
-  completed: 'bg-success text-success-foreground',
+  todo: 'bg-slate-100 text-slate-700',
+  'in-progress': 'bg-indigo-50 text-indigo-700',
+  completed: 'bg-emerald-50 text-emerald-700',
 };
 
 const modeThemes: Record<TaskType, { cardBorder: string; title: string; subtitle: string; glow: string }> = {
   todo: {
-    cardBorder: 'border-border',
-    title: 'Tasks',
+    cardBorder: 'border-cyan-200',
+    title: 'Task Mode',
     subtitle: 'Capture outcomes, due dates, and clear execution blocks.',
-    glow: '',
+    glow: 'from-cyan-600 via-sky-600 to-blue-600',
   },
   habit: {
-    cardBorder: 'border-border',
-    title: 'Habits',
+    cardBorder: 'border-fuchsia-200',
+    title: 'Habit Mode',
     subtitle: 'Build repeatable routines with visible streak momentum.',
-    glow: '',
+    glow: 'from-fuchsia-600 via-purple-600 to-violet-600',
   },
 };
 
@@ -948,105 +946,66 @@ const TaskManager = () => {
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
             >
               <Plus className="h-4 w-4" />
-              {isTaskMode ? 'New task' : 'New habit'}
+              {isTaskMode ? 'New Task' : 'New Habit'}
             </button>
-          }
-        />
-
-        <div
-          role="tablist"
-          aria-label="Task or habit view"
-          className="mb-6 inline-flex w-full max-w-[320px] rounded-lg border border-border bg-muted p-1"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={isTaskMode}
-            onClick={() => {
-              setHasUserSelectedMode(true);
-              setActiveMode('todo');
-            }}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              isTaskMode
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Tasks
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!isTaskMode}
-            onClick={() => {
-              setHasUserSelectedMode(true);
-              setActiveMode('habit');
-            }}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              !isTaskMode
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Habits
-          </button>
+          </div>
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className={`rounded-xl border ${theme.cardBorder} bg-card p-4 shadow-sm`}>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Visible {isTaskMode ? 'Tasks' : 'Habits'}</p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">{modeStats.total}</p>
+          <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Visible {isTaskMode ? 'Tasks' : 'Habits'}</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-900">{modeStats.total}</p>
           </div>
-          <div className={`rounded-xl border ${theme.cardBorder} bg-card p-4 shadow-sm`}>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Completed</p>
-            <p className="mt-1 text-2xl font-semibold text-success">{modeStats.completed}</p>
+          <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Completed</p>
+            <p className="mt-1 text-2xl font-semibold text-emerald-700">{modeStats.completed}</p>
           </div>
           {isTaskMode ? (
-            <div className={`rounded-xl border ${theme.cardBorder} bg-card p-4 shadow-sm`}>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Due In 3 Days</p>
-              <p className="mt-1 text-2xl font-semibold text-warning">{modeStats.dueSoon}</p>
+            <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Due In 3 Days</p>
+              <p className="mt-1 text-2xl font-semibold text-amber-700">{modeStats.dueSoon}</p>
             </div>
           ) : (
-            <div className={`rounded-xl border ${theme.cardBorder} bg-card p-4 shadow-sm`}>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Completed Today</p>
-              <p className="mt-1 text-2xl font-semibold text-primary">{modeStats.completedTodayCount}</p>
+            <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Completed Today</p>
+              <p className="mt-1 text-2xl font-semibold text-fuchsia-700">{modeStats.completedTodayCount}</p>
             </div>
           )}
           {isTaskMode ? (
-            <div className={`rounded-xl border ${theme.cardBorder} bg-card p-4 shadow-sm`}>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Avg Effort</p>
-              <p className="mt-1 text-2xl font-semibold text-primary">{formatDuration(modeStats.averageEstimatedDurationMinutes)}</p>
+            <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Avg Effort</p>
+              <p className="mt-1 text-2xl font-semibold text-cyan-700">{formatDuration(modeStats.averageEstimatedDurationMinutes)}</p>
             </div>
           ) : (
-            <div className={`rounded-xl border ${theme.cardBorder} bg-card p-4 shadow-sm`}>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Top Streak</p>
-              <p className="mt-1 text-2xl font-semibold text-primary">{modeStats.highestStreak}</p>
+            <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Top Streak</p>
+              <p className="mt-1 text-2xl font-semibold text-violet-700">{modeStats.highestStreak}</p>
             </div>
           )}
         </div>
 
         {!isTaskMode && (
           <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.35fr_1fr]">
-            <div className={`rounded-2xl border ${theme.cardBorder} bg-card p-4 shadow-sm`}>
+            <div className={`rounded-2xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Habit Contribution Grid</p>
-                  <h2 className="mt-1 text-lg font-semibold text-foreground">Streak Momentum</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{habitTrendSnapshot.contributionRangeLabel}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Habit Contribution Grid</p>
+                  <h2 className="mt-1 text-lg font-semibold text-slate-900">Streak Momentum</h2>
+                  <p className="mt-1 text-sm text-slate-500">{habitTrendSnapshot.contributionRangeLabel}</p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-right">
-                  <div className="rounded-lg border border-border bg-surface px-2.5 py-1.5">
-                    <p className="text-[10px] uppercase tracking-wide text-success">Current Run</p>
-                    <p className="text-sm font-semibold text-success">{habitTrendSnapshot.currentRun}d</p>
+                  <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-1.5">
+                    <p className="text-[10px] uppercase tracking-wide text-emerald-700">Current Run</p>
+                    <p className="text-sm font-semibold text-emerald-800">{habitTrendSnapshot.currentRun}d</p>
                   </div>
-                  <div className="rounded-lg border border-border bg-surface px-2.5 py-1.5">
-                    <p className="text-[10px] uppercase tracking-wide text-primary">Longest Run</p>
-                    <p className="text-sm font-semibold text-primary">{habitTrendSnapshot.longestRun}d</p>
+                  <div className="rounded-lg border border-violet-100 bg-violet-50 px-2.5 py-1.5">
+                    <p className="text-[10px] uppercase tracking-wide text-violet-700">Longest Run</p>
+                    <p className="text-sm font-semibold text-violet-800">{habitTrendSnapshot.longestRun}d</p>
                   </div>
-                  <div className="rounded-lg border border-border bg-surface px-2.5 py-1.5">
-                    <p className="text-[10px] uppercase tracking-wide text-primary">Active Days</p>
-                    <p className="text-sm font-semibold text-primary">{habitTrendSnapshot.activeDays}</p>
+                  <div className="rounded-lg border border-sky-100 bg-sky-50 px-2.5 py-1.5">
+                    <p className="text-[10px] uppercase tracking-wide text-sky-700">Active Days</p>
+                    <p className="text-sm font-semibold text-sky-800">{habitTrendSnapshot.activeDays}</p>
                   </div>
                 </div>
               </div>
@@ -1055,14 +1014,14 @@ const TaskManager = () => {
                 <div className="min-w-[700px]">
                   <div className="mb-2 flex pl-8">
                     {habitTrendSnapshot.contributionMonthLabels.map((label, index) => (
-                      <div key={`month-${index}`} className="w-[16px] text-[10px] text-muted-foreground">
+                      <div key={`month-${index}`} className="w-[16px] text-[10px] text-slate-500">
                         {label}
                       </div>
                     ))}
                   </div>
 
                   <div className="flex gap-2">
-                    <div className="flex flex-col justify-between py-[1px] text-[10px] text-muted-foreground">
+                    <div className="flex flex-col justify-between py-[1px] text-[10px] text-slate-400">
                       <span>Sun</span>
                       <span>Tue</span>
                       <span>Thu</span>
@@ -1076,12 +1035,12 @@ const TaskManager = () => {
                             const levelClass = !cell.inRange
                               ? 'border-transparent bg-transparent'
                               : cell.level === 0
-                                ? 'border-border bg-surface'
+                                ? 'border-emerald-100 bg-emerald-50'
                                 : cell.level === 1
-                                  ? 'border-border bg-success'
+                                  ? 'border-emerald-200 bg-emerald-200'
                                   : cell.level === 2
-                                    ? 'border-success bg-success'
-                                    : 'border-success bg-success';
+                                    ? 'border-emerald-400 bg-emerald-400'
+                                    : 'border-emerald-700 bg-emerald-700';
 
                             const title = cell.inRange
                               ? `${cell.label}: ${cell.count} habit${cell.count === 1 ? '' : 's'} completed`
@@ -1102,23 +1061,23 @@ const TaskManager = () => {
                 </div>
               </div>
 
-              <div className="mt-3 flex items-center gap-1 text-[11px] text-muted-foreground">
+              <div className="mt-3 flex items-center gap-1 text-[11px] text-slate-500">
                 <span>Less</span>
-                <span className="h-3 w-3 rounded-sm border border-border bg-surface" />
-                <span className="h-3 w-3 rounded-sm border border-border bg-success" />
-                <span className="h-3 w-3 rounded-sm border border-success bg-success" />
-                <span className="h-3 w-3 rounded-sm border border-success bg-success" />
+                <span className="h-3 w-3 rounded-sm border border-emerald-100 bg-emerald-50" />
+                <span className="h-3 w-3 rounded-sm border border-emerald-200 bg-emerald-200" />
+                <span className="h-3 w-3 rounded-sm border border-emerald-400 bg-emerald-400" />
+                <span className="h-3 w-3 rounded-sm border border-emerald-700 bg-emerald-700" />
                 <span>More</span>
-                <span className="ml-2 text-muted-foreground">
+                <span className="ml-2 text-slate-400">
                   Peak day: {habitTrendSnapshot.maxContributionCount} habit{habitTrendSnapshot.maxContributionCount === 1 ? '' : 's'}
                 </span>
               </div>
             </div>
 
-            <div className={`rounded-2xl border ${theme.cardBorder} bg-card p-4 shadow-sm`}>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Completion Trend</p>
-              <h2 className="mt-1 text-lg font-semibold text-foreground">Daily Follow-Through</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Last {HABIT_LINE_WINDOW_DAYS} days of completed habits</p>
+            <div className={`rounded-2xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Completion Trend</p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-900">Daily Follow-Through</h2>
+              <p className="mt-1 text-sm text-slate-500">Last {HABIT_LINE_WINDOW_DAYS} days of completed habits</p>
 
               <div className="mt-3 h-56 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1152,7 +1111,7 @@ const TaskManager = () => {
                 </ResponsiveContainer>
               </div>
 
-              <p className="mt-3 text-xs text-muted-foreground">
+              <p className="mt-3 text-xs text-slate-500">
                 Repetition compounds. If yesterday is active, today gets easier to start.
               </p>
             </div>
@@ -1167,7 +1126,7 @@ const TaskManager = () => {
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as 'all' | TaskStatus)}
-            className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
+            className="rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2 text-sm"
           >
             <option value="all">All Statuses</option>
             <option value="todo">Todo</option>
@@ -1177,7 +1136,7 @@ const TaskManager = () => {
           <select
             value={priorityFilter}
             onChange={(event) => setPriorityFilter(event.target.value as 'all' | TaskPriority)}
-            className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
+            className="rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2 text-sm"
           >
             <option value="all">All Priorities</option>
             <option value="low">Low</option>
@@ -1187,9 +1146,9 @@ const TaskManager = () => {
         </div>
 
         {filteredTasks.length === 0 ? (
-          <div className={`rounded-2xl border border-dashed ${theme.cardBorder} bg-card/80 p-10 text-center`}>
-            <p className="text-lg font-semibold text-foreground">No {isTaskMode ? 'tasks' : 'habits'} in this view</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+          <div className={`rounded-2xl border border-dashed ${theme.cardBorder} bg-white/80 p-10 text-center`}>
+            <p className="text-lg font-semibold text-slate-700">No {isTaskMode ? 'tasks' : 'habits'} in this view</p>
+            <p className="mt-1 text-sm text-slate-500">
               {isTaskMode
                 ? 'Create a focused task with a due date and priority.'
                 : 'Start with a repeatable habit and edit it as your routine evolves.'}
@@ -1209,13 +1168,13 @@ const TaskManager = () => {
               const completedToday = taskType === 'habit' && isCompletedToday(task);
               const isSampleHabit = taskType === 'habit' && task.tags.some((tag) => tag.toLowerCase() === 'sample');
               return (
-                <div key={task.id} className={`rounded-2xl border ${theme.cardBorder} bg-card p-4 shadow-sm transition hover:shadow-md`}>
+                <div key={task.id} className={`rounded-2xl border ${theme.cardBorder} bg-white p-4 shadow-sm transition hover:shadow-md`}>
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-semibold text-foreground">{task.title}</h3>
+                        <h3 className="text-lg font-semibold text-slate-900">{task.title}</h3>
                         {isSampleHabit && (
-                          <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-primary">Sample habit</span>
+                          <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">Sample habit</span>
                         )}
                         <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityStyles[task.priority]}`}>
                           {task.priority}
@@ -1225,16 +1184,16 @@ const TaskManager = () => {
                         </span>
                       </div>
 
-                      {task.description && <p className="mt-2 text-sm text-muted-foreground">{task.description}</p>}
+                      {task.description && <p className="mt-2 text-sm text-slate-600">{task.description}</p>}
 
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1">
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
                           <Flag className="h-3.5 w-3.5" />
                           {formatDuration(task.timeSpent)} / {formatDuration(task.estimatedDuration)}
                         </span>
 
                         {task.projectId && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-primary">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-1 text-cyan-700">
                             <Target className="h-3.5 w-3.5" />
                             Project: {projectNameById.get(task.projectId) || task.projectId}
                           </span>
@@ -1242,17 +1201,17 @@ const TaskManager = () => {
 
                         {taskType === 'todo' ? (
                           <>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
                               <CalendarDays className="h-3.5 w-3.5" />
                               Deadline: {formatDate(task.deadline)}
                             </span>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1">
                               <Target className="h-3.5 w-3.5" />
                               Follow-up: {formatDate(task.followUpDate)}
                             </span>
                           </>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-primary">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-100 px-2.5 py-1 text-fuchsia-700">
                             <Repeat className="h-3.5 w-3.5" />
                             Streak {task.currentStreak}/{task.streakTarget || 1}
                           </span>
@@ -1262,7 +1221,7 @@ const TaskManager = () => {
                       {task.tags.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
                           {task.tags.map((tagValue) => (
-                            <span key={`${task.id}-${tagValue}`} className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                            <span key={`${task.id}-${tagValue}`} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
                               {tagValue}
                             </span>
                           ))}
@@ -1280,43 +1239,28 @@ const TaskManager = () => {
                       )}
                     </div>
 
-                    {/* One primary action, then quiet icon controls — the old
-                        four full-width buttons wrapped into a ragged block. */}
-                    <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
-                      {taskType === 'todo' && (
-                        <select
-                          value={task.status}
-                          onChange={(event) => updateTaskStatus(task.id, event.target.value as TaskStatus)}
-                          aria-label={`Status for ${task.title}`}
-                          className="h-9 rounded-lg border border-input bg-background px-2 text-sm text-foreground"
-                        >
-                          <option value="todo">Todo</option>
-                          <option value="in-progress">In Progress</option>
-                          <option value="completed">Completed</option>
-                        </select>
-                      )}
-
+                    <div className="flex flex-row flex-wrap items-center gap-2 md:w-[230px] md:justify-end">
                       {taskType === 'habit' ? (
                         <button
                           type="button"
                           onClick={() => toggleTaskCompletion(task.id)}
-                          className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-opacity hover:opacity-90 ${
+                          className={`inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
                             completedToday
-                              ? 'bg-success text-success-foreground'
-                              : 'bg-primary text-primary-foreground'
+                              ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+                              : 'bg-fuchsia-600 text-white hover:bg-fuchsia-500'
                           }`}
                         >
                           <Check className="h-4 w-4" />
-                          {completedToday ? 'Done today' : 'Check today'}
+                          {completedToday ? 'Completed Today' : 'Check Today'}
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => toggleTaskCompletion(task.id)}
-                          className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors ${
+                          className={`inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
                             task.status === 'completed'
-                              ? 'border border-input text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                              : 'bg-primary text-primary-foreground hover:opacity-90'
+                              ? 'bg-slate-600 text-white hover:bg-slate-500'
+                              : 'bg-emerald-600 text-white hover:bg-emerald-500'
                           }`}
                         >
                           <CheckCircle2 className="h-4 w-4" />
@@ -1324,22 +1268,34 @@ const TaskManager = () => {
                         </button>
                       )}
 
+                      {taskType === 'todo' && (
+                        <select
+                          value={task.status}
+                          onChange={(event) => updateTaskStatus(task.id, event.target.value as TaskStatus)}
+                          className="rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2 text-sm"
+                        >
+                          <option value="todo">Todo</option>
+                          <option value="in-progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => openEdit(task)}
-                        aria-label={`Edit ${task.title}`}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                       >
                         <Edit3 className="h-4 w-4" />
+                        Edit
                       </button>
 
                       <button
                         type="button"
                         onClick={() => deleteTask(task.id)}
-                        aria-label={`Delete ${task.title}`}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive hover:text-destructive-foreground"
+                        className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
                       >
                         <Trash2 className="h-4 w-4" />
+                        Remove
                       </button>
                     </div>
                   </div>
@@ -1361,7 +1317,7 @@ const TaskManager = () => {
 
               <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
                 <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
-                  <label className="block space-y-1 text-sm text-foreground">
+                  <label className="block space-y-1 text-sm text-slate-700">
                     <span className="font-medium">Title</span>
                     <input
                       type="text"
@@ -1375,7 +1331,7 @@ const TaskManager = () => {
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {draft.type === 'todo' ? (
-                      <label className="space-y-1 text-sm text-foreground">
+                      <label className="space-y-1 text-sm text-slate-700">
                         <span className="font-medium">Priority</span>
                         <select
                           value={draft.priority}
@@ -1388,7 +1344,7 @@ const TaskManager = () => {
                         </select>
                       </label>
                     ) : (
-                      <label className="space-y-1 text-sm text-foreground">
+                      <label className="space-y-1 text-sm text-slate-700">
                         <span className="font-medium">Streak Target (days)</span>
                         <input
                           type="number"
@@ -1400,7 +1356,7 @@ const TaskManager = () => {
                       </label>
                     )}
 
-                    <label className="space-y-1 text-sm text-foreground">
+                    <label className="space-y-1 text-sm text-slate-700">
                       <span className="font-medium">Estimated Duration (h + m)</span>
                       <input
                         type="number"
@@ -1409,10 +1365,10 @@ const TaskManager = () => {
                         onChange={(event) => setDraft((prev) => ({ ...prev, estimatedDuration: Number(event.target.value) || 0 }))}
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                       />
-                      <p className="text-xs text-muted-foreground">Preview: {formatDuration(draft.estimatedDuration)}</p>
+                      <p className="text-xs text-slate-500">Preview: {formatDuration(draft.estimatedDuration)}</p>
                     </label>
 
-                    <label className="space-y-1 text-sm text-foreground sm:col-span-2">
+                    <label className="space-y-1 text-sm text-slate-700 sm:col-span-2">
                       <span className="font-medium">Project</span>
                       <select
                         value={draft.projectId}
@@ -1427,13 +1383,13 @@ const TaskManager = () => {
                         ))}
                       </select>
                       {loadingTaskMeta && (
-                        <p className="text-xs text-muted-foreground">Loading projects and tags...</p>
+                        <p className="text-xs text-slate-500">Loading projects and tags...</p>
                       )}
                     </label>
                   </div>
 
                   {draft.type === 'todo' && (
-                    <label className="block space-y-1 text-sm text-foreground">
+                    <label className="block space-y-1 text-sm text-slate-700">
                       <span className="font-medium">Deadline</span>
                       <input
                         type="date"
@@ -1447,14 +1403,14 @@ const TaskManager = () => {
                   <button
                     type="button"
                     onClick={() => setShowAdvanced((prev) => !prev)}
-                    className="rounded-lg border border-border bg-muted px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted"
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
                   >
                     {showAdvanced ? 'Hide Advanced Fields' : 'Show Advanced Fields'}
                   </button>
 
                   {showAdvanced && (
-                    <div className="space-y-4 rounded-xl border border-border bg-muted p-4">
-                      <label className="block space-y-1 text-sm text-foreground">
+                    <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <label className="block space-y-1 text-sm text-slate-700">
                         <span className="font-medium">Description</span>
                         <textarea
                           value={draft.description}
@@ -1466,7 +1422,7 @@ const TaskManager = () => {
                       </label>
 
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <label className="space-y-1 text-sm text-foreground">
+                        <label className="space-y-1 text-sm text-slate-700">
                           <span className="font-medium">Tags</span>
                           <input
                             type="text"
@@ -1488,7 +1444,7 @@ const TaskManager = () => {
                                   key={tag.id}
                                   type="button"
                                   onClick={() => appendTagToDraft(tag.name)}
-                                  className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted"
+                                  className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-600 hover:bg-slate-100"
                                 >
                                   {tag.name}
                                 </button>
@@ -1497,7 +1453,7 @@ const TaskManager = () => {
                           )}
                         </label>
 
-                        <label className="space-y-1 text-sm text-foreground">
+                        <label className="space-y-1 text-sm text-slate-700">
                           <span className="font-medium">Follow-up Date</span>
                           <input
                             type="date"
@@ -1509,7 +1465,7 @@ const TaskManager = () => {
                       </div>
 
                       {draft.type === 'todo' && (
-                        <label className="block space-y-1 text-sm text-foreground">
+                        <label className="block space-y-1 text-sm text-slate-700">
                           <span className="font-medium">Status</span>
                           <select
                             value={draft.status}
@@ -1523,9 +1479,9 @@ const TaskManager = () => {
                         </label>
                       )}
 
-                      <label className="block space-y-1 text-sm text-foreground">
+                      <label className="block space-y-1 text-sm text-slate-700">
                         <span className="inline-flex items-center gap-1 font-medium">
-                          <Sparkles className="h-4 w-4 text-primary" />
+                          <Sparkles className="h-4 w-4 text-violet-600" />
                           Note To AI
                         </span>
                         <textarea
@@ -1544,7 +1500,7 @@ const TaskManager = () => {
                   <button
                     type="button"
                     onClick={closeEditor}
-                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                    className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                   >
                     Cancel
                   </button>

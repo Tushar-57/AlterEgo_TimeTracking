@@ -32,15 +32,6 @@ const monthNames = [
 
 const HOUR_ROW_HEIGHT = 72;
 
-const WEEKDAY_INITIALS = [
-  { name: 'Sunday', initial: 'S' },
-  { name: 'Monday', initial: 'M' },
-  { name: 'Tuesday', initial: 'T' },
-  { name: 'Wednesday', initial: 'W' },
-  { name: 'Thursday', initial: 'T' },
-  { name: 'Friday', initial: 'F' },
-  { name: 'Saturday', initial: 'S' },
-] as const;
 
 /** An entry's `color` is now the owning project's own hex (see Dashboard), so
  *  the calendar and the Projects page agree on what colour a project is.

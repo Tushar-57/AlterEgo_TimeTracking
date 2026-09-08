@@ -1,7 +1,5 @@
-import { ArrowRight, Compass, Layers3, Link2 } from 'lucide-react';
+import { ArrowRight, Layers3, Link2, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-import { PageHeader } from '../ui/PageHeader';
 
 type QuickLink = {
   label: string;
