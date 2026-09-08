@@ -2,8 +2,10 @@ import * as React from 'react';
 
 import type { ToastActionElement, ToastProps } from '../components/ui/toast';
 
-const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+// Allow a small burst; a single slot silently swallowed follow-up toasts.
+const TOAST_LIMIT = 3;
+// ~16 minutes previously, i.e. toasts never went away on their own.
+const TOAST_REMOVE_DELAY = 5000;
 
 type ToasterToast = ToastProps & {
   id: string;
