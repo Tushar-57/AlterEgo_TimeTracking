@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -70,14 +70,36 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     window.localStorage.setItem(STORAGE_KEY, mode);
   }, [mode]);
 
+  const isFirstThemeApply = useRef(true);
+
   useEffect(() => {
     if (typeof document === 'undefined') {
       return;
     }
 
     const root = document.documentElement;
-    root.classList.toggle('dark', isDark);
-    root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    const applyTheme = () => {
+      root.classList.toggle('dark', isDark);
+      root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    };
+
+    // Ease colours only while the theme is actually switching. A permanent
+    // global colour transition made frequently re-rendering surfaces (the
+    // calendar's live time indicator, say) visibly lag their real colours.
+    if (isFirstThemeApply.current) {
+      isFirstThemeApply.current = false;
+      applyTheme();
+      return;
+    }
+
+    root.classList.add('theme-transition');
+    applyTheme();
+
+    const timeout = window.setTimeout(() => root.classList.remove('theme-transition'), 320);
+    return () => {
+      window.clearTimeout(timeout);
+      root.classList.remove('theme-transition');
+    };
   }, [isDark]);
 
   const setMode = useCallback((nextMode: ThemeMode) => {

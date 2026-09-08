@@ -435,11 +435,15 @@ body {
 }
 
 /*
- * Global theme-switch easing. Scoped to color properties only — animating
- * `transform` globally fought drag interactions (calendar entries) and hover
- * scales. Components opt into transform transitions locally.
+ * Theme-switch easing. Applied ONLY while `.theme-transition` is on <html>,
+ * which ThemeContext adds for the duration of a light/dark switch.
+ *
+ * It used to be an unconditional `* { transition: ... }`. That made every
+ * colour change anywhere ease over 300ms, so surfaces that re-render often
+ * (the calendar's live time indicator, for one) visibly lagged behind their
+ * real colours — entries rendered a stale hue for a beat after every tick.
  */
-* {
+.theme-transition * {
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 

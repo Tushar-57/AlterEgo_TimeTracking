@@ -18,6 +18,7 @@ import { ToastViewport } from './components/ui/toast';
 import ChatOnboarding from './components/Onboarding/ChatOnboarding';
 import CoachWorkspace from './components/Integration/CoachWorkspace';
 import ProfilePage from './components/Profile/ProfilePage';
+import SettingsPage from './components/Settings/SettingsPage';
 import ConnectedPlaceholderPage from './components/Workspace/ConnectedPlaceholderPage';
 import CheckupPrompt from './components/checkups/CheckupPrompt';
 import { ChatProvider } from './components/AIChat/ChatContext';
@@ -296,43 +297,7 @@ const ProtectedRoutes = () => {
               }
             />
             <Route path="/tags" element={<UserTagPage />} />
-            <Route
-              path="/settings"
-              element={
-                <ConnectedPlaceholderPage
-                  title="Settings Hub"
-                  subtitle="Tune your account experience, onboarding profile, and assistant behavior from one coordinated place."
-                  badge="Configuration"
-                  quickLinks={[
-                    {
-                      label: 'Profile',
-                      to: '/profile',
-                      description: 'Update onboarding details or redo onboarding.',
-                    },
-                    {
-                      label: 'AI Coach',
-                      to: '/coach',
-                      description: 'Continue context-aware planning with your mentor.',
-                    },
-                    {
-                      label: 'Tags',
-                      to: '/tags',
-                      description: 'Refine the taxonomy used across your entries.',
-                    },
-                    {
-                      label: 'Projects',
-                      to: '/projects',
-                      description: 'Adjust your project map and client grouping.',
-                    },
-                  ]}
-                  highlights={[
-                    'Settings are intentionally linked so profile updates flow into planner and coach behavior.',
-                    'Use profile actions to keep onboarding context current as your routine evolves.',
-                    'Treat settings as a control center instead of isolated one-off pages.',
-                  ]}
-                />
-              }
-            />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/coach" element={<Navigate to="/coach/knowledge" replace />} />
             <Route
