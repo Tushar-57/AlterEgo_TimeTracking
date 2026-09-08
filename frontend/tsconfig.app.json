@@ -20,11 +20,14 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
-  },
-  "baseUrl": ".",
-  "paths": {
-    "@/*": ["src/*"]
+    "noFallthroughCasesInSwitch": true,
+
+    /* Mirrors the "@/*" alias in vite.config.ts. These were previously
+       siblings of compilerOptions, where TypeScript ignores them. */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src"]
 }

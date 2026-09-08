@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MentorArchetype } from '../types/onboarding';
+import { MentorArchetype } from '../utils/onboardingUtils';
 import { Brain, Lightbulb, Target, Compass, Map } from 'lucide-react';
 
 interface MentorSelectionProps {

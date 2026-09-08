@@ -446,7 +446,6 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
             setGoalForm={setGoalForm}
             onSubmit={handleFormSubmit}
             onCancel={() => setShowGoalForm(false)}
-            userRole={null}
           />
         )}
       </AnimatePresence>

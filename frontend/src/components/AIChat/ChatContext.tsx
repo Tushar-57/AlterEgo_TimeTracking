@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
-import { Message } from '../Onboarding/types/onboarding';
+import { Message } from '../Onboarding/utils/onboardingUtils';
 
 interface ChatContextType {
   isChatOpen: boolean;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Message, PlannerData, UserRole, Answer, Goal, Mentor } from './utils/onboardingUtils';
+import { Message, PlannerData, UserRole, Answer, Goal, Mentor, ChatBubbleProps } from './utils/onboardingUtils';
 import { ChatContainer } from './UI/ChatContainer';
 import RoleSelection from './introduction/RoleSelection';
 import StepGoals from './goals/StepGoals';
@@ -51,7 +51,9 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
   });
   const [isLoading, setIsLoading] = useState(false); // Add loading state
   const navigate = useNavigate(); // Initialize navigate
-  const [, setChatHistory] = useState<Message[]>([]);
+  // StepPlanner writes ChatBubbleProps-shaped entries here. The value is
+  // deliberately not destructured: nothing reads this history back.
+  const [, setChatHistory] = useState<ChatBubbleProps[]>([]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -379,7 +381,6 @@ const ChatOnboarding: React.FC<ChatOnboardingProps> = ({ onComplete }) => {
                     onSubmit={handlePlannerSubmit}
                     setChatHistory={setChatHistory}
                     errors={{}}
-                    tone={null}
                     onBack={handleBack}
                   />
                 )}

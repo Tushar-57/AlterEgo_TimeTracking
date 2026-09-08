@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Goal } from '../types/onboarding';
+import { Goal } from '../utils/onboardingUtils';
 import { Target, ChevronRight, Clock, Flag } from 'lucide-react';
 
 interface GoalCanvasProps {

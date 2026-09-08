@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 export type MentorArchetype = 'Innovator' | 'Sage' | 'Challenger' | 'Master' | 'Guide';
 export type CoachingStyle = 'Direct' | 'Friendly' | 'Encouraging' | 'Nurturing' | 'Patient' | 'Challenging' | string;
 export type UserRole = 'Student' | 'Professional' | 'Freelancer' | 'Other';
-export type OnboardingStep = 'intro' | 'role' | 'personalization' | 'goals' | 'planner' | 'complete';
+export type OnboardingStep = 'intro' | 'role' | 'personalization' | 'goals' | 'planner' | 'mentor' | 'complete';
 
 
 

@@ -44,9 +44,23 @@ const eventColorClasses: Record<string, string> = {
   emerald: "border-emerald-300/60 bg-emerald-100 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200",
 };
 
-const getEventColorClasses = (color: string) =>
-  eventColorClasses[color] ??
-  "border-border bg-secondary text-secondary-foreground dark:bg-secondary";
+const isHexColor = (color: string) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(color ?? "");
+
+const getEventColorClasses = (color: string) => {
+  if (isHexColor(color)) {
+    // Neutral surface; the project's own hue lands as a left rule via
+    // getEventColorStyle, so the calendar and the Projects page agree on what
+    // colour a project is.
+    return "border-border border-l-[3px] bg-secondary text-secondary-foreground dark:bg-secondary";
+  }
+  return (
+    eventColorClasses[color] ??
+    "border-border bg-secondary text-secondary-foreground dark:bg-secondary"
+  );
+};
+
+const getEventColorStyle = (color: string): React.CSSProperties =>
+  isHexColor(color) ? { borderLeftColor: color } : {};
 
 const isSameDay = (left: Date, right: Date) =>
   left.getFullYear() === right.getFullYear() &&

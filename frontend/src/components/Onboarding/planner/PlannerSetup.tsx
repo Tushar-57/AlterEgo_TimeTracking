@@ -1,7 +1,7 @@
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Bell, Calendar } from 'lucide-react';
-import { PlannerData, ChatBubbleProps, Goal, Availability } from '../types/onboarding';
+import { PlannerData, ChatBubbleProps, Goal, Availability } from '../utils/onboardingUtils';
 
 interface PlannerSetupProps {
   handleNext: () => void;

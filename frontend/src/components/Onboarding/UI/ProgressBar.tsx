@@ -1,5 +1,5 @@
 import React from 'react';
-import { OnboardingStep, Tone } from '../types/onboarding';
+import { OnboardingStep, Tone } from '../utils/onboardingUtils';
 import { getToneStyles } from '../utils/onboardingUtils';
 
 interface ProgressBarProps {
