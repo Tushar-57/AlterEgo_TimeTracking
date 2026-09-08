@@ -11,7 +11,7 @@ import {
   Sun,
 } from 'lucide-react';
 
-import { PageHeader } from '../ui/page-header';
+import { PageHeader } from '../ui/PageHeader';
 import { useTheme } from '../../context/ThemeContext';
 import { getStoredAuthToken } from '../../utils/auth';
 import { useToast } from '../ui/toast';
@@ -132,10 +132,9 @@ const SettingsPage = () => {
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 md:px-8">
       <div className="mx-auto w-full max-w-3xl space-y-5">
         <PageHeader
-          eyebrow="Account"
           title="Settings"
           icon={SettingsIcon}
-          subtitle="Appearance, assistant behaviour, and what gets synced to your Coach."
+          description="Appearance, assistant behaviour, and what gets synced to your Coach."
         />
 
         <Section
