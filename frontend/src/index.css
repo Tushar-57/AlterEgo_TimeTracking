@@ -1,18 +1,43 @@
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Design tokens — single source of truth for the AlterEgo UI.
+   * Neutrals: slate. Primary: indigo. `--today`: amber (calendar "today" marker
+   * and streak highlights only). Flip the brand by editing --primary / --ring here.
+   * Every component should consume these via `bg-card`, `text-muted-foreground`,
+   * `border-border`, etc. — never raw palette classes or hex literals.
+   */
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --input: 214.3 31.8% 91.4%;
-    --primary: 222.2 47.4% 11.2%;
-    --border: 214.3 31.8% 91.4%;
-    --radius: 0.5rem;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --surface: 210 40% 98%;
+    --surface-foreground: 222 47% 11%;
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 226 100% 97%;
+    --accent-foreground: 243 63% 42%;
+    --destructive: 350 89% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 243 75% 59%;
+    --today: 38 92% 50%;
+    --today-foreground: 26 83% 14%;
+    --radius: 0.75rem;
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     color-scheme: light;
     height: 100%;
@@ -20,12 +45,31 @@
   }
 
   .dark {
-    --background: 220 32% 10%;
+    --background: 222 47% 11%;
     --foreground: 210 40% 96%;
-    --card: 220 32% 12%;
+    --card: 217 33% 14%;
     --card-foreground: 210 40% 96%;
-    --input: 217 25% 24%;
-    --border: 217 25% 24%;
+    --popover: 217 33% 14%;
+    --popover-foreground: 210 40% 96%;
+    --surface: 217 33% 17%;
+    --surface-foreground: 210 40% 96%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 20%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 20%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 24%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 350 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 160 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --border: 217 33% 24%;
+    --input: 217 33% 24%;
+    --ring: 239 84% 67%;
+    --today: 38 92% 55%;
+    --today-foreground: 26 83% 14%;
     color-scheme: dark;
   }
 
@@ -36,6 +80,12 @@
     color: hsl(var(--foreground));
   }
 
+  /*
+   * TODO(overhaul): temporary dark-mode safety net. These global attribute
+   * selectors patch components that still hardcode bg-white / gray text / gray
+   * borders. Delete this whole block in Phase 6 once components consume tokens
+   * (bg-card, text-muted-foreground, border-border) with real `dark:` variants.
+   */
   .dark [class~="bg-white"] {
     background-color: rgb(15 23 42);
   }
@@ -328,7 +378,7 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
