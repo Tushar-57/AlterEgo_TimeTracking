@@ -173,13 +173,13 @@ export default function LoginClassic() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF5E9] p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl lg:flex-row">
+    <div className="min-h-screen bg-auth-surface p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col overflow-hidden rounded-3xl bg-auth-card shadow-xl lg:flex-row">
         {/* Left side with illustration */}
-        <div className="relative hidden overflow-hidden bg-[#FFF5E9] p-12 lg:block lg:w-1/2">
-          <div className="absolute -top-16 -left-16 w-64 h-64 bg-[#B32C1A] rounded-full opacity-20"></div>
-          <div className="absolute top-32 -right-8 w-16 h-16 bg-[#FFC7B4] rounded-full opacity-40"></div>
-          <div className="absolute bottom-24 left-24 w-32 h-32 bg-[#B32C1A] rounded-full opacity-10"></div>
+        <div className="relative hidden overflow-hidden bg-auth-surface p-12 lg:block lg:w-1/2">
+          <div className="absolute -top-16 -left-16 w-64 h-64 bg-auth-accent rounded-full opacity-20"></div>
+          <div className="absolute top-32 -right-8 w-16 h-16 bg-auth-accent-soft rounded-full opacity-40"></div>
+          <div className="absolute bottom-24 left-24 w-32 h-32 bg-auth-accent rounded-full opacity-10"></div>
 
           <div className="relative z-10 flex flex-col h-full">
             <div className="flex-grow flex flex-col justify-center space-y-6">
@@ -189,16 +189,16 @@ export default function LoginClassic() {
                 className="w-80 mx-auto transform -rotate-6"
               />
               <div className="space-y-4 pl-12">
-                <h1 className="text-4xl font-bold text-[#4A154B] leading-tight">
+                <h1 className="text-4xl font-bold text-auth-ink leading-tight">
                   Making time to do<br />
                   things you love ?
                 </h1>
-                <p className="text-lg text-[#4A154B] opacity-80">
+                <p className="text-lg text-auth-ink opacity-80">
                   Still making changes to your schedule<br />
                   to make time for people you love ?
                 </p>
                 <br />
-                <p className="text-2xl font-handwriting text-[#4A154B] mt-8">
+                <p className="text-2xl font-handwriting text-auth-ink mt-8">
                   Be Human, 3rd:9:0.
                 </p>
               </div>
@@ -210,27 +210,27 @@ export default function LoginClassic() {
         <div className="flex w-full flex-col justify-center p-6 sm:p-8 lg:w-1/2 lg:p-12">
           <div className="max-w-md mx-auto w-full">
             <div className="text-center mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl font-bold text-[#4A154B] mb-3">Login to your Account</h2>
-              <p className="text-[#4A154B]/80">See, how you can live and grow more, Powered with AI</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-auth-ink mb-3">Login to your Account</h2>
+              <p className="text-auth-ink/80">See, how you can live and grow more, Powered with AI</p>
             </div>
 
-            <button className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2.5 mb-6 hover:bg-gray-50 transition-colors">
+            <button className="w-full flex items-center justify-center gap-2 border border-auth-ink/25 rounded-lg px-4 py-2.5 mb-6 hover:bg-auth-surface/60 transition-colors">
               <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-              <span className="text-gray-700">Continue with Google</span>
+              <span className="text-auth-ink">Continue with Google</span>
             </button>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
+                <div className="w-full border-t border-auth-ink/15"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or Sign in with Email</span>
+                <span className="px-2 bg-auth-card text-auth-ink/60">or Sign in with Email</span>
               </div>
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-auth-ink mb-1">Email</label>
                 <input
                   type="email"
                   value={email}
@@ -238,19 +238,19 @@ export default function LoginClassic() {
                   autoComplete="email"
                   autoCapitalize="none"
                   spellCheck={false}
-                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
+                  className="block w-full px-3 py-2.5 border border-auth-ink/25 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-auth-ink focus:border-auth-ink"
                   placeholder="FutureYou@gmail.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label className="block text-sm font-medium text-auth-ink mb-1">Password</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
-                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
+                  className="block w-full px-3 py-2.5 border border-auth-ink/25 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-auth-ink focus:border-auth-ink"
                   placeholder="••••••••"
                 />
               </div>
@@ -260,11 +260,11 @@ export default function LoginClassic() {
                   <input
                     type="checkbox"
                     autoComplete="off"
-                    className="h-4 w-4 text-[#4A154B] focus:ring-[#4A154B] border-gray-300 rounded"
+                    className="h-4 w-4 text-auth-ink focus:ring-auth-ink border-auth-ink/25 rounded"
                   />
-                  <label className="ml-2 block text-sm text-gray-700">Remember Me</label>
+                  <label className="ml-2 block text-sm text-auth-ink">Remember Me</label>
                 </div>
-                <Link to="/forgot-password" className="text-sm font-medium text-[#4A154B] hover:text-[#3D1D38]">
+                <Link to="/forgot-password" className="text-sm font-medium text-auth-ink hover:text-auth-ink-strong">
                   Forgot Password?
                 </Link>
               </div>
@@ -285,8 +285,8 @@ export default function LoginClassic() {
               <button
                 type="submit"
                 disabled={loading || isInCooldown}
-                className={`w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-medium text-white bg-[#4A154B] ${
-                  loading || isInCooldown ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#3D1D38]'
+                className={`w-full flex justify-center py-2.5 px-4 rounded-lg text-sm font-medium text-white bg-auth-ink ${
+                  loading || isInCooldown ? 'opacity-50 cursor-not-allowed' : 'hover:bg-auth-ink-strong'
                 }`}
               >
                 {loading ? 'Logging in...' : 'Login'}
@@ -294,11 +294,11 @@ export default function LoginClassic() {
             </form>
 
             <div className="mt-8 text-center text-sm">
-              <span className="text-gray-600">Still Planning Life By Yourself ?</span>
+              <span className="text-auth-ink/80">Still Planning Life By Yourself ?</span>
               <div className="mt-1">
-                <span className="text-gray-600 italic">We would love you Onboard you</span>
+                <span className="text-auth-ink/80 italic">We would love you Onboard you</span>
                 {' → '}
-                <Link to="/signup" className="font-medium text-[#4A154B] hover:text-[#3D1D38]">
+                <Link to="/signup" className="font-medium text-auth-ink hover:text-auth-ink-strong">
                   Create an account
                 </Link>
               </div>

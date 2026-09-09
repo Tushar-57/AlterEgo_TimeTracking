@@ -58,6 +58,16 @@ export default {
           DEFAULT: 'hsl(var(--today))',
           foreground: 'hsl(var(--today-foreground))',
         },
+        // Auth screens keep the original aubergine identity, as tokens so they
+        // gain a dark mode. See DESIGN_SYSTEM.md.
+        auth: {
+          surface: 'hsl(var(--auth-surface))',
+          card: 'hsl(var(--auth-card))',
+          ink: 'hsl(var(--auth-ink))',
+          'ink-strong': 'hsl(var(--auth-ink-strong))',
+          accent: 'hsl(var(--auth-accent))',
+          'accent-soft': 'hsl(var(--auth-accent-soft))',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',

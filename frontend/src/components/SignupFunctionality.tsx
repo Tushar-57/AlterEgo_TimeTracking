@@ -132,22 +132,22 @@ export default function SignupClassic() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF5E9] p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl lg:flex-row">
+    <div className="min-h-screen bg-auth-surface p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col overflow-hidden rounded-3xl bg-auth-card shadow-xl lg:flex-row">
         {/* Left side with illustration */}
-        <div className="relative hidden bg-[#FFF5E9] p-12 lg:block lg:w-1/2">
-          <div className="absolute top-8 left-8 w-32 h-32 bg-[#B32C1A] rounded-full opacity-80"></div>
-          <div className="absolute top-24 right-24 w-8 h-8 bg-[#FFC7B4] rounded-full opacity-60"></div>
-          <div className="absolute bottom-24 right-12 w-24 h-24 bg-[#FFC7B4] rounded-full opacity-40"></div>
+        <div className="relative hidden bg-auth-surface p-12 lg:block lg:w-1/2">
+          <div className="absolute top-8 left-8 w-32 h-32 bg-auth-accent rounded-full opacity-80"></div>
+          <div className="absolute top-24 right-24 w-8 h-8 bg-auth-accent-soft rounded-full opacity-60"></div>
+          <div className="absolute bottom-24 right-12 w-24 h-24 bg-auth-accent-soft rounded-full opacity-40"></div>
 
           <div className="relative z-10 flex flex-col h-full">
             <div className="flex-grow flex flex-col justify-center">
               <img src={skeletonImg} alt="Skeleton at laptop" className="w-96 mx-auto mb-12" />
-              <h1 className="text-4xl font-bold text-[#4A154B] mb-4">Ready to transform your life?</h1>
-              <p className="text-lg text-[#4A154B] mb-8">
+              <h1 className="text-4xl font-bold text-auth-ink mb-4">Ready to transform your life?</h1>
+              <p className="text-lg text-auth-ink mb-8">
                 Join thousands who are already managing their time better with AI
               </p>
-              <p className="text-lg font-handwriting text-[#4A154B]">Be Human, Ask AI.</p>
+              <p className="text-lg font-handwriting text-auth-ink">Be Human, Ask AI.</p>
             </div>
           </div>
         </div>
@@ -157,7 +157,7 @@ export default function SignupClassic() {
           <div className="max-w-md mx-auto w-full">
             <div className="text-center mb-8">
               <div className="w-8 h-8 mx-auto mb-6">
-                <svg viewBox="0 0 24 24" className="w-full h-full text-[#4A154B]">
+                <svg viewBox="0 0 24 24" className="w-full h-full text-auth-ink">
                   <path
                     d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
                     stroke="currentColor"
@@ -168,42 +168,42 @@ export default function SignupClassic() {
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">Create your Account</h2>
-              <p className="text-gray-600 mt-2 text-sm">Start your journey to better time management</p>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-auth-ink-strong">Create your Account</h2>
+              <p className="text-auth-ink/80 mt-2 text-sm">Start your journey to better time management</p>
             </div>
 
             <button
               onClick={handleGoogleSignup}
-              className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2.5 mb-6 hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center justify-center gap-2 border border-auth-ink/25 rounded-lg px-4 py-2.5 mb-6 hover:bg-auth-surface/60 transition-colors"
             >
               <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-              <span className="text-gray-700">Continue with Google</span>
+              <span className="text-auth-ink">Continue with Google</span>
             </button>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
+                <div className="w-full border-t border-auth-ink/15"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or Sign up with Email</span>
+                <span className="px-2 bg-auth-card text-auth-ink/60">or Sign up with Email</span>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <label className="block text-sm font-medium text-auth-ink mb-1">Full Name</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   autoComplete="name"
-                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
+                  className="block w-full px-3 py-2.5 border border-auth-ink/25 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-auth-ink focus:border-auth-ink"
                   placeholder="John Doe"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-auth-ink mb-1">Email</label>
                 <input
                   type="email"
                   value={email}
@@ -211,7 +211,7 @@ export default function SignupClassic() {
                   autoComplete="email"
                   autoCapitalize="none"
                   spellCheck={false}
-                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
+                  className="block w-full px-3 py-2.5 border border-auth-ink/25 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-auth-ink focus:border-auth-ink"
                   placeholder="your.email@example.com"
                 />
                 {email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && (
@@ -220,13 +220,13 @@ export default function SignupClassic() {
               </div>
 
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label className="block text-sm font-medium text-auth-ink mb-1">Password</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
-                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
+                  className="block w-full px-3 py-2.5 border border-auth-ink/25 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-auth-ink focus:border-auth-ink"
                   placeholder="••••••••"
                 />
                 <div className="mt-2 flex gap-1">
@@ -239,23 +239,23 @@ export default function SignupClassic() {
                   ].map((valid, idx) => (
                     <div
                       key={idx}
-                      className={`h-1 w-1/5 rounded-full ${valid ? 'bg-green-500' : 'bg-gray-200'}`}
+                      className={`h-1 w-1/5 rounded-full ${valid ? 'bg-success' : 'bg-auth-ink/20'}`}
                     />
                   ))}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-auth-ink/60 mt-1">
                   Requirements: 12+ characters, uppercase, lowercase, number, and special character
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                <label className="block text-sm font-medium text-auth-ink mb-1">Confirm Password</label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   autoComplete="new-password"
-                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-[#4A154B] focus:border-[#4A154B]"
+                  className="block w-full px-3 py-2.5 border border-auth-ink/25 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-auth-ink focus:border-auth-ink"
                   placeholder="••••••••"
                 />
                 {confirmPassword && password !== confirmPassword && (
@@ -266,17 +266,17 @@ export default function SignupClassic() {
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 text-[#4A154B] focus:ring-[#4A154B] border-gray-300 rounded"
+                  className="h-4 w-4 text-auth-ink focus:ring-auth-ink border-auth-ink/25 rounded"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
                 />
-                <label className="ml-2 block text-sm text-gray-700">
+                <label className="ml-2 block text-sm text-auth-ink">
                   I agree to the{' '}
-                  <a href="#" className="text-[#4A154B] hover:text-[#3D1D38]">
+                  <a href="#" className="text-auth-ink hover:text-auth-ink-strong">
                     Terms of Service
                   </a>{' '}
                   and{' '}
-                  <a href="#" className="text-[#4A154B] hover:text-[#3D1D38]">
+                  <a href="#" className="text-auth-ink hover:text-auth-ink-strong">
                     Privacy Policy
                   </a>
                 </label>
@@ -285,7 +285,7 @@ export default function SignupClassic() {
               <button
                 type="submit"
                 disabled={loading || !isFormValid || inCooldown}
-                className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#4A154B] hover:bg-[#3D1D38] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4A154B] disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-auth-ink hover:bg-auth-ink-strong focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-auth-ink disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {loading ? 'Creating Account...' : 'Create Account'}
               </button>
@@ -301,11 +301,11 @@ export default function SignupClassic() {
             </form>
 
             <div className="mt-8 text-center text-sm">
-              <span className="text-gray-600">Already have an account?</span>
+              <span className="text-auth-ink/80">Already have an account?</span>
               <div className="mt-1">
-                <span className="text-gray-600 italic">Welcome back!</span>
+                <span className="text-auth-ink/80 italic">Welcome back!</span>
                 {' → '}
-                <Link to="/login" className="font-medium text-[#4A154B] hover:text-[#3D1D38]">
+                <Link to="/login" className="font-medium text-auth-ink hover:text-auth-ink-strong">
                   Sign in to your account
                 </Link>
               </div>

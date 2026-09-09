@@ -28,6 +28,19 @@
     --surface: 210 40% 98%;
     --surface-foreground: 222 47% 11%;
     --primary: 243 75% 59%;
+
+    /* Auth screens (login / signup / forgot password) carry the original
+       aubergine identity. They were 45 hardcoded hex values with no dark
+       variant, so a dark-mode user got a cream page and maroon-on-dark
+       headings before falling into a dark app. Kept as its own scale
+       rather than folded into --primary: repainting the front door indigo
+       is a brand decision, not a bug fix. */
+    --auth-surface: 33 100% 96%;
+    --auth-card: 0 0% 100%;
+    --auth-ink: 295 55% 19%;
+    --auth-ink-strong: 305 35% 17%;
+    --auth-accent: 9 75% 40%;
+    --auth-accent-soft: 12 100% 85%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
@@ -61,6 +74,15 @@
     --surface: 217 33% 17%;
     --surface-foreground: 210 40% 96%;
     --primary: 239 84% 67%;
+
+    /* Same hues, re-weighted for a dark ground: the ink becomes light,
+       the surface becomes deep, and the accent keeps its identity. */
+    --auth-surface: 300 20% 12%;
+    --auth-card: 295 18% 16%;
+    --auth-ink: 33 60% 94%;
+    --auth-ink-strong: 0 0% 100%;
+    --auth-accent: 9 80% 62%;
+    --auth-accent-soft: 12 40% 32%;
     --primary-foreground: 0 0% 100%;
     --secondary: 217 33% 20%;
     --secondary-foreground: 210 40% 96%;

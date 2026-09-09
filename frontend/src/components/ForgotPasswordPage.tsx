@@ -106,10 +106,10 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF5E9] p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto w-full max-w-xl overflow-hidden rounded-3xl bg-white p-6 shadow-xl sm:p-8 lg:p-10">
-        <h1 className="text-2xl font-semibold text-[#4A154B] sm:text-3xl">Reset your password</h1>
-        <p className="mt-2 text-sm text-gray-600">
+    <div className="min-h-screen bg-auth-surface p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto w-full max-w-xl overflow-hidden rounded-3xl bg-auth-card p-6 shadow-xl sm:p-8 lg:p-10">
+        <h1 className="text-2xl font-semibold text-auth-ink sm:text-3xl">Reset your password</h1>
+        <p className="mt-2 text-sm text-auth-ink/80">
           Use a one-time verification code. No password reset token is exposed in the URL.
         </p>
 
@@ -128,7 +128,7 @@ export default function ForgotPasswordPage() {
         {step === 'request' ? (
           <form className="mt-6 space-y-4" onSubmit={requestReset}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Account Email</label>
+              <label className="block text-sm font-medium text-auth-ink mb-1">Account Email</label>
               <input
                 type="email"
                 value={email}
@@ -137,14 +137,14 @@ export default function ForgotPasswordPage() {
                 autoCapitalize="none"
                 spellCheck={false}
                 placeholder="you@example.com"
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 shadow-sm focus:border-[#4A154B] focus:outline-none focus:ring-1 focus:ring-[#4A154B]"
+                className="block w-full rounded-lg border border-auth-ink/25 px-3 py-2.5 shadow-sm focus:border-auth-ink focus:outline-none focus:ring-1 focus:ring-auth-ink"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-[#4A154B] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#3D1D38] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg bg-auth-ink px-4 py-2.5 text-sm font-medium text-white transition hover:bg-auth-ink-strong disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? 'Requesting Code...' : 'Request Reset Code'}
             </button>
@@ -152,7 +152,7 @@ export default function ForgotPasswordPage() {
         ) : (
           <form className="mt-6 space-y-4" onSubmit={confirmReset}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-auth-ink mb-1">Email</label>
               <input
                 type="email"
                 value={email}
@@ -160,12 +160,12 @@ export default function ForgotPasswordPage() {
                 autoComplete="email"
                 autoCapitalize="none"
                 spellCheck={false}
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 shadow-sm focus:border-[#4A154B] focus:outline-none focus:ring-1 focus:ring-[#4A154B]"
+                className="block w-full rounded-lg border border-auth-ink/25 px-3 py-2.5 shadow-sm focus:border-auth-ink focus:outline-none focus:ring-1 focus:ring-auth-ink"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">6-digit code</label>
+              <label className="block text-sm font-medium text-auth-ink mb-1">6-digit code</label>
               <input
                 type="text"
                 value={code}
@@ -173,7 +173,7 @@ export default function ForgotPasswordPage() {
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 placeholder="123456"
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 shadow-sm focus:border-[#4A154B] focus:outline-none focus:ring-1 focus:ring-[#4A154B]"
+                className="block w-full rounded-lg border border-auth-ink/25 px-3 py-2.5 shadow-sm focus:border-auth-ink focus:outline-none focus:ring-1 focus:ring-auth-ink"
               />
               {devCode && (
                 <p className="mt-1 text-xs text-amber-700">
@@ -183,42 +183,42 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+              <label className="block text-sm font-medium text-auth-ink mb-1">New Password</label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
                 autoComplete="new-password"
                 placeholder="••••••••••••"
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 shadow-sm focus:border-[#4A154B] focus:outline-none focus:ring-1 focus:ring-[#4A154B]"
+                className="block w-full rounded-lg border border-auth-ink/25 px-3 py-2.5 shadow-sm focus:border-auth-ink focus:outline-none focus:ring-1 focus:ring-auth-ink"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+              <label className="block text-sm font-medium text-auth-ink mb-1">Confirm New Password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 autoComplete="new-password"
                 placeholder="••••••••••••"
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 shadow-sm focus:border-[#4A154B] focus:outline-none focus:ring-1 focus:ring-[#4A154B]"
+                className="block w-full rounded-lg border border-auth-ink/25 px-3 py-2.5 shadow-sm focus:border-auth-ink focus:outline-none focus:ring-1 focus:ring-auth-ink"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-[#4A154B] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#3D1D38] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg bg-auth-ink px-4 py-2.5 text-sm font-medium text-white transition hover:bg-auth-ink-strong disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? 'Updating Password...' : 'Update Password'}
             </button>
           </form>
         )}
 
-        <div className="mt-6 text-center text-sm text-gray-600">
+        <div className="mt-6 text-center text-sm text-auth-ink/80">
           Remembered your password?{' '}
-          <Link to="/login" className="font-medium text-[#4A154B] hover:text-[#3D1D38]">
+          <Link to="/login" className="font-medium text-auth-ink hover:text-auth-ink-strong">
             Go back to login
           </Link>
         </div>
