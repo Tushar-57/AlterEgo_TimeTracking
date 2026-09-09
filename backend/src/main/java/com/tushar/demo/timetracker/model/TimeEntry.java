@@ -40,7 +40,11 @@ public class TimeEntry {
     @ManyToOne
     private Project project;
 
-    @ElementCollection
+    // Eager because every TimeEntry is serialized with its tags. With
+    // open-in-view disabled the Hibernate session closes before the JSON
+    // writer runs, so a lazy collection here fails the whole response with
+    // "could not initialize proxy - no Session" — which emptied the dashboard.
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<Long> tagIds = new ArrayList<>(); // Changed from List<String> tags to List<Long> tagIds
 
     private boolean billable;

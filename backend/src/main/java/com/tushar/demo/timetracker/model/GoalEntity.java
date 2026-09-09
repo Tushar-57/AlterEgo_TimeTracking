@@ -26,7 +26,9 @@ public class GoalEntity {
     @Column
     private String priority;
 
-    @ElementCollection
+    // Eager for the same reason as TimeEntry.tagIds: milestones are part of
+    // every serialized goal, and the session is gone by the time JSON is written.
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "goal_milestones", joinColumns = @JoinColumn(name = "goal_id"))
     @Column(name = "milestone")
     private List<String> milestones;
