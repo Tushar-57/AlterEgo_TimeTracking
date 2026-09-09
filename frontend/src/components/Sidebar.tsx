@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
+  Database,
   ArrowUpRight,
   BarChart2,
   BellRing,
@@ -127,7 +128,11 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
           </NavGroup>
 
           <NavGroup label="Coach">
-            <NavItem icon={Sparkles} label="AI Coach" to="/coach/knowledge" external onNavigate={onMobileClose} />
+            {/* "AI Coach" pointed at /coach/knowledge, so clicking it landed on
+                the Memory tab rather than the coach. Two different things, and
+                the label named the one you did not get. */}
+            <NavItem icon={Sparkles} label="AI Coach" to="/coach/chat" external onNavigate={onMobileClose} />
+            <NavItem icon={Database} label="Memory" to="/coach/knowledge" external onNavigate={onMobileClose} />
             <NavItem icon={BarChart2} label="Analytics" to="/coach/analytics" external onNavigate={onMobileClose} />
             <NavItem icon={BellRing} label="AI Notifications" to="/coach/notifications" external onNavigate={onMobileClose} />
           </NavGroup>

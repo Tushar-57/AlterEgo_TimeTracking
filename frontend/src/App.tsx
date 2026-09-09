@@ -67,7 +67,7 @@ const MOBILE_TABS = [
   { label: 'Timer', to: '/timer', icon: Clock },
   { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
   { label: 'Tasks', to: '/tasks', icon: ListChecks },
-  { label: 'Coach', to: '/coach/knowledge', icon: Brain },
+  { label: 'Coach', to: '/coach/chat', icon: Brain },
 ];
 
 const ProtectedRoutes = () => {
@@ -296,7 +296,13 @@ const ProtectedRoutes = () => {
             <Route path="/tags" element={<UserTagPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/coach" element={<Navigate to="/coach/knowledge" replace />} />
+            {/* "Coach" now means the coach. It redirected to the Memory tab,
+                so every entry point labelled Coach opened something else. */}
+            <Route path="/coach" element={<Navigate to="/coach/chat" replace />} />
+            <Route
+              path="/coach/chat"
+              element={<CoachWorkspace autoLaunch targetView="chat" returnPath="/dashboard" />}
+            />
             <Route
               path="/coach/knowledge"
               element={<CoachWorkspace autoLaunch targetView="knowledge" returnPath="/dashboard" />}
