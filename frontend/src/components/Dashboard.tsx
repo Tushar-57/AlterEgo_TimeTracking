@@ -500,11 +500,19 @@ export const Dashboard = () => {
   );
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col gap-4 p-4">
-      {/* The calendar is a record of what happened. This says what it means,
-          and it goes first — the grid opens at midnight, so on most days the
-          first thing the app showed you was six empty hours. */}
-      <TodayBand />
+    // Height is pinned to the viewport rather than inherited. <main> is
+    // flex-1 inside a parent with no bounded height, so it grows to fit its
+    // content instead of scrolling — which means h-full here resolved to the
+    // full height of the calendar, the calendar's own scroll container never
+    // scrolled, and the whole document scrolled instead. Bounding this page
+    // gives the grid its scroller back, so it can jump to the current hour
+    // without carrying the summary off the top of the screen.
+    <div className="flex h-[calc(100dvh-1rem)] min-h-0 w-full flex-col gap-4 overflow-hidden p-4 md:h-dvh">
+      {/* The calendar is a record of what happened. This says what it means. */}
+      <div className="shrink-0">
+        <TodayBand />
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col">
       <CalendarSection
         events={calendarEvents}
         refreshEvents={fetchData}
@@ -513,6 +521,7 @@ export const Dashboard = () => {
         onDeleteEvent={handleDeleteEvent}
         onContinueEvent={handleContinueEvent}
       />
+      </div>
     </div>
   );
 };
