@@ -540,7 +540,8 @@ public class TimerController {
     @PostMapping("/sync/agentic/backfill")
     public ResponseEntity<ApiResponse<Map<String, Object>>> backfillAgenticTimeEntries(
             Authentication authentication,
-            @RequestParam(name = "limit", required = false) Integer limit) {
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "force", required = false, defaultValue = "false") boolean force) {
         logger.info("Backfilling Agentic time entries for user: {}", authName(authentication));
 
         try {
@@ -570,7 +571,7 @@ public class TimerController {
 
             // Persistent rate limit: skip backfill if it ran recently enough (survives restarts).
             // This prevents a full re-backfill on every Agentic_lyf spin-down/up cycle.
-            if (!agenticKnowledgeSyncService.isBackfillAllowed(user)) {
+            if (!force && !agenticKnowledgeSyncService.isBackfillAllowed(user)) {
                 logger.info(
                         "Backfill skipped for user {} — last backfill cursor is within the rate-limit window",
                         userId
@@ -606,7 +607,7 @@ public class TimerController {
             }
 
             AgenticSyncOutboxService.BackfillQueueResult result =
-                    agenticSyncOutboxService.enqueueHistoricalTimeEntries(user, requestedLimit);
+                    agenticSyncOutboxService.enqueueHistoricalTimeEntries(user, requestedLimit, force);
 
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("configured", result.configured());
@@ -615,6 +616,7 @@ public class TimerController {
             payload.put("queued", result.queued());
             payload.put("enqueueFailed", result.enqueueFailed());
             payload.put("skippedActive", result.skippedActive());
+            payload.put("forced", force);
 
             if (!result.configured()) {
                 return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED)

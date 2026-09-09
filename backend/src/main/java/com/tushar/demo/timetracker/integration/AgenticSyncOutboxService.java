@@ -303,13 +303,26 @@ public class AgenticSyncOutboxService {
     }
 
     public BackfillQueueResult enqueueHistoricalTimeEntries(Users user, int maxEntries) {
+        return enqueueHistoricalTimeEntries(user, maxEntries, false);
+    }
+
+    /**
+     * Queue historical time entries for re-sync.
+     *
+     * @param force ignore the incremental cursor and re-push the full history.
+     *              The cursor exists so a spin-down cycle does not re-queue
+     *              everything, but that also means a change to what we store
+     *              per entry can never reach entries already synced. After such
+     *              a change there has to be a way to push them again.
+     */
+    public BackfillQueueResult enqueueHistoricalTimeEntries(Users user, int maxEntries, boolean force) {
         if (!isQueueConfigured() || user == null || user.getId() == null) {
             return new BackfillQueueResult(false, Math.max(0, maxEntries), 0, 0, 0, 0);
         }
 
         // Use cursor to limit backfill to entries newer than the last known horizon.
         // Avoids re-queuing the entire history on every Agentic_lyf spin-down cycle.
-        Instant lastBackfillAt = user.getAgenticLastBackfillAt();
+        Instant lastBackfillAt = force ? null : user.getAgenticLastBackfillAt();
         LocalDateTime horizon = lastBackfillAt != null
                 ? LocalDateTime.ofInstant(lastBackfillAt.minusSeconds(3600L), ZoneOffset.UTC)
                 : LocalDateTime.now(ZoneOffset.UTC).minusDays(30L);
