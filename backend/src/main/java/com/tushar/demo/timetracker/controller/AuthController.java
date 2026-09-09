@@ -187,6 +187,21 @@ public class AuthController {
 			));
 
 		} catch (AuthenticationException e) {
+			// A database that cannot hand out a connection surfaces here as an
+			// AuthenticationException, because the user lookup inside the
+			// provider failed rather than returning "no such user". Reporting
+			// that as "Invalid email or password" sent us hunting a typo for
+			// three rounds while the real fault was an exhausted pool. Tell the
+			// two apart so the message matches the cause.
+			if (isInfrastructureFailure(e)) {
+				logger.error("Login failed for {} due to an infrastructure error", loginRequest.email(), e);
+				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+						.body(Map.of(
+								"error", "SERVICE_UNAVAILABLE",
+								"message", "We can't reach the service right now. Please try again in a moment."
+						));
+			}
+
 			logger.warn("Failed login attempt for email: {}", loginRequest.email());
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 					.body(Map.of("error", "INVALID_CREDENTIALS", "message", "Invalid email or password"));
@@ -613,5 +628,24 @@ public class AuthController {
 		user.setPasswordResetCodeHash(null);
 		user.setPasswordResetCodeExpiresAt(null);
 		user.setPasswordResetAttempts(0);
+	}
+
+	/**
+	 * True when an authentication failure was caused by infrastructure rather
+	 * than by the credentials — a connection pool timeout, a dropped database
+	 * connection, or any other data-access fault surfacing through the
+	 * authentication provider.
+	 */
+	private boolean isInfrastructureFailure(Throwable error) {
+		for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+			if (cause instanceof org.springframework.dao.DataAccessException
+					|| cause instanceof java.sql.SQLException) {
+				return true;
+			}
+			if (cause.getCause() == cause) {
+				break;
+			}
+		}
+		return false;
 	}
 }

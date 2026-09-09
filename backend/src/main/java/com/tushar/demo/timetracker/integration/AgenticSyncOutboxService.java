@@ -405,6 +405,20 @@ public class AgenticSyncOutboxService {
             return;
         }
 
+        // While the upstream is in cooldown nothing here can be dispatched, so
+        // querying for due events every three seconds only borrows a pooled
+        // connection to throw the answer away. When Agentic is down — which is
+        // exactly when this cooldown is set — that poll competes with real
+        // requests for a ten-connection pool.
+        long cooldownRemaining = syncService.getUpstreamCooldownRemainingSeconds();
+        if (cooldownRemaining > 0) {
+            logger.debug(
+                    "Skipping outbox poll — upstream cooldown has {}s remaining",
+                    cooldownRemaining
+            );
+            return;
+        }
+
         LocalDateTime now = LocalDateTime.now();
         List<AgenticSyncOutboxEvent> dueEvents = outboxRepository
                 .findByStatusInAndNextAttemptAtLessThanEqualOrderByNextAttemptAtAsc(
