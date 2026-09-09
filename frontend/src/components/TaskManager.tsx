@@ -779,6 +779,36 @@ const TaskManager = () => {
     const averageEstimatedDurationMinutes =
       total > 0 ? Math.round(modeTasks.reduce((sum, task) => sum + task.estimatedDuration, 0) / total) : 0;
 
+    /**
+     * Follow-through over the last thirty days: the share of the
+     * habit-days on offer that were actually ticked.
+     *
+     * The card beside it said "Completed", which for a habit is not a
+     * number that means anything — habits recur, they are not finished. So
+     * the page could show a tidy contribution grid, a streak, and a trend
+     * line while never stating the one figure that says how it is going. On
+     * this account that figure is around 13%, and nothing on the screen
+     * said so.
+     */
+    const habits = modeTasks.filter((task) => normalizeTaskType(task.type) === 'habit');
+    const windowDays = HABIT_LINE_WINDOW_DAYS;
+    let opportunities = 0;
+    let ticks = 0;
+
+    if (habits.length > 0) {
+      const since = new Date();
+      since.setDate(since.getDate() - (windowDays - 1));
+      const sinceKey = toDateKey(since);
+
+      for (const habit of habits) {
+        opportunities += windowDays;
+        ticks += (habit.completedDates || []).filter((key) => key >= sinceKey).length;
+      }
+    }
+
+    const followThrough30d =
+      opportunities > 0 ? Math.round((ticks / opportunities) * 100) : null;
+
     return {
       total,
       completed,
@@ -786,6 +816,7 @@ const TaskManager = () => {
       completedTodayCount,
       highestStreak,
       averageEstimatedDurationMinutes,
+      followThrough30d,
     };
   }, [modeTasks]);
 
@@ -902,10 +933,22 @@ const TaskManager = () => {
     <div className="min-h-full bg-background p-4 sm:p-6 md:p-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <div className={`bg-gradient-to-r ${theme.glow} px-4 py-3 text-white sm:px-5`}>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/80">Task + Habit Workspace</p>
-            <h1 className="mt-1 text-xl font-semibold sm:text-2xl">{theme.title}</h1>
-            <p className="mt-1 text-sm text-white/85">{theme.subtitle}</p>
+          {/* This was a full-width gradient reading "Task + Habit Workspace"
+              over "Habit Mode" over "Build repeatable routines with visible
+              streak momentum" — three lines naming the screen you are already
+              looking at, above the data. The strap line now reports where the
+              user actually stands, and the band is a third of the height. */}
+          <div className={`bg-gradient-to-r ${theme.glow} px-4 py-2.5 text-white sm:px-5`}>
+            <h1 className="text-lg font-semibold sm:text-xl">{theme.title}</h1>
+            <p className="mt-0.5 text-sm text-white/85">
+              {isTaskMode
+                ? modeStats.dueSoon > 0
+                  ? `${modeStats.dueSoon} due in the next three days.`
+                  : theme.subtitle
+                : modeStats.followThrough30d === null
+                  ? theme.subtitle
+                  : `${modeStats.completedTodayCount} of ${modeStats.total} done today · ${modeStats.followThrough30d}% follow-through this month.`}
+            </p>
           </div>
 
           <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
@@ -956,10 +999,24 @@ const TaskManager = () => {
             <p className="text-xs uppercase tracking-wide text-slate-500">Visible {isTaskMode ? 'Tasks' : 'Habits'}</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900">{modeStats.total}</p>
           </div>
-          <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Completed</p>
-            <p className="mt-1 text-2xl font-semibold text-emerald-700">{modeStats.completed}</p>
-          </div>
+          {isTaskMode ? (
+            <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Completed</p>
+              <p className="mt-1 text-2xl font-semibold text-emerald-700">{modeStats.completed}</p>
+            </div>
+          ) : (
+            <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Follow-Through</p>
+              <p
+                className={`mt-1 text-2xl font-semibold ${
+                  (modeStats.followThrough30d ?? 0) >= 50 ? 'text-emerald-700' : 'text-amber-700'
+                }`}
+              >
+                {modeStats.followThrough30d === null ? '—' : `${modeStats.followThrough30d}%`}
+              </p>
+              <p className="text-xs text-slate-500">last 30 days</p>
+            </div>
+          )}
           {isTaskMode ? (
             <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
               <p className="text-xs uppercase tracking-wide text-slate-500">Due In 3 Days</p>
