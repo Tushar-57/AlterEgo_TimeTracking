@@ -172,7 +172,7 @@ public class AuthController {
 				return unverifiedEmailResponse(verificationCode);
 			}
 
-			String jwt = jwtUtils.generateToken(user.getEmail(), user.getTokenVersion());
+			String jwt = jwtUtils.generateToken(user, user.getTokenVersion());
 			addAuthCookie(response, jwt, isSecureRequest(request));
 
 			return ResponseEntity.ok(Map.of(

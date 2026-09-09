@@ -47,12 +47,39 @@ public class JwtUtils {
         return generateToken(username, 0L);
     }
 
+    /**
+     * Login token that also says which user row it belongs to.
+     *
+     * Agentic partitions every piece of stored knowledge by the identity it
+     * reads out of the token, preferring the "uid" claim and falling back to
+     * the subject. The subject here is an email address, so a login token and
+     * a bridge token for the same person resolved to two different namespaces
+     * — one holding all the data, one empty. Anything AlterEgo sent across
+     * with a plain login token therefore read back as "no data yet".
+     *
+     * Carrying the id makes both tokens agree.
+     */
+    public String generateToken(Users user, long tokenVersion) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(TOKEN_VERSION_CLAIM, tokenVersion);
+        if (user.getId() != null) {
+            claims.put("uid", user.getId().toString());
+        }
+        claims.put("email", user.getEmail());
+
+        return buildToken(claims, user.getEmail());
+    }
+
     public String generateToken(String username, long tokenVersion) {
         Map<String, Object> claims = new HashMap<>();
         claims.put(TOKEN_VERSION_CLAIM, tokenVersion);
+        return buildToken(claims, username);
+    }
+
+    private String buildToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                    .setClaims(claims)
-                   .setSubject(username)
+                   .setSubject(subject)
                    .setIssuedAt(new Date())
                    .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000L))
                    .signWith(getSigningKey(), SignatureAlgorithm.HS512)
