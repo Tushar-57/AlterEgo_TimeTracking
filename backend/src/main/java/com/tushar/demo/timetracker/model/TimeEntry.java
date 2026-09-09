@@ -1,5 +1,7 @@
 package com.tushar.demo.timetracker.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
@@ -75,6 +77,11 @@ public class TimeEntry {
     @Transient
     private String aiDetail;
 
+    // Never serialized: the client has no use for the owning user, and
+    // sending it dragged the entire Users row — password hash included — into
+    // every API response. It is also the last lazy field on this entity, so
+    // ignoring it removes the "no Session" failure as well.
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private Users user;

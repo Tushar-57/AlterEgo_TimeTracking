@@ -1,5 +1,8 @@
 package com.tushar.demo.timetracker.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
@@ -16,6 +19,7 @@ public class Users {
     private String name;
     @Column(unique = true)
     private String email;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     
     @Column(name = "email_verified")
@@ -26,6 +30,7 @@ public class Users {
     private Long tokenVersion = 0L;
 
     @Column(name = "password_reset_code_hash")
+    @JsonIgnore
     private String passwordResetCodeHash;
 
     @Column(name = "password_reset_code_expires_at")
@@ -35,6 +40,7 @@ public class Users {
     private int passwordResetAttempts = 0;
 
     @Column(name = "email_verification_code_hash")
+    @JsonIgnore
     private String emailVerificationCodeHash;
 
     @Column(name = "email_verification_code_expires_at")

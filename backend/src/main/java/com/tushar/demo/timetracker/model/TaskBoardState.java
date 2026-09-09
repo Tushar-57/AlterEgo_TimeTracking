@@ -1,5 +1,7 @@
 package com.tushar.demo.timetracker.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -22,6 +24,9 @@ public class TaskBoardState {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // See TimeEntry.user — the owning user is not the client's business, and
+    // it is lazy, so serializing it fails outright now that open-in-view is off.
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private Users user;
