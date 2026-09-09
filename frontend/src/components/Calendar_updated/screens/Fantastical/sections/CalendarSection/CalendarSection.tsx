@@ -597,15 +597,39 @@ export const CalendarSection = ({
       return;
     }
 
-    const scrollContainer = timelineScrollRef.current;
-    if (!scrollContainer) {
+    // This targeted the timeline element directly, and that element is not
+    // always the one that scrolls — when an ancestor is unbounded the page
+    // scrolls instead, the call is a no-op, and the day view opens at midnight
+    // on six empty rows. Find whatever actually scrolls and move that.
+    const findScroller = (element: HTMLElement | null): HTMLElement | null => {
+      let node: HTMLElement | null = element;
+      while (node) {
+        if (node.scrollHeight > node.clientHeight + 40) {
+          return node;
+        }
+        node = node.parentElement;
+      }
+      return (document.scrollingElement as HTMLElement) ?? null;
+    };
+
+    const scrollContainer = findScroller(timelineScrollRef.current);
+    const timeline = timelineScrollRef.current;
+    if (!scrollContainer || !timeline) {
       return;
     }
 
     const nowDate = new Date();
     const focusPosition =
       nowDate.getHours() * HOUR_ROW_HEIGHT + (nowDate.getMinutes() / 60) * HOUR_ROW_HEIGHT;
-    const targetTop = Math.max(0, focusPosition - scrollContainer.clientHeight * 0.35);
+
+    // When the page is the scroller, the timeline starts partway down it.
+    const offset =
+      scrollContainer === timeline
+        ? 0
+        : timeline.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top
+          + scrollContainer.scrollTop;
+
+    const targetTop = Math.max(0, offset + focusPosition - scrollContainer.clientHeight * 0.35);
 
     scrollContainer.scrollTo({
       top: targetTop,

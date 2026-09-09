@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { CalendarSection } from "./Calendar_updated/screens/Fantastical/sections/CalendarSection/CalendarSection";
 import { CalendarEvent } from "./Calendar_updated/types";
 import { parseDateTimeAsLocal } from "../utils/utils";
+import { TodayBand } from "./Dashboard/TodayBand";
 
 interface TimerEntryResponse {
   id: number;
@@ -499,7 +500,11 @@ export const Dashboard = () => {
   );
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col">
+    <div className="flex h-full min-h-0 w-full flex-col gap-4 p-4">
+      {/* The calendar is a record of what happened. This says what it means,
+          and it goes first — the grid opens at midnight, so on most days the
+          first thing the app showed you was six empty hours. */}
+      <TodayBand />
       <CalendarSection
         events={calendarEvents}
         refreshEvents={fetchData}
