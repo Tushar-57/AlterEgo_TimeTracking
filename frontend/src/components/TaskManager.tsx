@@ -125,13 +125,13 @@ const statusStyles: Record<TaskStatus, string> = {
 const modeThemes: Record<TaskType, { cardBorder: string; title: string; subtitle: string; glow: string }> = {
   todo: {
     cardBorder: 'border-cyan-200',
-    title: 'Task Mode',
+    title: 'Tasks',
     subtitle: 'Capture outcomes, due dates, and clear execution blocks.',
     glow: 'from-cyan-600 via-sky-600 to-blue-600',
   },
   habit: {
     cardBorder: 'border-fuchsia-200',
-    title: 'Habit Mode',
+    title: 'Habits',
     subtitle: 'Build repeatable routines with visible streak momentum.',
     glow: 'from-fuchsia-600 via-purple-600 to-violet-600',
   },
@@ -934,7 +934,7 @@ const TaskManager = () => {
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           {/* This was a full-width gradient reading "Task + Habit Workspace"
-              over "Habit Mode" over "Build repeatable routines with visible
+              over "Habits" over "Build repeatable routines with visible
               streak momentum" — three lines naming the screen you are already
               looking at, above the data. The strap line now reports where the
               user actually stands, and the band is a third of the height. */}
@@ -989,7 +989,7 @@ const TaskManager = () => {
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
             >
               <Plus className="h-4 w-4" />
-              {isTaskMode ? 'New Task' : 'New Habit'}
+              {isTaskMode ? 'New task' : 'New habit'}
             </button>
           </div>
         </div>
@@ -1148,7 +1148,7 @@ const TaskManager = () => {
                     <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748B' }} />
                     <RechartsTooltip
                       labelFormatter={(value: string) => formatSeriesTick(value)}
-                      formatter={(value: number | string) => [`${value}`, 'Completed Habits']}
+                      formatter={(value: number | string) => [`${value}`, 'Habits done']}
                       contentStyle={{
                         borderRadius: '10px',
                         border: '1px solid #D1FAE5',

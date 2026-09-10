@@ -127,14 +127,17 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
             <NavItem icon={ListChecks} label="Tasks" to="/tasks" onNavigate={onMobileClose} />
           </NavGroup>
 
-          <NavGroup label="Coach">
-            {/* "AI Coach" pointed at /coach/knowledge, so clicking it landed on
-                the Memory tab rather than the coach. Two different things, and
-                the label named the one you did not get. */}
-            <NavItem icon={Sparkles} label="AI Coach" to="/coach/chat" external onNavigate={onMobileClose} />
-            <NavItem icon={Database} label="Memory" to="/coach/knowledge" external onNavigate={onMobileClose} />
-            <NavItem icon={BarChart2} label="Analytics" to="/coach/analytics" external onNavigate={onMobileClose} />
-            <NavItem icon={BellRing} label="AI Notifications" to="/coach/notifications" external onNavigate={onMobileClose} />
+          {/* These four open the other half of the same product, so they carry
+              the names those screens actually use. They used to be "AI Coach",
+              "Analytics" and "AI Notifications", which named three things that
+              do not exist over there — and "AI Coach" pointed at
+              /coach/knowledge, so clicking it landed on Memory rather than on
+              the chat it named. */}
+          <NavGroup label="Alter Ego">
+            <NavItem icon={Sparkles} label="Talk" to="/coach/chat" external onNavigate={onMobileClose} />
+            <NavItem icon={Database} label="My Memory" to="/coach/knowledge" external onNavigate={onMobileClose} />
+            <NavItem icon={BarChart2} label="Insights" to="/coach/analytics" external onNavigate={onMobileClose} />
+            <NavItem icon={BellRing} label="Alerts" to="/coach/notifications" external onNavigate={onMobileClose} />
           </NavGroup>
 
           <NavGroup label="Manage">

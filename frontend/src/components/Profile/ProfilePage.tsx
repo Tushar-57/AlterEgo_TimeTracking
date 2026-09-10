@@ -460,7 +460,7 @@ const ProfilePage = () => {
       }
 
       const data = await response.json();
-      const normalized = normalizeSnapshot(data, user?.name || 'Your Alter Ego');
+      const normalized = normalizeSnapshot(data, user?.name || 'Your alter ego');
       setSnapshot(normalized);
       setFormState(toFormState(normalized));
     } catch (error) {
@@ -513,7 +513,7 @@ const ProfilePage = () => {
     const mentor: Mentor = {
       archetype: snapshot.mentor.archetype,
       style: formState.mentorStyle,
-      name: snapshot.mentor.name || user?.name || 'Your Alter Ego',
+      name: snapshot.mentor.name || user?.name || 'Your alter ego',
       avatar: snapshot.mentor.avatar || snapshot.coachAvatar || '/avatars/default.svg',
     };
 
@@ -697,8 +697,8 @@ const ProfilePage = () => {
       <div className="mx-auto max-w-6xl space-y-6">
         <PageHeader
           icon={Sparkles}
-          title={user?.name || 'Your Profile'}
-          description="Fine-tune your onboarding context so your coach and planner stay aligned with your current routine."
+          title={user?.name || 'Your profile'}
+          description="Keep this current and everything else stays aligned with it."
         />
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -749,7 +749,7 @@ const ProfilePage = () => {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <LogOut className="h-4 w-4" />
-                {endingAllSessions ? 'Ending Sessions...' : 'Logout All Devices'}
+                {endingAllSessions ? 'Ending Sessions...' : 'Log out everywhere'}
               </button>
               <button
                 type="button"
@@ -758,7 +758,7 @@ const ProfilePage = () => {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCcw className="h-4 w-4" />
-                {redoing ? 'Preparing...' : 'Redo Onboarding'}
+                {redoing ? 'Preparing...' : 'Run setup again'}
               </button>
             </div>
           </div>
@@ -807,7 +807,7 @@ const ProfilePage = () => {
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Work End</span>
+                <span className="font-medium text-slate-700">Work ends</span>
                 <input
                   type="time"
                   value={formState.workEnd}
@@ -880,14 +880,14 @@ const ProfilePage = () => {
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="text-sm font-semibold text-slate-800">Coach Preferences</h3>
+              <h3 className="text-sm font-semibold text-slate-800">How it should treat you</h3>
               <p className="mt-1 text-xs text-slate-600">
-                These settings shape how your coach communicates, challenges, and keeps you accountable.
+                How it talks to you, how hard it pushes, and how it holds you to things.
               </p>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Communication Style</span>
+                  <span className="font-medium text-slate-700">How it talks</span>
                   <input
                     value={formState.coachCommunicationStyle}
                     onChange={(event) =>
@@ -922,7 +922,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Accountability Mode</span>
+                  <span className="font-medium text-slate-700">How hard it pushes</span>
                   <input
                     value={formState.coachAccountabilityMode}
                     onChange={(event) =>
@@ -936,7 +936,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Decision Style</span>
+                  <span className="font-medium text-slate-700">How it helps you decide</span>
                   <input
                     value={formState.coachDecisionStyle}
                     onChange={(event) =>
@@ -1246,7 +1246,7 @@ const ProfilePage = () => {
                 className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Save className="h-4 w-4" />
-                {saving ? 'Saving...' : 'Save Profile Updates'}
+                {saving ? 'Saving...' : 'Save changes'}
               </button>
             </div>
           </form>

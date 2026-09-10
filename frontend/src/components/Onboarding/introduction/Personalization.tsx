@@ -25,28 +25,28 @@ const roleSpecificPriorities: {
   student: [
     {
       id: 'study-reminders',
-      title: 'Study Reminders',
+      title: 'Study reminders',
       description: 'Support for study reminders to enhance your learning journey.',
       color: 'from-blue-400 to-cyan-500',
       icon: <BookOpen className="w-6 h-6" />,
     },
     {
       id: 'assignment-tracking',
-      title: 'Assignment Tracking',
+      title: 'Assignment tracking',
       description: 'Support for assignment tracking to enhance your learning journey.',
       color: 'from-blue-400 to-cyan-500',
       icon: <BookOpen className="w-6 h-6" />,
     },
     {
       id: 'test-preparation',
-      title: 'Test Preparation',
+      title: 'Test prep',
       description: 'Support for test preparation to enhance your learning journey.',
       color: 'from-blue-400 to-cyan-500',
       icon: <BookOpen className="w-6 h-6" />,
     },
     {
       id: 'knowledge-retention',
-      title: 'Knowledge Retention',
+      title: 'Remembering what you learn',
       description: 'Support for knowledge retention to enhance your learning journey.',
       color: 'from-blue-400 to-cyan-500',
       icon: <BookOpen className="w-6 h-6" />,
@@ -55,14 +55,14 @@ const roleSpecificPriorities: {
   professional: [
     {
       id: 'time-management',
-      title: 'Time Management',
+      title: 'Managing your time',
       description: 'Support for time management to enhance your professional journey.',
       color: 'from-violet-400 to-purple-500',
       icon: <Briefcase className="w-6 h-6" />,
     },
     {
       id: 'project-organization',
-      title: 'Project Organization',
+      title: 'Keeping projects straight',
       description: 'Support for project organization to enhance your professional journey.',
       color: 'from-violet-400 to-purple-500',
       icon: <Briefcase className="w-6 h-6" />,
@@ -76,7 +76,7 @@ const roleSpecificPriorities: {
     },
     {
       id: 'skill-development',
-      title: 'Skill Development',
+      title: 'Building skills',
       description: 'Support for skill development to enhance your professional journey.',
       color: 'from-violet-400 to-purple-500',
       icon: <Briefcase className="w-6 h-6" />,
@@ -85,28 +85,28 @@ const roleSpecificPriorities: {
   freelancer: [
     {
       id: 'client-management',
-      title: 'Client Management',
+      title: 'Clients',
       description: 'Support for client management to enhance your freelancing journey.',
       color: 'from-emerald-400 to-teal-500',
       icon: <DollarSign className="w-6 h-6" />,
     },
     {
       id: 'project-scheduling',
-      title: 'Project Scheduling',
+      title: 'Scheduling work',
       description: 'Support for project scheduling to enhance your freelancing journey.',
       color: 'from-emerald-400 to-teal-500',
       icon: <DollarSign className="w-6 h-6" />,
     },
     {
       id: 'income-tracking',
-      title: 'Income Tracking',
+      title: 'Tracking income',
       description: 'Support for income tracking to enhance your freelancing journey.',
       color: 'from-emerald-400 to-teal-500',
       icon: <DollarSign className="w-6 h-6" />,
     },
     {
       id: 'skill-marketing',
-      title: 'Skill Marketing',
+      title: 'Selling your skills',
       description: 'Support for skill marketing to enhance your freelancing journey.',
       color: 'from-emerald-400 to-teal-500',
       icon: <DollarSign className="w-6 h-6" />,
@@ -115,7 +115,7 @@ const roleSpecificPriorities: {
   other: [
     {
       id: 'custom-needs',
-      title: 'Custom Needs',
+      title: 'Something else',
       description: 'Support for custom needs to enhance your growth journey.',
       color: 'from-amber-400 to-orange-500',
       icon: <Star className="w-6 h-6" />,

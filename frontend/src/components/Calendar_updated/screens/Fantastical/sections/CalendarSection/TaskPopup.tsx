@@ -68,7 +68,7 @@
 //         console.log('JWT Token:', token); // Debug token
 //         if (!token) {
 //           toast({
-//             title: 'Authentication Error',
+//             title: 'Signed out',
 //             description: 'Please log in to load data.',
 //             variant: 'destructive',
 //           });
@@ -155,7 +155,7 @@
 //   const handleSave = async () => {
 //     if (!description || !startHour || !startMinute || !endHour || !endMinute) {
 //       toast({
-//         title: 'Validation Error',
+//         title: 'Check this',
 //         description: 'Please fill in all required fields.',
 //         variant: 'destructive',
 //       });
@@ -167,7 +167,7 @@
 //       const token = sessionStorage.getItem('auth_session');
 //       if (!token) {
 //         toast({
-//           title: 'Authentication Error',
+//           title: 'Signed out',
 //           description: 'Please log in to save the task.',
 //           variant: 'destructive',
 //         });
@@ -182,7 +182,7 @@
 
 //       if (endDateTime <= startDateTime) {
 //         toast({
-//           title: 'Validation Error',
+//           title: 'Check this',
 //           description: 'End time must be after start time.',
 //           variant: 'destructive',
 //         });
@@ -245,7 +245,7 @@
 //       }
 
 //       toast({
-//         title: 'Task Saved',
+//         title: 'Saved',
 //         description: 'Your task has been saved successfully.',
 //       });
 //       await onSave();
@@ -285,7 +285,7 @@
 //           className="bg-white dark:bg-gray-900 rounded-xl p-6 w-[700px] shadow-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-gray-800 dark:to-gray-900"
 //         >
 //           <div className="flex justify-between items-center mb-4">
-//             <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Add Task</h3>
+//             <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Add</h3>
 //             <Button
 //               variant="ghost"
 //               size="icon"
@@ -708,7 +708,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
       try {
         if (!token) {
           toast({
-            title: 'Authentication Error',
+            title: 'Signed out',
             description: 'Please log in to load data.',
             variant: 'destructive',
             className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
@@ -845,7 +845,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
   const handleSave = async () => {
     if (!description || !entryDate || !startTime || !endTime) {
       toast({
-        title: 'Validation Error',
+        title: 'Check this',
         description: 'Please fill in all required fields.',
         variant: 'destructive',
         className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
@@ -857,7 +857,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
       setLoading(true);
       if (!token) {
         toast({
-          title: 'Authentication Error',
+          title: 'Signed out',
           description: 'Please log in to save the task.',
           variant: 'destructive',
           className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
@@ -881,7 +881,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
         || !Number.isFinite(endMinutes)
       ) {
         toast({
-          title: 'Validation Error',
+          title: 'Check this',
           description: 'Please pick a valid date and time range.',
           variant: 'destructive',
           className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
@@ -895,7 +895,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
 
       if (endDate <= startDate) {
         toast({
-          title: 'Validation Error',
+          title: 'Check this',
           description: 'End time must be after start time.',
           variant: 'destructive',
           className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
@@ -965,7 +965,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
       }
 
       toast({
-        title: initialEntry ? 'Task Updated' : 'Task Saved',
+        title: initialEntry ? 'Updated' : 'Saved',
         description: initialEntry
           ? 'Your task has been updated successfully.'
           : 'Your task has been saved successfully.',
@@ -998,7 +998,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     } catch (error) {
       console.error('Error deleting task:', error);
       toast({
-        title: 'Delete Failed',
+        title: 'Couldn’t delete',
         description: 'Unable to delete this task right now.',
         variant: 'destructive',
         className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
@@ -1020,7 +1020,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     } catch (error) {
       console.error('Error continuing task as timer:', error);
       toast({
-        title: 'Continue Failed',
+        title: 'Couldn’t continue',
         description: 'Unable to continue this entry right now.',
         variant: 'destructive',
         className: 'bg-[#F7F7F7] text-[#2D3748] dark:bg-[#2D3748] dark:text-[#E6E6FA] border-[#D8BFD8]/50',
@@ -1050,7 +1050,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
         >
           <div className="sticky top-0 z-10 mb-4 flex items-center justify-between border-b border-[#D8BFD8]/40 bg-[#FCFBFF]/95 pb-3 pt-1 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
             <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-              {initialEntry ? 'Edit Task' : 'Add Task'}
+              {initialEntry ? 'Edit' : 'Add'}
             </h3>
             <Button
               variant="ghost"
@@ -1091,7 +1091,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
             <div>
               
               <label htmlFor="startTime" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                Start Time
+                Starts
               </label>
               <Input
                 id="startTime"
@@ -1302,7 +1302,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
                 className="w-full rounded-xl border-rose-200 px-4 py-2 text-rose-700 hover:bg-rose-50 dark:border-rose-700 dark:text-rose-200 dark:hover:bg-rose-900/30 sm:mr-auto sm:w-auto"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                {isDeleting ? 'Deleting...' : 'Delete Entry'}
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </Button>
             )}
             {initialEntry && onContinue && (
@@ -1313,7 +1313,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
                 className="w-full rounded-xl border-emerald-200 px-4 py-2 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-200 dark:hover:bg-emerald-900/30 sm:w-auto"
               >
                 <Clock className="mr-2 h-4 w-4" />
-                {isContinuing ? 'Continuing...' : 'Continue As Timer'}
+                {isContinuing ? 'Continuing...' : 'Continue as a timer'}
               </Button>
             )}
             <Button
@@ -1333,7 +1333,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
                 disabled={loading}
                 className="w-full rounded-xl bg-gradient-to-r from-[#D8BFD8] to-[#B0C4DE] px-5 py-2 text-slate-900 shadow-sm transition-all duration-200 hover:from-[#CFAEE4] hover:to-[#9DB7D8] hover:shadow-md dark:from-slate-700 dark:to-slate-600 dark:text-slate-100 sm:w-auto"
               >
-                {loading ? 'Saving...' : initialEntry ? 'Save Changes' : 'Save'}
+                {loading ? 'Saving...' : initialEntry ? 'Save' : 'Save'}
               </Button>
             </motion.div>
           </div>

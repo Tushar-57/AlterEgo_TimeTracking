@@ -102,16 +102,16 @@ const DAILY_MARKER_CONFIG: Record<
  }
 > = {
  wake_up: {
- buttonLabel: 'Log Wake Up',
- description: 'Daily Wake Up',
+ buttonLabel: 'Log wake-up',
+ description: 'Wake-up',
  category: 'daily_wake_up',
  contextNotes: 'One-tap wake-up checkpoint from TimeTracker quick actions.',
  recordedTitle: 'Wake-Up Recorded',
  updatedTitle: 'Wake-Up Updated',
  },
  sign_off: {
- buttonLabel: 'Log Sign Off',
- description: 'Daily Sign Off',
+ buttonLabel: 'Log sign-off',
+ description: 'Sign-off',
  category: 'daily_sign_off',
  contextNotes: 'One-tap sign-off checkpoint from TimeTracker quick actions.',
  recordedTitle: 'Sign-Off Recorded',
@@ -286,14 +286,14 @@ export default function TimeTracker() {
  }
 
  toast({
- title: 'Preferences Loaded',
+ title: 'Settings loaded',
  description: 'User preferences loaded successfully.',
  className: 'bg-muted text-foreground border-border',
  });
  } catch (error) {
  console.error('Error parsing saved preferences:', error);
  toast({
- title: 'Preferences Error',
+ title: 'Couldn’t load settings',
  description: 'Failed to load saved preferences.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -326,7 +326,7 @@ export default function TimeTracker() {
  } catch (error) {
  console.error('Error saving preferences:', error);
  toast({
- title: 'Preferences Error',
+ title: 'Couldn’t load settings',
  description: 'Failed to save preferences.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -420,7 +420,7 @@ export default function TimeTracker() {
           const errorMessage = `Couldn't load ${errors.length === 1 ? errors[0] : `${errors.slice(0, -1).join(', ')} and ${errors[errors.length - 1]}`}.`;
  setFetchError(errorMessage);
  toast({
- title: 'Data Loading Error',
+ title: 'Couldn’t load your data',
  description: errorMessage,
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -430,7 +430,7 @@ export default function TimeTracker() {
  const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
  setFetchError(errorMessage);
  toast({
- title: 'Data Loading Error',
+ title: 'Couldn’t load your data',
  description: errorMessage,
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
