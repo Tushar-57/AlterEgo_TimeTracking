@@ -15,7 +15,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
     { message: 'Building your personal growth space...', progress: 25 },
     { message: 'Customizing your experience...', progress: 50 },
     { message: 'Preparing your coaching environment...', progress: 75 },
-    { message: 'Ready to begin your journey...', progress: 100 },
+    { message: 'Ready when you are...', progress: 100 },
   ];
 
   useEffect(() => {

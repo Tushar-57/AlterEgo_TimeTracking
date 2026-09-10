@@ -167,7 +167,7 @@ export default function EmailVerificationPage() {
         <div className="mt-6 text-center text-sm text-gray-600">
           Already verified?{' '}
           <Link to="/login" className="font-medium text-[#4A154B] hover:text-[#3D1D38]">
-            Go back to login
+            Back to login
           </Link>
         </div>
       </div>

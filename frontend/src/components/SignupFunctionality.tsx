@@ -143,11 +143,14 @@ export default function SignupClassic() {
           <div className="relative z-10 flex flex-col h-full">
             <div className="flex-grow flex flex-col justify-center">
               <img src={skeletonImg} alt="Skeleton at laptop" className="w-96 mx-auto mb-12" />
-              <h1 className="text-4xl font-bold text-auth-ink mb-4">Ready to transform your life?</h1>
+              <h1 className="text-4xl font-bold text-auth-ink mb-4 leading-tight">
+                There is a version of you<br />
+                who does the things.
+              </h1>
               <p className="text-lg text-auth-ink mb-8">
-                Join thousands who are already managing their time better with AI
+                Track your time, money and habits. See the gap. Close it.
               </p>
-              <p className="text-lg font-handwriting text-auth-ink">Be Human, Ask AI.</p>
+              <p className="text-lg font-handwriting text-auth-ink">Become them.</p>
             </div>
           </div>
         </div>
@@ -168,8 +171,8 @@ export default function SignupClassic() {
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-semibold text-auth-ink-strong">Create your Account</h2>
-              <p className="text-auth-ink/80 mt-2 text-sm">Start your journey to better time management</p>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-auth-ink-strong">Create your account</h2>
+              <p className="text-auth-ink/80 mt-2 text-sm">Takes a minute.</p>
             </div>
 
             <button
@@ -244,7 +247,7 @@ export default function SignupClassic() {
                   ))}
                 </div>
                 <div className="text-xs text-auth-ink/60 mt-1">
-                  Requirements: 12+ characters, uppercase, lowercase, number, and special character
+                  At least 12 characters, with an uppercase, a lowercase, a number and a symbol
                 </div>
               </div>
 
@@ -292,7 +295,7 @@ export default function SignupClassic() {
 
               {success && (
                 <div className="mt-4 p-3 bg-green-100 text-green-800 rounded">
-                  Signup successful! Redirecting to email verification...
+                  Account created. Check your email to verify it.
                 </div>
               )}
               {error && (

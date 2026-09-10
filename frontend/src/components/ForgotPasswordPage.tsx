@@ -110,7 +110,7 @@ export default function ForgotPasswordPage() {
       <div className="mx-auto w-full max-w-xl overflow-hidden rounded-3xl bg-auth-card p-6 shadow-xl sm:p-8 lg:p-10">
         <h1 className="text-2xl font-semibold text-auth-ink sm:text-3xl">Reset your password</h1>
         <p className="mt-2 text-sm text-auth-ink/80">
-          Use a one-time verification code. No password reset token is exposed in the URL.
+          We will email you a one-time code.
         </p>
 
         {statusMessage && (
@@ -128,7 +128,7 @@ export default function ForgotPasswordPage() {
         {step === 'request' ? (
           <form className="mt-6 space-y-4" onSubmit={requestReset}>
             <div>
-              <label className="block text-sm font-medium text-auth-ink mb-1">Account Email</label>
+              <label className="block text-sm font-medium text-auth-ink mb-1">Email</label>
               <input
                 type="email"
                 value={email}
@@ -219,7 +219,7 @@ export default function ForgotPasswordPage() {
         <div className="mt-6 text-center text-sm text-auth-ink/80">
           Remembered your password?{' '}
           <Link to="/login" className="font-medium text-auth-ink hover:text-auth-ink-strong">
-            Go back to login
+            Back to login
           </Link>
         </div>
       </div>

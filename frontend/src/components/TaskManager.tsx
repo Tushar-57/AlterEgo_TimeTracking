@@ -1006,7 +1006,7 @@ const TaskManager = () => {
             </div>
           ) : (
             <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Follow-Through</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Kept</p>
               <p
                 className={`mt-1 text-2xl font-semibold ${
                   (modeStats.followThrough30d ?? 0) >= 50 ? 'text-emerald-700' : 'text-amber-700'
@@ -1019,23 +1019,23 @@ const TaskManager = () => {
           )}
           {isTaskMode ? (
             <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Due In 3 Days</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Due within 3 days</p>
               <p className="mt-1 text-2xl font-semibold text-amber-700">{modeStats.dueSoon}</p>
             </div>
           ) : (
             <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Completed Today</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Done today</p>
               <p className="mt-1 text-2xl font-semibold text-fuchsia-700">{modeStats.completedTodayCount}</p>
             </div>
           )}
           {isTaskMode ? (
             <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Avg Effort</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Average effort</p>
               <p className="mt-1 text-2xl font-semibold text-cyan-700">{formatDuration(modeStats.averageEstimatedDurationMinutes)}</p>
             </div>
           ) : (
             <div className={`rounded-xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Top Streak</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Best streak</p>
               <p className="mt-1 text-2xl font-semibold text-violet-700">{modeStats.highestStreak}</p>
             </div>
           )}
@@ -1046,22 +1046,22 @@ const TaskManager = () => {
             <div className={`rounded-2xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Habit Contribution Grid</p>
-                  <h2 className="mt-1 text-lg font-semibold text-slate-900">Streak Momentum</h2>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Every day, at a glance</p>
+                  <h2 className="mt-1 text-lg font-semibold text-slate-900">Your streaks</h2>
                   <p className="mt-1 text-sm text-slate-500">{habitTrendSnapshot.contributionRangeLabel}</p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-right">
                   <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-1.5">
-                    <p className="text-[10px] uppercase tracking-wide text-emerald-700">Current Run</p>
+                    <p className="text-[10px] uppercase tracking-wide text-emerald-700">Right now</p>
                     <p className="text-sm font-semibold text-emerald-800">{habitTrendSnapshot.currentRun}d</p>
                   </div>
                   <div className="rounded-lg border border-violet-100 bg-violet-50 px-2.5 py-1.5">
-                    <p className="text-[10px] uppercase tracking-wide text-violet-700">Longest Run</p>
+                    <p className="text-[10px] uppercase tracking-wide text-violet-700">Best ever</p>
                     <p className="text-sm font-semibold text-violet-800">{habitTrendSnapshot.longestRun}d</p>
                   </div>
                   <div className="rounded-lg border border-sky-100 bg-sky-50 px-2.5 py-1.5">
-                    <p className="text-[10px] uppercase tracking-wide text-sky-700">Active Days</p>
+                    <p className="text-[10px] uppercase tracking-wide text-sky-700">Days active</p>
                     <p className="text-sm font-semibold text-sky-800">{habitTrendSnapshot.activeDays}</p>
                   </div>
                 </div>
@@ -1132,8 +1132,8 @@ const TaskManager = () => {
             </div>
 
             <div className={`rounded-2xl border ${theme.cardBorder} bg-white p-4 shadow-sm`}>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Completion Trend</p>
-              <h2 className="mt-1 text-lg font-semibold text-slate-900">Daily Follow-Through</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">How it is trending</p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-900">Kept per day</h2>
               <p className="mt-1 text-sm text-slate-500">Last {HABIT_LINE_WINDOW_DAYS} days of completed habits</p>
 
               <div className="mt-3 h-56 w-full">
@@ -1169,7 +1169,7 @@ const TaskManager = () => {
               </div>
 
               <p className="mt-3 text-xs text-slate-500">
-                Repetition compounds. If yesterday is active, today gets easier to start.
+                Streaks make themselves. A day you showed up makes the next one easier.
               </p>
             </div>
           </div>
@@ -1308,7 +1308,7 @@ const TaskManager = () => {
                           }`}
                         >
                           <Check className="h-4 w-4" />
-                          {completedToday ? 'Completed Today' : 'Check Today'}
+                          {completedToday ? 'Done today' : 'Check Today'}
                         </button>
                       ) : (
                         <button

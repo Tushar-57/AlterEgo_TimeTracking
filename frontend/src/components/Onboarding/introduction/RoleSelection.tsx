@@ -53,7 +53,7 @@ const RoleSelection: React.FC<RoleSelectionProps> = ({ onSelect }) => {
             What best describes your current focus?
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            This will help us tailor your experience and provide the most relevant guidance for your journey.
+            It decides which suggestions you get everywhere else.
           </p>
         </motion.div>
 

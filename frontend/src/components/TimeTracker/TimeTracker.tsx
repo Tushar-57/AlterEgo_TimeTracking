@@ -873,7 +873,7 @@ export default function TimeTracker() {
  setDescriptionError(true);
  toast({
  title: 'Missing Description',
- description: 'Please enter a task description before starting the timer',
+ description: 'Say what you are working on first before starting the timer',
  variant: 'destructive',
  action: (
  <Button
@@ -881,7 +881,7 @@ export default function TimeTracker() {
  onClick={() => document.getElementById('task-description-input')?.focus()}
  className="bg-primary text-white hover:bg-primary/80"
  >
- Add Description
+ What are you working on?
  </Button>
  ),
  className: 'bg-muted text-foreground border-border',
@@ -1766,7 +1766,7 @@ export default function TimeTracker() {
  <div className="flex items-start gap-2">
  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
  <div className="text-sm text-surface-foreground">
- <p className="font-medium">Some data didn&apos;t load</p>
+ <p className="font-medium">Some of your data didn&apos;t load</p>
  <p className="text-muted-foreground">{fetchError}</p>
  </div>
  </div>
@@ -1791,7 +1791,7 @@ export default function TimeTracker() {
  <div className="flex items-start gap-3">
  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
  <div className="space-y-1 text-sm">
- <p className="font-semibold">Agentic sync is degraded</p>
+ <p className="font-semibold">Sync is having trouble</p>
  <p>
  Background sync is delayed. You can keep working locally, then use the refresh/sync action once Agentic is back.
  </p>
@@ -1812,7 +1812,7 @@ export default function TimeTracker() {
  >
  <div className="flex items-start justify-between gap-3">
  <div className="space-y-1 text-sm">
- <p className="font-semibold">Agentic sync needs attention</p>
+ <p className="font-semibold">Sync needs attention</p>
  <p>
  Queue is idle, but {agenticSyncStatus?.failed || 0} earlier sync event(s) failed and need retry.
  </p>
@@ -1855,7 +1855,7 @@ export default function TimeTracker() {
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.3 }}
  >
- Please enter a task description
+ Say what you are working on first
  </motion.p>
  )}
  </div>
@@ -2023,17 +2023,17 @@ export default function TimeTracker() {
  }}
  >
  <DialogHeader>
- <DialogTitle className="text-foreground font-serif">Set Custom Duration</DialogTitle>
+ <DialogTitle className="text-foreground font-serif">Set a duration</DialogTitle>
  <DialogDescription className="text-muted-foreground">
- Quick mode keeps it compact. Enable advanced mode for hour + minute control.
+ Advanced mode adds separate hour and minute controls.
  </DialogDescription>
  </DialogHeader>
 
  <div className="space-y-4 py-2">
  <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-3 py-2">
  <div>
- <p className="text-sm font-semibold text-foreground">Advanced Input</p>
- <p className="text-xs text-muted-foreground">Toggle extra controls only when needed</p>
+ <p className="text-sm font-semibold text-foreground">Advanced</p>
+ <p className="text-xs text-muted-foreground">Extra controls, only when you need them</p>
  </div>
  <Switch
  checked={showAdvancedCustomCountdown}
@@ -2086,7 +2086,7 @@ export default function TimeTracker() {
  </div>
  <div>
  <label htmlFor="custom-minutes-advanced" className="mb-1 block text-xs font-semibold text-muted-foreground">
- Minute Remainder
+ Minutes
  </label>
  <Input
  id="custom-minutes-advanced"
