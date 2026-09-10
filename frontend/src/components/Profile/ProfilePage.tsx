@@ -952,14 +952,14 @@ const ProfilePage = () => {
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="text-sm font-semibold text-slate-800">Domain Preferences</h3>
+              <h3 className="text-sm font-semibold text-slate-800">What matters to you</h3>
               <p className="mt-1 text-xs text-slate-600">
                 Tune productivity, health, finance, and journal preferences so Agentic suggestions stay personalized.
               </p>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Focus Style</span>
+                  <span className="font-medium text-slate-700">How you focus</span>
                   <input
                     value={formState.productivityFocusStyle}
                     onChange={(event) =>
@@ -993,7 +993,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Planning Cadence</span>
+                  <span className="font-medium text-slate-700">How often you plan</span>
                   <input
                     value={formState.productivityPlanningCadence}
                     onChange={(event) =>
@@ -1007,7 +1007,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Priority System</span>
+                  <span className="font-medium text-slate-700">How you prioritize</span>
                   <input
                     value={formState.productivityPrioritySystem}
                     onChange={(event) =>
@@ -1062,7 +1062,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Stress Approach</span>
+                  <span className="font-medium text-slate-700">When things get heavy</span>
                   <input
                     value={formState.healthStressApproach}
                     onChange={(event) =>
@@ -1076,7 +1076,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Nutrition Style</span>
+                  <span className="font-medium text-slate-700">How you eat</span>
                   <input
                     value={formState.healthNutritionStyle}
                     onChange={(event) =>

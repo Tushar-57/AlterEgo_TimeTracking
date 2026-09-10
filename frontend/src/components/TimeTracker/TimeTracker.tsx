@@ -466,7 +466,7 @@ export default function TimeTracker() {
  if (resp.status === 401) {
  logout();
  toast({
- title: 'Session Expired',
+ title: 'Signed out',
  description: 'Please log in again.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -577,14 +577,14 @@ export default function TimeTracker() {
  }
 
  toast({
- title: 'Agentic Sync Retry Started',
+ title: 'Retrying sync',
  description: 'Failed Agentic sync events were queued for retry.',
  className: 'bg-muted text-foreground border-border',
  });
  } catch (error) {
  const message = error instanceof Error ? error.message : 'Failed to retry Agentic sync events.';
  toast({
- title: 'Retry Failed',
+ title: 'Retry didn’t work',
  description: message,
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -635,7 +635,7 @@ export default function TimeTracker() {
 
  if (showResetToast) {
  toast({
- title: 'Timer Reset',
+ title: 'Timer reset',
  description: resetDescription,
  className: 'bg-muted text-foreground border-border',
  });
@@ -743,7 +743,7 @@ export default function TimeTracker() {
  const handleTimerModeChange = (mode: TimerMode) => {
  if (timerState.status !== 'stopped') {
  toast({
- title: 'Cannot Change Mode',
+ title: 'Can’t switch while running',
  description: 'Please stop or reset the timer before switching modes.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -794,7 +794,7 @@ export default function TimeTracker() {
  pomodoroTime: breakDuration * 60,
  }));
  toast({
- title: 'Pomodoro Break',
+ title: 'Break time',
  description: `Time for a ${isLongBreak ? 'long' : 'short'} break (${formatMinutesAsHoursMinutes(breakDuration)})`,
  className: 'bg-muted text-foreground border-border',
  });
@@ -818,7 +818,7 @@ export default function TimeTracker() {
  status: 'paused',
  }));
  toast({
- title: 'Pomodoro Work',
+ title: 'Back to work',
  description: `Ready for work session ${pomodoroState.currentSession + 1}`,
  className: 'bg-muted text-foreground border-border',
  });
@@ -1130,7 +1130,7 @@ export default function TimeTracker() {
  clearTimerStateLocally();
  if (options?.triggeredByReset) {
  toast({
- title: 'Timer Reset',
+ title: 'Timer reset',
  description: `Stopped and saved"${currentTask.description}" before reset.`,
  className: 'bg-muted text-foreground border-border',
  });
@@ -1827,7 +1827,7 @@ export default function TimeTracker() {
  disabled={agenticRetryInProgress}
  className="shrink-0 rounded-xl border-yellow-500/40 bg-yellow-100/80 text-yellow-900 hover:bg-yellow-200 dark:border-yellow-600/40 dark:bg-yellow-900/40 dark:text-yellow-100"
  >
- {agenticRetryInProgress ? 'Retrying...' : 'Retry Failed Sync'}
+ {agenticRetryInProgress ? 'Retrying...' : 'Retry didn’t work Sync'}
  </Button>
  </div>
  </motion.div>
