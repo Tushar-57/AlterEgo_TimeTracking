@@ -452,8 +452,9 @@
 //     </AnimatePresence>
 //   );
 // }
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useBodyScrollLock } from '../../../../../../hooks/useBodyScrollLock';
+import { useUnsavedChangesGuard } from '../../../../../../hooks/useUnsavedChangesGuard';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import {
@@ -516,6 +517,84 @@ const formatDateInput = (date: Date) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
+const formatTimeInput = (date: Date) =>
+  `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+/** Every field the user can edit, gathered so the popup can tell clean from dirty. */
+interface TaskFormValues {
+  description: string;
+  entryDate: string;
+  startTime: string;
+  endTime: string;
+  projectId: string | null;
+  selectedTagIds: string[];
+  billable: boolean;
+  linkedGoal: string | null;
+  focusScore: string;
+  energyScore: string;
+  contextNotes: string;
+  blockers: string;
+  aiDetail: string;
+}
+
+const EMPTY_FORM: TaskFormValues = {
+  description: '',
+  entryDate: '',
+  startTime: '',
+  endTime: '',
+  projectId: null,
+  selectedTagIds: [],
+  billable: false,
+  linkedGoal: null,
+  focusScore: '',
+  energyScore: '',
+  contextNotes: '',
+  blockers: '',
+  aiDetail: '',
+};
+
+// Tag order only records which chip was clicked first, so it is normalised away:
+// removing a tag and putting it back is not an unsaved edit.
+const serializeForm = (values: TaskFormValues) =>
+  JSON.stringify({ ...values, selectedTagIds: [...values.selectedTagIds].sort() });
+
+const buildCreateForm = (baseDate?: Date): TaskFormValues => {
+  const start = baseDate ? new Date(baseDate) : roundToNextMinute(new Date());
+  const end = new Date(start);
+  end.setHours(end.getHours() + 1);
+
+  return {
+    ...EMPTY_FORM,
+    entryDate: formatDateInput(start),
+    startTime: formatTimeInput(start),
+    endTime: formatTimeInput(end),
+  };
+};
+
+const buildEditForm = (entry: CalendarEvent): TaskFormValues => {
+  const start = new Date(entry.startTime);
+  const fallbackDurationSeconds = Number.isFinite(entry.durationSeconds)
+    ? (entry.durationSeconds as number)
+    : Math.max(900, Math.round((Number.parseFloat(entry.height) / 60) * 3600));
+  const end = new Date(start.getTime() + fallbackDurationSeconds * 1000);
+
+  return {
+    description: entry.title ?? '',
+    entryDate: formatDateInput(start),
+    startTime: formatTimeInput(start),
+    endTime: formatTimeInput(end),
+    projectId: entry.projectId !== null && entry.projectId !== undefined ? entry.projectId.toString() : null,
+    selectedTagIds: (entry.tagIds ?? []).map((id) => id.toString()),
+    billable: entry.billable ?? false,
+    linkedGoal: entry.linkedGoal ?? null,
+    focusScore: entry.focusScore !== null && entry.focusScore !== undefined ? String(entry.focusScore) : '',
+    energyScore: entry.energyScore !== null && entry.energyScore !== undefined ? String(entry.energyScore) : '',
+    contextNotes: entry.contextNotes ?? '',
+    blockers: entry.blockers ?? '',
+    aiDetail: entry.aiDetail ?? '',
+  };
+};
+
 export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onSave, onDelete, onContinue }: TaskPopupProps) {
   const [description, setDescription] = useState('');
   const [entryDate, setEntryDate] = useState('');
@@ -539,63 +618,71 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
   const [isDeleting, setIsDeleting] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
   const [showAdvancedFields, setShowAdvancedFields] = useState(false);
+  /** Serialized values the popup opened with — the yardstick for "unsaved edits". */
+  const [pristineForm, setPristineForm] = useState('');
   const { toast } = useToast();
   const { token } = useAuth();
   const popupRef = useRef<HTMLDivElement>(null);
 
-  const formatTimeInput = (date: Date) =>
-    `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-
-  const resetForm = () => {
-    setDescription('');
-    setEntryDate('');
-    setStartTime('');
-    setEndTime('');
-    setProjectId(null);
-    setSelectedTagIds([]);
-    setBillable(false);
-    setLinkedGoal(null);
-    setFocusScore('');
-    setEnergyScore('');
-    setContextNotes('');
-    setBlockers('');
-    setAiDetail('');
+  const applyForm = (values: TaskFormValues) => {
+    setDescription(values.description);
+    setEntryDate(values.entryDate);
+    setStartTime(values.startTime);
+    setEndTime(values.endTime);
+    setProjectId(values.projectId);
+    setSelectedTagIds(values.selectedTagIds);
+    setBillable(values.billable);
+    setLinkedGoal(values.linkedGoal);
+    setFocusScore(values.focusScore);
+    setEnergyScore(values.energyScore);
+    setContextNotes(values.contextNotes);
+    setBlockers(values.blockers);
+    setAiDetail(values.aiDetail);
+    setPristineForm(serializeForm(values));
   };
 
-  const initializeCreateForm = (baseDate?: Date) => {
-    resetForm();
+  const currentForm = useMemo<TaskFormValues>(
+    () => ({
+      description,
+      entryDate,
+      startTime,
+      endTime,
+      projectId,
+      selectedTagIds,
+      billable,
+      linkedGoal,
+      focusScore,
+      energyScore,
+      contextNotes,
+      blockers,
+      aiDetail,
+    }),
+    [
+      description,
+      entryDate,
+      startTime,
+      endTime,
+      projectId,
+      selectedTagIds,
+      billable,
+      linkedGoal,
+      focusScore,
+      energyScore,
+      contextNotes,
+      blockers,
+      aiDetail,
+    ]
+  );
 
-    const start = baseDate ? new Date(baseDate) : roundToNextMinute(new Date());
-    const end = new Date(start);
-    end.setHours(end.getHours() + 1);
-    setEntryDate(formatDateInput(start));
-    setStartTime(formatTimeInput(start));
-    setEndTime(formatTimeInput(end));
-  };
+  // Compared against the opening values, so typing an edit and undoing it
+  // leaves the popup clean and freely dismissable.
+  const hasUnsavedChanges = pristineForm !== '' && serializeForm(currentForm) !== pristineForm;
 
-  const initializeEditForm = (entry: CalendarEvent) => {
-    resetForm();
-
-    const start = new Date(entry.startTime);
-    const fallbackDurationSeconds = Number.isFinite(entry.durationSeconds)
-      ? (entry.durationSeconds as number)
-      : Math.max(900, Math.round((Number.parseFloat(entry.height) / 60) * 3600));
-    const end = new Date(start.getTime() + fallbackDurationSeconds * 1000);
-
-    setDescription(entry.title ?? '');
-    setEntryDate(formatDateInput(start));
-    setStartTime(formatTimeInput(start));
-    setEndTime(formatTimeInput(end));
-    setProjectId(entry.projectId !== null && entry.projectId !== undefined ? entry.projectId.toString() : null);
-    setSelectedTagIds((entry.tagIds ?? []).map((id) => id.toString()));
-    setBillable(entry.billable ?? false);
-    setLinkedGoal(entry.linkedGoal ?? null);
-    setFocusScore(entry.focusScore !== null && entry.focusScore !== undefined ? String(entry.focusScore) : '');
-    setEnergyScore(entry.energyScore !== null && entry.energyScore !== undefined ? String(entry.energyScore) : '');
-    setBlockers(entry.blockers ?? '');
-    setContextNotes(entry.contextNotes ?? '');
-    setAiDetail(entry.aiDetail ?? '');
-  };
+  const { isDiscardPromptOpen, requestClose, discardAndClose, keepEditing } = useUnsavedChangesGuard({
+    isOpen,
+    isDirty: hasUnsavedChanges,
+    onClose,
+  });
 
   const toggleTagSelection = (tagValue: string) => {
     setSelectedTagIds((previous) =>
@@ -612,13 +699,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     }
 
     setShowAdvancedFields(Boolean(initialEntry));
-
-    if (initialEntry) {
-      initializeEditForm(initialEntry);
-      return;
-    }
-
-    initializeCreateForm(defaultStartTime);
+    applyForm(initialEntry ? buildEditForm(initialEntry) : buildCreateForm(defaultStartTime));
   }, [isOpen, defaultStartTime, initialEntry]);
 
   // Fetch projects and tags
@@ -715,22 +796,36 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
     }
   }, [entryDate, startTime, endTime]);
 
-  // Handle outside click, ignoring dropdowns
+  // Handle outside click, ignoring dropdowns. Both dismissals go through the
+  // unsaved-changes guard so a stray click can't wipe out a half-edited entry.
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // The discard prompt is modal within the popup — the only ways past it
+      // are its own two buttons.
+      if (isDiscardPromptOpen) {
+        return;
+      }
+
       if (
         popupRef.current &&
         !popupRef.current.contains(event.target as Node) &&
         !(event.target as HTMLElement).closest('.radix-select-content')
       ) {
-        onClose();
+        requestClose();
       }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
+      if (event.key !== 'Escape') {
+        return;
       }
+
+      if (isDiscardPromptOpen) {
+        keepEditing();
+        return;
+      }
+
+      requestClose();
     };
 
     if (isOpen) {
@@ -742,7 +837,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, isDiscardPromptOpen, keepEditing, requestClose]);
 
   // Safe scroll lock using ref-counted hook
   useBodyScrollLock(isOpen);
@@ -960,7 +1055,8 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
             <Button
               variant="ghost"
               size="icon"
-              onClick={onClose}
+              onClick={requestClose}
+              aria-label="Close"
               className="rounded-full text-slate-600 hover:bg-[#EFE8FF] dark:text-slate-300 dark:hover:bg-slate-700"
             >
               <X className="h-5 w-5" />
@@ -1222,7 +1318,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
             )}
             <Button
               variant="outline"
-              onClick={onClose}
+              onClick={requestClose}
               className="w-full rounded-xl border-[#D8BFD8]/50 px-4 py-2 text-slate-700 hover:bg-[#F3EEFF] dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700 sm:w-auto"
             >
               Cancel
@@ -1242,6 +1338,57 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
             </motion.div>
           </div>
         </motion.div>
+
+        {/* Sits over the card rather than replacing it, so the edits being
+            argued about stay visible behind the question. */}
+        {isDiscardPromptOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="task-popup-discard-title"
+            aria-describedby="task-popup-discard-description"
+            className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-900/55 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="w-full max-w-sm rounded-2xl border border-[#D8BFD8]/45 bg-[#FCFBFF] p-5 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            >
+              <h4 id="task-popup-discard-title" className="text-base font-semibold">
+                Discard changes?
+              </h4>
+              <p
+                id="task-popup-discard-description"
+                className="mt-2 text-sm text-slate-600 dark:text-slate-300"
+              >
+                {initialEntry
+                  ? 'Your edits to this entry haven’t been saved yet. Closing now loses them.'
+                  : 'This task hasn’t been saved yet. Closing now loses what you’ve entered.'}
+              </p>
+              <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  autoFocus
+                  variant="outline"
+                  onClick={keepEditing}
+                  className="w-full rounded-xl border-[#D8BFD8]/50 px-4 py-2 text-slate-700 hover:bg-[#F3EEFF] dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 sm:w-auto"
+                >
+                  Keep Editing
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={discardAndClose}
+                  className="w-full rounded-xl border-rose-200 px-4 py-2 text-rose-700 hover:bg-rose-50 dark:border-rose-700 dark:text-rose-200 dark:hover:bg-rose-900/30 sm:w-auto"
+                >
+                  Discard Changes
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </motion.div>
     </AnimatePresence>
   );

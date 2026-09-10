@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useToast } from '../Calendar_updated/components/hooks/use-toast';
+import { useUnsavedChangesGuard } from '../../hooks/useUnsavedChangesGuard';
 import { useAuth } from '../../context/AuthContext';
 import { fetchWithToken } from '../../utils/auth';
 import { TimerHeader } from './TimerHeader';
@@ -15,7 +16,7 @@ import { Button } from '../Calendar_updated/components/ui/button';
 import { Input } from '../Calendar_updated/components/ui/input';
 import { Switch } from '../Calendar_updated/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '../Calendar_updated/components/ui/dialog';
-import { Timer, AlarmClock, Coffee, Plus, RefreshCw, Sunrise, Moon, AlertTriangle } from 'lucide-react';
+import { Timer, AlarmClock, Coffee, Plus, RefreshCw, Sunrise, Moon, AlertTriangle, History } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CurrentTask, Project, Tag, TimeEntry, UserPreferences, TimerStatus, TimerMode, PomodoroState } from './types';
 import { formatTime, getRandomColor } from './utility';
@@ -33,6 +34,28 @@ const toLocalDateTimeString = (date: Date) => {
 const formatDateTimeLocalInput = (date: Date) => {
  const pad = (value: number) => value.toString().padStart(2, '0');
  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+/** How far back a finished session can still be treated as"where I left off". */
+const RESUME_ANCHOR_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+/** Names a past moment the way the user would say it out loud:"2:32 PM","yesterday 11:10 PM". */
+const formatResumeAnchorLabel = (date: Date) => {
+ const clock = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+ const today = new Date();
+
+ if (date.toDateString() === today.toDateString()) {
+ return clock;
+ }
+
+ const yesterday = new Date(today);
+ yesterday.setDate(today.getDate() - 1);
+
+ if (date.toDateString() === yesterday.toDateString()) {
+ return `yesterday ${clock}`;
+ }
+
+ return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${clock}`;
 };
 
 const toProjectId = (value: CurrentTask['projectId']): number | null => {
@@ -170,7 +193,11 @@ export default function TimeTracker() {
  const [customHours, setCustomHours] = useState<number>(0);
  const [showAdvancedCustomCountdown, setShowAdvancedCustomCountdown] = useState(false);
  const [isCustomCountdownDialogOpen, setIsCustomCountdownDialogOpen] = useState(false);
- const [startFromPreviousTime, setStartFromPreviousTime] = useState(false);
+ // Backdating: start the stopwatch as if it had been running since an earlier
+ // moment, for the sessions people forget to start.
+ const [isBackdatingStart, setIsBackdatingStart] = useState(false);
+ const [showCustomStartPicker, setShowCustomStartPicker] = useState(false);
+ const [backdatePreviewTick, setBackdatePreviewTick] = useState(0);
  const [manualStartDateTime, setManualStartDateTime] = useState<string>(() => formatDateTimeLocalInput(new Date()));
 
  // Data states
@@ -472,7 +499,8 @@ export default function TimeTracker() {
  category: response.data.category || '',
  });
  setManualStartDateTime(formatDateTimeLocalInput(parseDateTimeAsLocal(response.data.startTime)));
- setStartFromPreviousTime(false);
+ setIsBackdatingStart(false);
+ setShowCustomStartPicker(false);
  setTimerMode('stopwatch');
  console.log('Active timer tags:', response.data.tags);
  } else {
@@ -601,7 +629,8 @@ export default function TimeTracker() {
  }
 
  setDescriptionError(false);
- setStartFromPreviousTime(false);
+ setIsBackdatingStart(false);
+ setShowCustomStartPicker(false);
  setManualStartDateTime(formatDateTimeLocalInput(new Date()));
 
  if (showResetToast) {
@@ -896,7 +925,7 @@ export default function TimeTracker() {
  const now = new Date();
  let requestedStartDate = now;
 
- if (timerMode === 'stopwatch' && startFromPreviousTime) {
+ if (timerMode === 'stopwatch' && isBackdatingStart) {
  const candidate = new Date(manualStartDateTime);
 
  if (Number.isNaN(candidate.getTime())) {
@@ -1204,6 +1233,124 @@ export default function TimeTracker() {
  setCustomHours(Math.floor(safeMinutes / 60));
  setCustomMinutes(safeMinutes % 60);
  setTimerState(prev => ({ ...prev, countdownTime: seconds }));
+ };
+
+ // The dialog's inputs are a pending duration until"Apply" commits them, so
+ // anything other than the duration already in force counts as an unsaved edit.
+ const pendingCustomCountdownSeconds = Math.max(1, customHours * 60 + customMinutes) * 60;
+ const hasUnappliedCustomCountdown = pendingCustomCountdownSeconds !== countdownPreset;
+
+ const closeCustomCountdownDialog = useCallback(() => {
+ // Put the inputs back to the duration that is actually in force, so a
+ // dismissed edit doesn't linger as a stale number on the next open.
+ setCustomHours(Math.floor(countdownPreset / 3600));
+ setCustomMinutes(Math.floor((countdownPreset % 3600) / 60));
+ setIsCustomCountdownDialogOpen(false);
+ }, [countdownPreset]);
+
+ const {
+ isDiscardPromptOpen: isCustomCountdownDiscardOpen,
+ requestClose: requestCustomCountdownClose,
+ discardAndClose: discardCustomCountdown,
+ keepEditing: keepEditingCustomCountdown,
+ } = useUnsavedChangesGuard({
+ isOpen: isCustomCountdownDialogOpen,
+ isDirty: hasUnappliedCustomCountdown,
+ onClose: closeCustomCountdownDialog,
+ });
+
+ // The one concrete "previous time" this page knows about: the moment the last
+ // tracked session ended. Anything older than the window would turn a forgotten
+ // start into an invented multi-hour entry, so it isn't offered.
+ const resumeAnchor = useMemo(() => {
+ const now = Date.now();
+ let latestEnd = 0;
+
+ timeEntries.forEach(entry => {
+ if (!entry.endTime) {
+ return;
+ }
+
+ const end = parseDateTimeAsLocal(entry.endTime).getTime();
+ if (!Number.isFinite(end) || end > now || now - end > RESUME_ANCHOR_WINDOW_MS) {
+ return;
+ }
+
+ latestEnd = Math.max(latestEnd, end);
+ });
+
+ return latestEnd > 0 ? new Date(latestEnd) : null;
+ }, [timeEntries]);
+
+ // Whatever start the timer would actually use, named so the control can say it.
+ const backdatedStart = useMemo(() => {
+ if (!isBackdatingStart) {
+ return null;
+ }
+
+ const parsed = new Date(manualStartDateTime);
+ return Number.isNaN(parsed.getTime()) ? null : parsed;
+ }, [isBackdatingStart, manualStartDateTime]);
+
+ const backdatePreview = useMemo(() => {
+ if (!backdatedStart) {
+ return null;
+ }
+
+ // backdatePreviewTick keeps this from going stale while the page sits idle.
+ void backdatePreviewTick;
+ const elapsedSeconds = Math.floor((Date.now() - backdatedStart.getTime()) / 1000);
+
+ if (elapsedSeconds < 0) {
+ return { isValid: false, label: 'That time is in the future — pick an earlier one.' };
+ }
+
+ return {
+ isValid: true,
+ label: `Start will show ${formatSecondsAsHoursMinutes(elapsedSeconds)} already tracked.`,
+ };
+ }, [backdatedStart, backdatePreviewTick]);
+
+ const canOfferResume = timerMode === 'stopwatch' && timerState.status === 'stopped' && Boolean(resumeAnchor);
+
+ // Refresh the elapsed preview, but only while it is actually on screen.
+ useEffect(() => {
+ if (!isBackdatingStart || !canOfferResume) {
+ return;
+ }
+
+ const interval = window.setInterval(() => setBackdatePreviewTick(tick => tick + 1), 30000);
+ return () => window.clearInterval(interval);
+ }, [isBackdatingStart, canOfferResume]);
+
+ // Never leave a backdate armed once its control is off screen — a timer that
+ // silently starts hours in the past is worse than the vague switch it replaced.
+ useEffect(() => {
+ if (!resumeAnchor && (isBackdatingStart || showCustomStartPicker)) {
+ setIsBackdatingStart(false);
+ setShowCustomStartPicker(false);
+ }
+ }, [resumeAnchor, isBackdatingStart, showCustomStartPicker]);
+
+ const toggleBackdatedStart = () => {
+ if (isBackdatingStart) {
+ setIsBackdatingStart(false);
+ setShowCustomStartPicker(false);
+ setManualStartDateTime(formatDateTimeLocalInput(new Date()));
+ return;
+ }
+
+ if (!resumeAnchor) {
+ return;
+ }
+
+ setManualStartDateTime(formatDateTimeLocalInput(resumeAnchor));
+ setIsBackdatingStart(true);
+ };
+
+ const handleCustomStartChange = (value: string) => {
+ setManualStartDateTime(value);
+ setIsBackdatingStart(Boolean(value));
  };
 
  const handleAddTag = async () => {
@@ -1756,45 +1903,6 @@ export default function TimeTracker() {
 
  <TabsContent value="stopwatch" className="mt-4 p-0">
  <div className="flex flex-col items-center gap-6">
- <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-4 shadow-sm">
- <div className="flex flex-wrap items-center justify-between gap-3">
- <div>
- <p className="text-sm font-semibold text-foreground">Start From Previous Time</p>
- <p className="text-xs text-muted-foreground">Backdate stopwatch start to any earlier date/time.</p>
- </div>
- <Switch
- checked={startFromPreviousTime}
- onCheckedChange={setStartFromPreviousTime}
- disabled={timerState.status !== 'stopped'}
- aria-label="Toggle previous-time stopwatch start"
- />
- </div>
-
- {startFromPreviousTime && (
- <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
- <div className="flex-1">
- <label htmlFor="manual-start-datetime" className="text-xs font-semibold text-muted-foreground">
- Start Date & Time
- </label>
- <Input
- id="manual-start-datetime"
- type="datetime-local"
- value={manualStartDateTime}
- onChange={(event) => setManualStartDateTime(event.target.value)}
- className="mt-1 rounded-xl border-border bg-white/95 text-slate-900 shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
- />
- </div>
- <Button
- type="button"
- variant="outline"
- onClick={() => setManualStartDateTime(formatDateTimeLocalInput(new Date()))}
- className="rounded-xl border-border bg-muted text-muted-foreground hover:bg-primary/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
- >
- Use Now
- </Button>
- </div>
- )}
- </div>
  {renderTimer()}
  <TimerControls
  timerState={timerState}
@@ -1802,6 +1910,65 @@ export default function TimeTracker() {
  stopTimer={stopTimer}
  resetTimer={resetTimer}
  />
+
+ {/* Backdating is a rare rescue, not the main action, so it sits below
+ Start as one line — and only once there is a real time to resume from. */}
+ {canOfferResume && resumeAnchor && (
+ <div className="w-full max-w-xl">
+ <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-surface px-3 py-2">
+ <Button
+ type="button"
+ variant={isBackdatingStart ? 'default' : 'ghost'}
+ size="sm"
+ onClick={toggleBackdatedStart}
+ aria-pressed={isBackdatingStart}
+ className="h-8 rounded-lg px-2.5 text-xs font-semibold"
+ >
+ <History className="h-3.5 w-3.5" />
+ {backdatedStart
+ ? `Starting from ${formatResumeAnchorLabel(backdatedStart)}`
+ : `Resume from ${formatResumeAnchorLabel(resumeAnchor)}`}
+ </Button>
+
+ <Button
+ type="button"
+ variant="ghost"
+ size="sm"
+ onClick={() => setShowCustomStartPicker(previous => !previous)}
+ aria-expanded={showCustomStartPicker}
+ aria-controls="manual-start-datetime"
+ className="h-8 rounded-lg px-2.5 text-xs text-muted-foreground"
+ >
+ {showCustomStartPicker ? 'Done' : 'Another time'}
+ </Button>
+ </div>
+
+ {showCustomStartPicker && (
+ <div className="mt-2 rounded-xl border border-border bg-surface px-3 py-2">
+ <label htmlFor="manual-start-datetime" className="text-xs font-semibold text-muted-foreground">
+ Start the stopwatch at
+ </label>
+ <Input
+ id="manual-start-datetime"
+ type="datetime-local"
+ value={manualStartDateTime}
+ max={formatDateTimeLocalInput(new Date())}
+ onChange={(event) => handleCustomStartChange(event.target.value)}
+ className="mt-1 h-9 rounded-lg border-border bg-card text-sm text-foreground shadow-sm"
+ />
+ </div>
+ )}
+
+ {backdatePreview && (
+ <p
+ className={`mt-2 px-1 text-xs ${backdatePreview.isValid ? 'text-muted-foreground' : 'text-destructive'}`}
+ role="status"
+ >
+ {backdatePreview.label}
+ </p>
+ )}
+ </div>
+ )}
  </div>
  </TabsContent>
 
@@ -1823,7 +1990,19 @@ export default function TimeTracker() {
  {formatSecondsAsHoursMinutes(seconds)}
  </Button>
  ))}
- <Dialog open={isCustomCountdownDialogOpen} onOpenChange={setIsCustomCountdownDialogOpen}>
+ <Dialog
+ open={isCustomCountdownDialogOpen}
+ onOpenChange={(open) => {
+ if (open) {
+ setIsCustomCountdownDialogOpen(true);
+ return;
+ }
+
+ // Outside click, Escape and the corner X all land here, so the
+ // guard covers every way out of a half-typed duration.
+ requestCustomCountdownClose();
+ }}
+ >
  <DialogTrigger asChild>
  <Button
  variant="outline"
@@ -1834,7 +2013,15 @@ export default function TimeTracker() {
  Custom
  </Button>
  </DialogTrigger>
- <DialogContent className="max-w-[94vw] sm:max-w-md bg-card border-border rounded-xl">
+ <DialogContent
+ className="max-w-[94vw] sm:max-w-md bg-card border-border rounded-xl"
+ onEscapeKeyDown={(event) => {
+ if (isCustomCountdownDiscardOpen) {
+ event.preventDefault();
+ keepEditingCustomCountdown();
+ }
+ }}
+ >
  <DialogHeader>
  <DialogTitle className="text-foreground font-serif">Set Custom Duration</DialogTitle>
  <DialogDescription className="text-muted-foreground">
@@ -1934,6 +2121,43 @@ export default function TimeTracker() {
  Apply Duration
  </Button>
  </DialogFooter>
+
+ {isCustomCountdownDiscardOpen && (
+ <div
+ role="alertdialog"
+ aria-modal="true"
+ aria-labelledby="custom-countdown-discard-title"
+ className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-card/95 p-5 backdrop-blur-sm"
+ >
+ <div className="w-full max-w-xs text-center">
+ <p id="custom-countdown-discard-title" className="text-sm font-semibold text-foreground">
+ Discard this duration?
+ </p>
+ <p className="mt-1 text-xs text-muted-foreground">
+ {customHours}h {customMinutes}m hasn&apos;t been applied yet.
+ </p>
+ <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
+ <Button
+ autoFocus
+ variant="outline"
+ size="sm"
+ onClick={keepEditingCustomCountdown}
+ className="rounded-xl border-border"
+ >
+ Keep Editing
+ </Button>
+ <Button
+ variant="outline"
+ size="sm"
+ onClick={discardCustomCountdown}
+ className="rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10"
+ >
+ Discard
+ </Button>
+ </div>
+ </div>
+ </div>
+ )}
  </DialogContent>
  </Dialog>
  </div>
