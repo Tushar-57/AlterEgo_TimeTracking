@@ -189,17 +189,20 @@ export default function LoginClassic() {
                 className="w-80 mx-auto transform -rotate-6"
               />
               <div className="space-y-4 pl-12">
+                {/* The hero used to ask two rhetorical questions and then
+                    print "Be Human, 3rd:9:0." — a placeholder that shipped.
+                    See CONTENT.md: say what the product is, in the product's
+                    own idea, without pretending to be the user's alter ego. */}
                 <h1 className="text-4xl font-bold text-auth-ink leading-tight">
-                  Making time to do<br />
-                  things you love ?
+                  There is a version of you<br />
+                  who does the things.
                 </h1>
                 <p className="text-lg text-auth-ink opacity-80">
-                  Still making changes to your schedule<br />
-                  to make time for people you love ?
+                  Alter Ego tracks your time, money and habits,<br />
+                  then shows you the gap — and helps you close it.
                 </p>
-                <br />
                 <p className="text-2xl font-handwriting text-auth-ink mt-8">
-                  Be Human, 3rd:9:0.
+                  Become them.
                 </p>
               </div>
             </div>
@@ -210,8 +213,8 @@ export default function LoginClassic() {
         <div className="flex w-full flex-col justify-center p-6 sm:p-8 lg:w-1/2 lg:p-12">
           <div className="max-w-md mx-auto w-full">
             <div className="text-center mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl font-bold text-auth-ink mb-3">Login to your Account</h2>
-              <p className="text-auth-ink/80">See, how you can live and grow more, Powered with AI</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-auth-ink mb-3">Welcome back</h2>
+              <p className="text-auth-ink/80">Pick up where you left off.</p>
             </div>
 
             <button className="w-full flex items-center justify-center gap-2 border border-auth-ink/25 rounded-lg px-4 py-2.5 mb-6 hover:bg-auth-surface/60 transition-colors">
@@ -294,14 +297,10 @@ export default function LoginClassic() {
             </form>
 
             <div className="mt-8 text-center text-sm">
-              <span className="text-auth-ink/80">Still Planning Life By Yourself ?</span>
-              <div className="mt-1">
-                <span className="text-auth-ink/80 italic">We would love you Onboard you</span>
-                {' → '}
-                <Link to="/signup" className="font-medium text-auth-ink hover:text-auth-ink-strong">
-                  Create an account
-                </Link>
-              </div>
+              <span className="text-auth-ink/80">First time here?</span>{' '}
+              <Link to="/signup" className="font-medium text-auth-ink hover:text-auth-ink-strong">
+                Create an account
+              </Link>
             </div>
           </div>
         </div>
