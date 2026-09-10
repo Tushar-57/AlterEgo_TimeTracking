@@ -32,20 +32,6 @@ function isHtmlMarkup(value: string | undefined): boolean {
   return /<\/?(section|div|ol|ul|p|h\d|article)\b/i.test(trimmed);
 }
 
-/** Conservative HTML sanitiser for trusted backend output.
- *
- * Strips <script>, <style>, <iframe>, on* event handler attributes, and
- * javascript: URLs. The LLM is instructed never to emit these but we
- * defence-in-depth anyway since dangerouslySetInnerHTML bypasses React's
- * normal escaping.
- */
-function sanitizeCheckupHtml(value: string): string {
-  return value
-    .replace(/<\/?(script|style|iframe|object|embed|link|meta)[^>]*>/gi, '')
-    .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
-    .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
-    .replace(/javascript:/gi, '');
-}
 
 type CheckupType = 'morning' | 'evening';
 type CheckupFrequency = 'daily' | 'weekly' | 'biweekly';
@@ -82,10 +68,27 @@ type OnboardingSnapshot = {
   };
 };
 
+/** The check-in as data, from Agentic's /checkups endpoints.
+ *
+ * The coach used to answer with generated HTML, which arrived here and went
+ * through a sanitiser into dangerouslySetInnerHTML. That markup is built from
+ * a prompt containing the user's own project names and task titles, so it was
+ * never trusted input. It is structured now, and rendered as elements. */
+type StructuredCheckup = {
+  kind?: string;
+  headline?: string;
+  commitment?: string;
+  verdict?: string;
+  blocks?: Array<{ start?: string; end?: string; title?: string; why?: string }>;
+  notes?: string[];
+  question?: string;
+};
+
 type CheckupApiPayload = {
   date?: string;
   checkup_type?: CheckupType;
   focus_target?: string;
+  structured?: StructuredCheckup | null;
   coach_message?: string;
   generated_with?: string;
   stats?: Record<string, unknown>;
@@ -1323,16 +1326,79 @@ const CheckupPrompt = () => {
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Checkup saved
               </p>
-              {isHtmlMarkup(successPayload.coach_message) ? (
-                <div
-                  className="checkup-html-render mt-2"
-                  /* eslint-disable-next-line react/no-danger */
-                  dangerouslySetInnerHTML={{
-                    __html: sanitizeCheckupHtml(successPayload.coach_message),
-                  }}
-                />
+              {successPayload.structured ? (
+                <div className="mt-2 space-y-2">
+                  {successPayload.structured.headline ? (
+                    <p className="text-sm font-semibold leading-snug">
+                      {successPayload.structured.headline}
+                    </p>
+                  ) : null}
+
+                  {successPayload.structured.verdict ? (
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {successPayload.structured.verdict === 'kept'
+                        ? 'You did it'
+                        : successPayload.structured.verdict === 'partly'
+                          ? 'Partly'
+                          : successPayload.structured.verdict === 'missed'
+                            ? 'Not today'
+                            : 'Nothing to compare'}
+                    </p>
+                  ) : null}
+
+                  {successPayload.structured.commitment ? (
+                    <p className="rounded-lg bg-muted px-2 py-1.5 text-[11px]">
+                      {successPayload.structured.commitment}
+                    </p>
+                  ) : null}
+
+                  {Array.isArray(successPayload.structured.blocks) &&
+                  successPayload.structured.blocks.length > 0 ? (
+                    <ul className="space-y-1">
+                      {successPayload.structured.blocks.map((block, index) => (
+                        <li key={`${block.title}-${index}`} className="flex gap-2 text-[11px]">
+                          <span className="shrink-0 font-medium text-muted-foreground">
+                            {[block.start, block.end].filter(Boolean).join('-') || '-'}
+                          </span>
+                          <span>
+                            <span className="font-medium">{block.title}</span>
+                            {block.why ? (
+                              <span className="text-muted-foreground"> — {block.why}</span>
+                            ) : null}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+
+                  {Array.isArray(successPayload.structured.notes) &&
+                  successPayload.structured.notes.length > 0 ? (
+                    <ul className="space-y-0.5 text-[11px] text-muted-foreground">
+                      {successPayload.structured.notes.map((note, index) => (
+                        <li key={index}>- {note}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+
+                  {successPayload.structured.question ? (
+                    <p className="border-t border-border pt-2 text-[11px] italic">
+                      {successPayload.structured.question}
+                    </p>
+                  ) : null}
+                </div>
               ) : (
-                <p className="mt-1 whitespace-pre-wrap">{successPayload.coach_message}</p>
+                /* Anything stored before the rewrite. Tags stripped rather than
+                   parsed, so no model-written markup reaches the DOM. */
+                <p className="mt-1 whitespace-pre-wrap">
+                  {isHtmlMarkup(successPayload.coach_message)
+                    ? successPayload.coach_message
+                        .replace(/<[^>]*>/g, ' ')
+                        .replace(/&nbsp;/g, ' ')
+                        .replace(/&amp;/g, '&')
+                        .replace(/[ \t]+/g, ' ')
+                        .trim()
+                    : successPayload.coach_message}
+                </p>
               )}
 
               {Array.isArray(successPayload.wins) && successPayload.wins.length > 0 ? (
