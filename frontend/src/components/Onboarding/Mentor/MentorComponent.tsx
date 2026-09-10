@@ -31,15 +31,15 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
     { type: 'Direct', icon: <Zap className="w-8 h-8" />, description: 'Clear and straightforward guidance', tagline: 'Clarity' },
     { type: 'Friendly', icon: <Users className="w-8 h-8" />, description: 'Warm and approachable support', tagline: 'Warmth' },
     { type: 'Encouraging', icon: <Heart className="w-8 h-8" />, description: 'Boosts your confidence and morale', tagline: 'Confidence' },
-    { type: 'Nurturing', icon: <Sparkles className="w-8 h-8" />, description: 'Caring and empathetic coaching', tagline: 'Empathy' },
+    { type: 'Nurturing', icon: <Sparkles className="w-8 h-8" />, description: 'Warm, and patient with you', tagline: 'Empathy' },
     { type: 'Patient', icon: <Shield className="w-8 h-8" />, description: 'Supportive and unhurried guidance', tagline: 'Patience' },
     { type: 'Challenging', icon: <Target className="w-8 h-8" />, description: 'Pushes you to achieve greatness', tagline: 'Greatness' },
   ];
 
   const subStepTitles: Record<'archetype' | 'style' | 'name' | 'avatar', string> = {
-    archetype: 'Choose Your Coach’s Archetype',
-    style: 'Select Coaching Style',
-    name: 'Name Your Coach',
+    archetype: 'How should it think?',
+    style: 'How should it talk to you?',
+    name: 'Give it a name',
     avatar: 'Pick an Avatar',
   };
 
@@ -128,7 +128,7 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
             transition={{ duration: 0.3, delay: 0.1 }}
             className="text-gray-600 max-w-2xl mx-auto mb-8 text-center"
           >
-            Select the archetype that best suits your coaching needs.
+            Pick the one that sounds like the version of you that gets things done.
           </motion.p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {archetypes.map((arch, index) => (
@@ -198,7 +198,7 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
             transition={{ duration: 0.3, delay: 0.1 }}
             className="text-gray-600 max-w-2xl mx-auto mb-8 text-center"
           >
-            Choose the coaching style that resonates with you.
+            Some people want pushing. Some want patience. Pick yours.
           </motion.p>
           {/* Custom Tone Input Section */}
           <motion.div
@@ -219,7 +219,7 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
               disabled={!customTone.trim()}
               className="mt-3 w-full bg-gradient-to-r from-blue-400 to-cyan-500 text-white px-4 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
             >
-              Use Custom Tone
+              Write your own
             </button>
           </motion.div>
           {/* Style Selection Grid */}
@@ -291,7 +291,7 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
             transition={{ duration: 0.3, delay: 0.1 }}
             className="text-gray-600 max-w-2xl mx-auto mb-6 text-center"
           >
-            Give your coach a name that feels right.
+            Whatever you would call the version of you that follows through.
           </motion.p>
           <div className="text-center mb-4">
             <span className="text-sm text-gray-500">Step {subStepProgress.name} of 4</span>
@@ -302,7 +302,7 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your coach name"
+                placeholder="A name"
                 className="flex-1 p-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-50 text-gray-900 transition-all duration-200"
               />
               <button
@@ -348,7 +348,7 @@ const StepMentor: React.FC<StepMentorProps> = ({ onSelect, onBack }) => {
             transition={{ duration: 0.3, delay: 0.1 }}
             className="text-gray-600 max-w-2xl mx-auto mb-6 text-center"
           >
-            Pick an avatar for your coach.
+            Pick a face for it.
           </motion.p>
           <div className="text-center mb-4">
             <span className="text-sm text-gray-500">Step {subStepProgress.avatar} of 4</span>

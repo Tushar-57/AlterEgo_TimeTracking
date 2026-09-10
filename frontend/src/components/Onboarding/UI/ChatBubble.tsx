@@ -17,7 +17,7 @@ const UserAvatar = () => (
 const BotAvatar = ({ coachAvatar }: { coachAvatar?: string }) => (
   <img
     src={coachAvatar || '/avatars/default.svg'}
-    alt="Coach avatar"
+    alt=""
     className="mr-2 h-8 w-8 shrink-0 rounded-full border border-border object-cover"
     onError={(e) => (e.currentTarget.src = '/avatars/default.svg')}
   />

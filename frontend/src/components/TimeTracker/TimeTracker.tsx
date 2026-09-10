@@ -857,7 +857,7 @@ export default function TimeTracker() {
 
  if (timerMode !== 'stopwatch' && modeTime <= 0) {
  toast({
- title: 'Timer Duration Needed',
+ title: 'Set a duration first',
  description: 'Please set a valid duration before starting.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -872,7 +872,7 @@ export default function TimeTracker() {
  if (!currentTask.description.trim()) {
  setDescriptionError(true);
  toast({
- title: 'Missing Description',
+ title: 'Say what you are working on',
  description: 'Say what you are working on first before starting the timer',
  variant: 'destructive',
  action: (
@@ -901,7 +901,7 @@ export default function TimeTracker() {
  }));
 
  toast({
- title: 'Timer Started',
+ title: 'Started',
  description: `Running ${timerMode} for"${currentTask.description}"`,
  className: 'bg-muted text-foreground border-border',
  });
@@ -911,7 +911,7 @@ export default function TimeTracker() {
  try {
  if (!token) {
  toast({
- title: 'Authentication Error',
+ title: 'Signed out',
  description: 'Please log in to start the timer.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -930,7 +930,7 @@ export default function TimeTracker() {
 
  if (Number.isNaN(candidate.getTime())) {
  toast({
- title: 'Invalid Start Time',
+ title: 'That start time doesn’t work',
  description: 'Please pick a valid start date and time.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -940,7 +940,7 @@ export default function TimeTracker() {
 
  if (candidate.getTime() > now.getTime()) {
  toast({
- title: 'Future Time Not Allowed',
+ title: 'That is in the future',
  description: 'Start date/time must be current or earlier.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -969,7 +969,7 @@ export default function TimeTracker() {
  });
  if (res.status === 401) {
  toast({
- title: 'Authentication Error',
+ title: 'Signed out',
  description: 'Your session has expired. Please log in again.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -983,7 +983,7 @@ export default function TimeTracker() {
 
  if (res.status === 409) {
  toast({
- title: 'Timer Already Running',
+ title: 'A timer is already running',
  description: responseErrorMessage || 'Please stop the current timer before starting a new one.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1013,7 +1013,7 @@ export default function TimeTracker() {
  : prev.stopwatchTime,
  }));
  toast({
- title: 'Timer Started',
+ title: 'Started',
  description: `Tracking"${currentTask.description}"`,
  className: 'bg-muted text-foreground border-border',
  });
@@ -1075,7 +1075,7 @@ export default function TimeTracker() {
  try {
  if (!token) {
  toast({
- title: 'Authentication Error',
+ title: 'Signed out',
  description: 'Please log in to stop the timer.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1108,7 +1108,7 @@ export default function TimeTracker() {
  });
  if (res.status === 401) {
  toast({
- title: 'Authentication Error',
+ title: 'Signed out',
  description: 'Your session has expired. Please log in again.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1358,7 +1358,7 @@ export default function TimeTracker() {
  try {
  if (!token) {
  toast({
- title: 'Authentication Error',
+ title: 'Signed out',
  description: 'Your session has expired. Please log in again.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1379,7 +1379,7 @@ export default function TimeTracker() {
  });
  if (res.status === 401) {
  toast({
- title: 'Authentication Error',
+ title: 'Signed out',
  description: 'Your session has expired. Please log in again.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1442,7 +1442,7 @@ export default function TimeTracker() {
  setDeletingEntryId(entryId);
  if (!token) {
  toast({
- title: 'Authentication Error',
+ title: 'Signed out',
  description: 'Please log in to delete the entry.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1460,7 +1460,7 @@ export default function TimeTracker() {
 
  if (response.status === 401) {
  toast({
- title: 'Authentication Error',
+ title: 'Signed out',
  description: 'Your session has expired. Please log in again.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1505,7 +1505,7 @@ export default function TimeTracker() {
 
  if (!token) {
  toast({
- title: 'Authentication Error',
+ title: 'Signed out',
  description: 'Your session has expired. Please log in again.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1532,7 +1532,7 @@ export default function TimeTracker() {
 
  if (existingEntriesResponse.status === 401) {
  toast({
- title: 'Authentication Error',
+ title: 'Signed out',
  description: 'Your session has expired. Please log in again.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1582,7 +1582,7 @@ export default function TimeTracker() {
 
  if (markerResponse.status === 401) {
  toast({
- title: 'Authentication Error',
+ title: 'Signed out',
  description: 'Your session has expired. Please log in again.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',

@@ -121,7 +121,7 @@ const FullScreenChat: React.FC = () => {
       try {
         if (!token) {
           toast({
-            title: 'Session Expired',
+            title: 'Signed out',
             description: 'Please log in to continue.',
             variant: 'destructive',
           });
@@ -141,7 +141,7 @@ const FullScreenChat: React.FC = () => {
             navigate('/login');
           } else if (response.status === 404) {
             toast({
-              title: 'Onboarding Data Not Found',
+              title: 'No setup found',
               description: 'Please complete onboarding to use the chat.',
               variant: 'destructive',
             });
@@ -256,7 +256,7 @@ const FullScreenChat: React.FC = () => {
     try {
       if (!token) {
         toast({
-          title: 'Session Expired',
+          title: 'Signed out',
           description: 'Please log in to continue.',
           variant: 'destructive',
         });
@@ -354,7 +354,7 @@ const FullScreenChat: React.FC = () => {
     try {
       if (!token) {
         toast({
-          title: 'Session Expired',
+          title: 'Signed out',
           description: 'Please log in to continue.',
           variant: 'destructive',
         });
@@ -417,7 +417,7 @@ const FullScreenChat: React.FC = () => {
             }
           }
           body = {
-            description: details.description || 'Unnamed Task',
+            description: details.description || 'Untitled',
             startTime,
             endTime,
             projectId,
@@ -426,7 +426,7 @@ const FullScreenChat: React.FC = () => {
             positionTop: '',
             positionLeft: ''
           };
-          successMessage = `Time entry "${details.description || 'Unnamed Task'}" created for ${formatActionDuration(details.duration)}${projectId ? ` with project "${details.projectName}" (ID: ${projectId})` : ''}${tagIds.length ? ` and tags "${tagNames.join(', ')}"` : ''}.`;
+          successMessage = `Time entry "${details.description || 'Untitled'}" created for ${formatActionDuration(details.duration)}${projectId ? ` with project "${details.projectName}" (ID: ${projectId})` : ''}${tagIds.length ? ` and tags "${tagNames.join(', ')}"` : ''}.`;
           break;
         }
         case 'confirmProjectCreation': {
@@ -552,7 +552,7 @@ const FullScreenChat: React.FC = () => {
     try {
       if (!token) {
         toast({
-          title: 'Session Expired',
+          title: 'Signed out',
           description: 'Please log in to continue.',
           variant: 'destructive',
         });
@@ -590,7 +590,7 @@ const FullScreenChat: React.FC = () => {
     try {
       if (!token) {
         toast({
-          title: 'Session Expired',
+          title: 'Signed out',
           description: 'Please log in to continue.',
           variant: 'destructive',
         });
@@ -642,8 +642,8 @@ const FullScreenChat: React.FC = () => {
     { type: 'Habit', value: `Track progress on ${goal.title}` }
   ]) || [
     { type: 'Goal', value: 'Get Fall 2025 Internship' },
-    { type: 'Milestone', value: 'Getting Interview' },
-    { type: 'Milestone', value: 'Clearing Interview' },
+    { type: 'Milestone', value: 'Loading' },
+    { type: 'Milestone', value: 'Clearing' },
     { type: 'Habit', value: 'Daily job applications' }
   ];
 
@@ -700,7 +700,7 @@ const FullScreenChat: React.FC = () => {
               exit={{ opacity: 0, y: 12, scale: 0.98 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               role="dialog"
-              aria-label="Coach chat"
+              aria-label="Chat"
               className={panelClass}
             >
               <div className="flex items-center justify-between gap-2 border-b border-border bg-surface px-4 py-3">
@@ -915,7 +915,7 @@ const FullScreenChat: React.FC = () => {
                       }
                     }}
                     rows={2}
-                    placeholder="Message your Coach…  (Enter to send, Shift+Enter for a new line)"
+                    placeholder="Say anything… (Enter to send)"
                     className="max-h-40 min-h-[2.5rem] flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   />
                   <button
@@ -938,7 +938,7 @@ const FullScreenChat: React.FC = () => {
                   transition={{ duration: 0.15 }}
                   className="absolute right-3 top-14 z-[60] w-[min(20rem,calc(100vw-1.5rem))] rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-lg"
                 >
-                  <h3 className="mb-3 text-sm font-semibold text-foreground">Coach settings</h3>
+                  <h3 className="mb-3 text-sm font-semibold text-foreground">Settings</h3>
                   <div className="mb-3 flex border-b border-border">
                     <button
                       type="button"

@@ -1308,7 +1308,7 @@ const TaskManager = () => {
                           }`}
                         >
                           <Check className="h-4 w-4" />
-                          {completedToday ? 'Done today' : 'Check Today'}
+                          {completedToday ? 'Done today' : 'Tick off today'}
                         </button>
                       ) : (
                         <button
@@ -1462,7 +1462,7 @@ const TaskManager = () => {
                     onClick={() => setShowAdvanced((prev) => !prev)}
                     className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
                   >
-                    {showAdvanced ? 'Hide Advanced Fields' : 'Show Advanced Fields'}
+                    {showAdvanced ? 'Hide extra fields' : 'More fields'}
                   </button>
 
                   {showAdvanced && (
