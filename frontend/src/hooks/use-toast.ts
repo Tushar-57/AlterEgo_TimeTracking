@@ -5,7 +5,13 @@ import type { ToastActionElement, ToastProps } from '../components/ui/toast';
 // Allow a small burst; a single slot silently swallowed follow-up toasts.
 const TOAST_LIMIT = 3;
 // ~16 minutes previously, i.e. toasts never went away on their own.
+// How long a toast stays before it takes itself away. Radix runs its own
+// timer too, but pauses it on pointer-enter and when the window loses focus —
+// on a phone a stray touch anywhere near the toast used to leave it up
+// indefinitely, and until it went the strip underneath it swallowed taps.
+// This is the backstop that does not pause.
 const TOAST_REMOVE_DELAY = 5000;
+const TOAST_DISMISS_AFTER = 4000;
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -61,9 +67,24 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout);
 };
 
+const dismissTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+
+const addToDismissQueue = (toastId: string) => {
+  if (dismissTimeouts.has(toastId)) return;
+  const timeout = setTimeout(() => {
+    dismissTimeouts.delete(toastId);
+    dispatch({ type: 'DISMISS_TOAST', toastId });
+  }, TOAST_DISMISS_AFTER);
+  dismissTimeouts.set(toastId, timeout);
+};
+
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case 'ADD_TOAST':
+      // Schedule its own dismissal the moment it appears. Before this the
+      // only path to DISMISS_TOAST was the close button, so a toast nobody
+      // tapped stayed on screen for good.
+      addToDismissQueue(action.toast.id);
       return {
         ...state,
         toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
@@ -102,6 +123,13 @@ const reducer = (state: State, action: Action): State => {
     }
 
     case 'REMOVE_TOAST':
+      if (action.toastId !== undefined) {
+        const pending = dismissTimeouts.get(action.toastId);
+        if (pending) {
+          clearTimeout(pending);
+          dismissTimeouts.delete(action.toastId);
+        }
+      }
       if (action.toastId === undefined) {
         return {
           ...state,

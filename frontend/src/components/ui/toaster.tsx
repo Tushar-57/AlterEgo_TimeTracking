@@ -31,7 +31,13 @@ export function Toaster() {
           <ToastClose />
         </Toast>
       ))}
-      <ToastViewport className="fixed bottom-0 right-0 z-[2147483647] m-0 flex w-[390px] max-w-[100vw] list-none flex-col gap-2 p-6 outline-none" />
+      {/* On a phone this sat across the bottom, over the timer controls and
+          the nav, and nothing could be tapped through it. Toasts now come from
+          the top on small screens, clear of the safe area, and drop back to
+          the bottom-right corner once there is room for them. */}
+      <ToastViewport
+        className="pointer-events-none fixed inset-x-0 top-0 z-[2147483647] m-0 flex w-full list-none flex-col gap-2 p-3 pt-[calc(0.75rem+env(safe-area-inset-top))] outline-none sm:inset-x-auto sm:bottom-0 sm:right-0 sm:top-auto sm:w-[390px] sm:max-w-[100vw] sm:flex-col-reverse sm:p-6 sm:pt-6"
+      />
     </ToastProvider>
   );
 }
