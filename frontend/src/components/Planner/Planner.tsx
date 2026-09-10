@@ -119,7 +119,7 @@ export const PlannerForm: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">Plan Your Work</h1>
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">Plan your work</h1>
       
       {successMessage && (
         <div className="mb-4 p-4 bg-green-50 text-green-700 rounded-lg flex items-center">
@@ -131,10 +131,10 @@ export const PlannerForm: React.FC = () => {
       <form onSubmit={handleSubmit} className="rounded-lg bg-white p-4 shadow-md sm:p-6">
         {/* Vision & Objectives */}
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 pb-2 border-b border-gray-200">Vision &amp; Objectives</h2>
+          <h2 className="text-xl font-semibold mb-4 pb-2 border-b border-gray-200">What you are aiming at</h2>
           
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">Objective Title</label>
+            <label className="block text-gray-700 font-medium mb-2">What is it?</label>
             <input
               name="objectiveTitle"
               value={data.objectiveTitle}
@@ -145,7 +145,7 @@ export const PlannerForm: React.FC = () => {
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">Why It Matters</label>
+            <label className="block text-gray-700 font-medium mb-2">Why it matters</label>
             <textarea
               name="whyItMatters"
               rows={3}
@@ -183,7 +183,7 @@ export const PlannerForm: React.FC = () => {
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">SMART Checks</label>
+            <label className="block text-gray-700 font-medium mb-2">Make it specific</label>
             <div className="flex flex-wrap gap-4">
               {(['S', 'M', 'A', 'R', 'T'] as const).map(letter => {
                 const labels = {
@@ -211,12 +211,12 @@ export const PlannerForm: React.FC = () => {
           </div>
         </section>
 
-        {/* Review Cadence */}
+        {/* How often to review */}
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 pb-2 border-b border-gray-200">Review Cadence</h2>
+          <h2 className="text-xl font-semibold mb-4 pb-2 border-b border-gray-200">How often to review</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-gray-700 font-medium mb-2">Daily Check-in Time</label>
+              <label className="block text-gray-700 font-medium mb-2">When to check in</label>
               <input
                 type="time"
                 name="dailyCheckIn"

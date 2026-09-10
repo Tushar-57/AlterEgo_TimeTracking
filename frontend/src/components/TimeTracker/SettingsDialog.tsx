@@ -48,7 +48,7 @@ export const SettingsDialog = ({
         <DialogHeader>
           <DialogTitle className="text-[#2D3748] dark:text-[#E6E6FA] font-serif text-xl">Settings</DialogTitle>
           <DialogDescription className="text-[#6B7280] dark:text-[#B0C4DE] font-serif">
-            Customize your timer preferences
+            How your timer behaves
           </DialogDescription>
         </DialogHeader>
 
@@ -83,7 +83,7 @@ export const SettingsDialog = ({
             >
               <div>
                 <h3 className="font-serif font-medium text-[#2D3748] dark:text-[#E6E6FA]">Dark Mode</h3>
-                <p className="text-sm text-[#6B7280] dark:text-[#B0C4DE] font-serif">Switch between light and dark themes</p>
+                <p className="text-sm text-[#6B7280] dark:text-[#B0C4DE] font-serif">Light or dark</p>
               </div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Switch
@@ -101,7 +101,7 @@ export const SettingsDialog = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
             >
-              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Countdown Presets (h + m)</h3>
+              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Countdown presets</h3>
               <div className="flex flex-wrap gap-3">
                 {preferences.countdownPresets.map((seconds, index) => (
                   <motion.div
@@ -245,7 +245,7 @@ export const SettingsDialog = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.3 }}
             >
-              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Sessions Until Long Break</h3>
+              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Sessions before a long break</h3>
               <div className="flex items-center gap-4">
                 <Slider
                   min={1}

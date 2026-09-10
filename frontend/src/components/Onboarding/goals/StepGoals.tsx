@@ -127,7 +127,7 @@ export const GoalForm: React.FC<{
 
         <div className="mb-6">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-gray-700">Required Fields</h4>
+            <h4 className="text-sm font-medium text-gray-700">What is needed</h4>
             <span className="text-sm text-gray-500">{completedFields}/2 completed</span>
           </div>
           <div className="mt-2 h-2 bg-gray-200 rounded-full">
@@ -144,7 +144,7 @@ export const GoalForm: React.FC<{
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h4>
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">The basics</h4>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -198,7 +198,7 @@ export const GoalForm: React.FC<{
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Why It Matters
+                  Why it matters
                 </label>
                 <textarea
                   name="whyItMatters"
@@ -238,7 +238,7 @@ export const GoalForm: React.FC<{
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Estimated Effort (hours)
+                    Rough effort (hours)
                   </label>
                   <input
                     type="number"
@@ -269,7 +269,7 @@ export const GoalForm: React.FC<{
           >
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Milestones</h4>
             {goalForm.milestones.length === 0 && (
-              <p className="text-gray-500 text-sm mb-2">No milestones added yet.</p>
+              <p className="text-gray-500 text-sm mb-2">None yet. Useful when a goal is too big to finish in one go.</p>
             )}
             {goalForm.milestones.map((milestone, index) => (
               <div key={index} className="flex items-center gap-2 mb-2">
@@ -301,7 +301,7 @@ export const GoalForm: React.FC<{
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">SMART Criteria</h4>
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">Make it specific</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(goalForm.smartCriteria).map(([key, value]) => (
                 <div key={key} className="space-y-2">

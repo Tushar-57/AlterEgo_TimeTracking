@@ -171,7 +171,7 @@ const SettingsPage = () => {
         </Section>
 
         <Section
-          title="Coach chat"
+          title="Chat"
           description="How the assistant opens when you tap Coach."
           icon={MessageSquare}
         >
@@ -206,7 +206,7 @@ const SettingsPage = () => {
         </Section>
 
         <Section
-          title="Data &amp; sync"
+          title="Data and sync"
           description="Your tracked time and onboarding profile feed the Coach's knowledge base."
           icon={Database}
         >
@@ -228,7 +228,7 @@ const SettingsPage = () => {
             </button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Clearing the cache only affects this browser — nothing is deleted from your account.
+            Only affects this browser. Nothing is deleted from your account.
           </p>
         </Section>
 

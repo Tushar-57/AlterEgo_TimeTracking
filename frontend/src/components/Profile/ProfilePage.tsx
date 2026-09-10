@@ -707,7 +707,7 @@ const ProfilePage = () => {
               <Target className="h-4 w-4" />
             </div>
             <p className="text-2xl font-semibold text-foreground">{snapshot.goals.length}</p>
-            <p className="text-sm text-muted-foreground">Active goals in your onboarding plan</p>
+            <p className="text-sm text-muted-foreground">Goals you are working on</p>
           </article>
 
           <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
@@ -715,7 +715,7 @@ const ProfilePage = () => {
               <Clock3 className="h-4 w-4" />
             </div>
             <p className="text-2xl font-semibold text-foreground">{formState.checkInFrequency}</p>
-            <p className="text-sm text-muted-foreground">Check-in rhythm</p>
+            <p className="text-sm text-muted-foreground">How often you check in</p>
           </article>
 
           <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
@@ -723,7 +723,7 @@ const ProfilePage = () => {
               <UserRound className="h-4 w-4" />
             </div>
             <p className="text-2xl font-semibold text-foreground">{snapshot.mentor.archetype}</p>
-            <p className="text-sm text-muted-foreground">Mentor archetype</p>
+            <p className="text-sm text-muted-foreground">How it thinks</p>
           </article>
 
           <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
@@ -731,15 +731,15 @@ const ProfilePage = () => {
               <Sparkles className="h-4 w-4" />
             </div>
             <p className="truncate text-lg font-semibold text-slate-900">{formState.timezone}</p>
-            <p className="text-sm text-muted-foreground">Current planning timezone</p>
+            <p className="text-sm text-muted-foreground">Your timezone</p>
           </article>
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <div className="mb-6 flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Update Onboarding Details</h2>
-              <p className="text-sm text-muted-foreground">Adjust role, tone, routine windows, and planner sync preferences.</p>
+              <h2 className="text-lg font-semibold text-foreground">Change your setup</h2>
+              <p className="text-sm text-muted-foreground">Your role, how it talks, your hours, and what syncs.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -777,7 +777,7 @@ const ProfilePage = () => {
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Preferred Tone</span>
+                <span className="font-medium text-slate-700">How it should talk</span>
                 <input
                   value={formState.preferredTone}
                   onChange={(event) => setFormState((prev) => prev ? { ...prev, preferredTone: event.target.value } : prev)}
@@ -787,7 +787,7 @@ const ProfilePage = () => {
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Mentor Style</span>
+                <span className="font-medium text-slate-700">How it talks</span>
                 <input
                   value={formState.mentorStyle}
                   onChange={(event) => setFormState((prev) => prev ? { ...prev, mentorStyle: event.target.value } : prev)}
@@ -797,7 +797,7 @@ const ProfilePage = () => {
               </label>
 
               <label className="space-y-1 text-sm">
-                <span className="font-medium text-slate-700">Work Start</span>
+                <span className="font-medium text-slate-700">Work starts</span>
                 <input
                   type="time"
                   value={formState.workStart}

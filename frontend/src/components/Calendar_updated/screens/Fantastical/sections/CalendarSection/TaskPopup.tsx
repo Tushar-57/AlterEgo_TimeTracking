@@ -390,7 +390,7 @@
 //                       </SelectItem>
 //                     ))
 //                   ) : (
-//                     <SelectItem value="0">No projects available</SelectItem>
+//                     <SelectItem value="0">No projects yet</SelectItem>
 //                   )}
 //                 </SelectContent>
 //               </Select>
@@ -414,7 +414,7 @@
 //                       </SelectItem>
 //                     ))
 //                   ) : (
-//                     <SelectItem value="0">No tags available</SelectItem>
+//                     <SelectItem value="0">No tags yet</SelectItem>
 //                   )}
 //                 </SelectContent>
 //               </Select>
@@ -1202,7 +1202,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
                 <div>
                   <p className="flex items-center gap-2 text-sm font-semibold text-[#6B6697] dark:text-slate-200">
                     <Sparkles className="h-4 w-4" />
-                    Advanced AI Context
+                    Extra detail
                   </p>
                   <p className="mt-1 text-xs text-[#6B6697]/80 dark:text-slate-300">
                     {showAdvancedFields
@@ -1236,7 +1236,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Focus (1-10)</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">How focused were you? (1–10)</label>
                   <Input
                     type="number"
                     min={1}

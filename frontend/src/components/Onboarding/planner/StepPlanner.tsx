@@ -208,17 +208,17 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
       className="w-full max-w-4xl mx-auto p-6"
     >
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-3xl font-bold text-gray-900">Set Up Your Planner</h2>
+        <h2 className="text-3xl font-bold text-gray-900">Set up your week</h2>
         <BackButton onClick={onBack} />
       </div>
       <p className="text-gray-600 max-w-2xl mx-auto mb-8">
-        Configure your availability, notifications, and integrations to align with your goals.
+        When you work, when to leave you alone, and what should sync.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-2xl p-6 shadow-sm">
         {plannerData.goals.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Your Goals</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Your goals</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {plannerData.goals.map((goal, index) => (
                 <motion.div
@@ -261,7 +261,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="inline-block h-4 w-4 mr-1" /> Work Hours Start
+                <Clock className="inline-block h-4 w-4 mr-1" /> Work starts
               </label>
               <input
                 type="time"
@@ -278,7 +278,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="inline-block h-4 w-4 mr-1" /> Work Hours End
+                <Clock className="inline-block h-4 w-4 mr-1" /> Work ends
               </label>
               <input
                 type="time"
@@ -297,7 +297,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="inline-block h-4 w-4 mr-1" /> DND Start
+                <Clock className="inline-block h-4 w-4 mr-1" /> Do not disturb from
               </label>
               <input
                 type="time"
@@ -333,7 +333,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative group">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="inline-block h-4 w-4 mr-1" /> Check-In Time
+                <Clock className="inline-block h-4 w-4 mr-1" /> Check in at
               </label>
               <input
                 type="time"
