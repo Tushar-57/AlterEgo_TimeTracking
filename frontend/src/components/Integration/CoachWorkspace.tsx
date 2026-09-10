@@ -1,143 +1,16 @@
 import { ArrowUpRight, CalendarClock, Eye, ExternalLink, LineChart, Sparkles, Wand2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getStoredAuthToken } from '../../utils/auth';
 import { PageHeader } from '../ui/PageHeader';
+// Shared with the chat surface, so there is one allowlist and one handoff.
+import {
+  buildCoachLaunchUrl,
+  normalizePath,
+  requestAgenticBridgeToken,
+  resolveCoachSrc,
+} from '../../lib/coachEmbed';
+import { getStoredAuthToken } from '../../utils/auth';
+import type { CoachTargetView } from '../../lib/coachEmbed';
 
-const BUILTIN_COACH_URL_CANDIDATES = [
-  'https://agenticlyf.vercel.app/coach/',
-  'https://agenticlyf-tushar-sharmas-projects-b09f4a9f.vercel.app/coach/',
-  'https://agenticlyf-git-main-tushar-sharmas-projects-b09f4a9f.vercel.app/coach/',
-];
-
-const BUILTIN_ALLOWED_COACH_HOSTS = BUILTIN_COACH_URL_CANDIDATES.map((url) => {
-  try {
-    return new URL(url).hostname.toLowerCase();
-  } catch {
-    return '';
-  }
-}).filter((host) => host.length > 0);
-
-const ENV_ALLOWED_COACH_HOSTS = ((import.meta.env.VITE_ALLOWED_COACH_HOSTS as string | undefined) || '')
-  .split(',')
-  .map((host) => host.trim().toLowerCase())
-  .filter((host) => host.length > 0);
-
-const ALLOWED_EXTERNAL_COACH_HOSTS = Array.from(
-  new Set([...BUILTIN_ALLOWED_COACH_HOSTS, ...ENV_ALLOWED_COACH_HOSTS]),
-);
-
-const normalizePath = (path: string): string => {
-  const normalized = path.replace(/\/+$/, '');
-  return normalized.length > 0 ? normalized : '/';
-};
-
-const resolveCoachSrc = (): string => {
-  const explicitCoachUrl = (import.meta.env.VITE_AGENTIC_COACH_URL as string | undefined)?.trim();
-  const agenticApiOrigin = (import.meta.env.VITE_AGENTIC_API_ORIGIN as string | undefined)?.trim();
-
-  const toTrustedUrl = (rawUrl: string): string | null => {
-    try {
-      const parsed = new URL(rawUrl, window.location.origin);
-      const sameOrigin = parsed.origin === window.location.origin;
-      const allowlistedExternalHost = ALLOWED_EXTERNAL_COACH_HOSTS.includes(parsed.hostname.toLowerCase());
-
-      if (sameOrigin || allowlistedExternalHost) {
-        return parsed.toString();
-      }
-
-      return null;
-    } catch {
-      return null;
-    }
-  };
-
-  if (explicitCoachUrl) {
-    const trustedExplicitUrl = toTrustedUrl(explicitCoachUrl);
-    if (trustedExplicitUrl) {
-      return trustedExplicitUrl;
-    }
-  }
-
-  if (agenticApiOrigin) {
-    const trustedAgenticOriginUrl = toTrustedUrl(`${agenticApiOrigin.replace(/\/+$/, '')}/coach/`);
-    if (trustedAgenticOriginUrl) {
-      return trustedAgenticOriginUrl;
-    }
-  }
-
-  for (const fallbackUrl of BUILTIN_COACH_URL_CANDIDATES) {
-    const trustedUrl = toTrustedUrl(fallbackUrl);
-    if (trustedUrl) {
-      return trustedUrl;
-    }
-  }
-
-  return '/coach/';
-};
-
-type CoachTargetView = 'chat' | 'knowledge' | 'analytics' | 'notifications';
-
-const buildCoachLaunchUrl = (
-  url: string,
-  embedMode: boolean,
-  bridgeToken?: string | null,
-  targetView: CoachTargetView = 'chat',
-  returnPath = '/coach/launcher'
-): string => {
-  try {
-    const parsed = new URL(url, window.location.origin);
-    parsed.searchParams.set('from', 'alterego');
-    parsed.searchParams.set('view', targetView);
-    parsed.searchParams.set('return_url', `${window.location.origin}${returnPath}`);
-
-    if (bridgeToken) {
-      parsed.searchParams.set('bridge_token', bridgeToken);
-    }
-
-    if (embedMode) {
-      parsed.searchParams.set('embed', '1');
-    }
-
-    return parsed.toString();
-  } catch {
-    return url;
-  }
-};
-
-type BridgeTokenResponse = {
-  token: string;
-  expiresInSeconds: number;
-};
-
-const requestAgenticBridgeToken = async (): Promise<BridgeTokenResponse | null> => {
-  try {
-    const token = getStoredAuthToken();
-    const headers: HeadersInit = token
-      ? { Authorization: `Bearer ${token}` }
-      : {};
-    const response = await fetch('/api/auth/agentic-bridge-token', {
-      method: 'GET',
-      headers,
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const payload = (await response.json()) as Partial<BridgeTokenResponse>;
-    if (!payload.token) {
-      return null;
-    }
-
-    return {
-      token: payload.token,
-      expiresInSeconds: Math.max(30, payload.expiresInSeconds ?? 180),
-    };
-  } catch {
-    return null;
-  }
-};
 
 const AGENTIC_BACKFILL_MARKER = 'alterego-agentic-backfill-ts';
 const AGENTIC_ONBOARDING_SYNC_MARKER = 'alterego-agentic-onboarding-sync-ts';
