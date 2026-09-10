@@ -122,7 +122,7 @@ const roleSpecificPriorities: {
     },
     {
       id: 'personalized-help',
-      title: 'Personalized Help',
+      title: 'Help that fits you',
       description: 'Support for personalized help to enhance your growth journey.',
       color: 'from-amber-400 to-orange-500',
       icon: <Star className="w-6 h-6" />,
@@ -353,7 +353,7 @@ const Personalization: React.FC<PersonalizationProps> = ({ userRole, onSelect, o
               <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full mx-4">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-2xl font-bold text-gray-900">
-                    {priorityForm.isEditing ? 'Edit Priority' : 'Add Priority'}
+                    {priorityForm.isEditing ? 'Edit priority' : 'Add a priority'}
                   </h3>
                   <button
                     onClick={() => setShowPriorityForm(false)}

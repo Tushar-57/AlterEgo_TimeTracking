@@ -1178,16 +1178,16 @@ const TaskManager = () => {
         <div className="mb-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:gap-4">
           <div className="flex items-center gap-2 text-slate-500">
             <ListTodo className="h-4 w-4" />
-            <span className="text-sm font-medium">Filtered View</span>
+            <span className="text-sm font-medium">Filtered</span>
           </div>
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as 'all' | TaskStatus)}
             className="rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2 text-sm"
           >
-            <option value="all">All Statuses</option>
+            <option value="all">All statuses</option>
             <option value="todo">Todo</option>
-            <option value="in-progress">In Progress</option>
+            <option value="in-progress">In progress</option>
             <option value="completed">Completed</option>
           </select>
           <select
@@ -1195,7 +1195,7 @@ const TaskManager = () => {
             onChange={(event) => setPriorityFilter(event.target.value as 'all' | TaskPriority)}
             className="rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2 text-sm"
           >
-            <option value="all">All Priorities</option>
+            <option value="all">All priorities</option>
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
@@ -1332,7 +1332,7 @@ const TaskManager = () => {
                           className="rounded-lg border border-[#DBE6F5] bg-[#F8FBFF] px-3 py-2 text-sm"
                         >
                           <option value="todo">Todo</option>
-                          <option value="in-progress">In Progress</option>
+                          <option value="in-progress">In progress</option>
                           <option value="completed">Completed</option>
                         </select>
                       )}
@@ -1530,7 +1530,7 @@ const TaskManager = () => {
                             className="w-full rounded-lg border border-input bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
                           >
                             <option value="todo">Todo</option>
-                            <option value="in-progress">In Progress</option>
+                            <option value="in-progress">In progress</option>
                             <option value="completed">Completed</option>
                           </select>
                         </label>
@@ -1565,7 +1565,7 @@ const TaskManager = () => {
                     type="submit"
                     className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                   >
-                    {editingTaskId ? 'Save Changes' : 'Save Item'}
+                    {editingTaskId ? 'Save' : 'Save'}
                   </button>
                 </div>
               </form>

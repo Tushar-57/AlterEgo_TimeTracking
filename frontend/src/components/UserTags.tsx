@@ -192,7 +192,7 @@ export const UserTagPage = () => {
                   value={formState.name}
                   onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
                   required
-                  placeholder="Deep Work"
+                  placeholder="Focused work"
                   className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </label>

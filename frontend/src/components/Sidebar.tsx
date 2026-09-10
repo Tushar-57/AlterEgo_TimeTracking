@@ -159,7 +159,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             >
               <LogOut className="h-[18px] w-[18px] shrink-0" />
-              <span className="flex-1 text-left">Log Out</span>
+              <span className="flex-1 text-left">Log out</span>
             </button>
           </div>
         </nav>

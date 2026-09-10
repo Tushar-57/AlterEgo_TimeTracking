@@ -151,7 +151,7 @@ export default function EmailVerificationPage() {
               disabled={loading}
               className="w-full rounded-lg bg-[#4A154B] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#3D1D38] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? 'Verifying...' : 'Verify Email'}
+              {loading ? 'Verifying...' : 'Verify your email'}
             </button>
             <button
               type="button"

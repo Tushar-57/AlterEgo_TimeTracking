@@ -259,9 +259,9 @@ export const TimerPopup = ({
       <div className="flex max-h-[90vh] w-full max-w-[600px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-3 sm:px-6 sm:py-4">
-          <h2 className="text-lg font-semibold text-gray-800">Time Entry</h2>
+          <h2 className="text-lg font-semibold text-gray-800">Time entry</h2>
           <div className="flex space-x-1 sm:space-x-2">
-            <button onClick={() => setManualMode(!manualMode)} title={manualMode ? 'Auto Mode' : 'Manual Mode'} className="p-2 hover:bg-gray-100 rounded">
+            <button onClick={() => setManualMode(!manualMode)} title={manualMode ? 'Automatic' : 'Manual'} className="p-2 hover:bg-gray-100 rounded">
               <Edit2 className="w-5 h-5 text-gray-600" />
             </button>
             <button onClick={() => setChatOpen(!chatOpen)} title="AI Assistant" className="p-2 hover:bg-gray-100 rounded">

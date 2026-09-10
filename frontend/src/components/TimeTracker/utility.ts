@@ -21,19 +21,19 @@ export const formatTime = (seconds: number): string => {
     projects: Project[]
   ) => {
     if (!id || id === 'noproject') {
-      return 'No Project';
+      return 'No project';
     }
 
     const numericId = typeof id === 'string' ? Number.parseInt(id, 10) : id;
     if (!Number.isFinite(numericId)) {
-      return 'No Project';
+      return 'No project';
     }
 
     const project = projects.find((p) => p.id === numericId);
-    return project ? project.name : 'No Project';
+    return project ? project.name : 'No project';
   };
   // const getProjectNameById = (id: string | undefined, projects: Project[]) => {
-  //   if (!id || id === 'noproject') return 'No Project';
+  //   if (!id || id === 'noproject') return 'No project';
   //   const project = projects.find(p => p.id === parseInt(id));
-  //   return project ? project.name : 'No Project';
+  //   return project ? project.name : 'No project';
   // };

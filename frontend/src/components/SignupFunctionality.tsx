@@ -194,7 +194,7 @@ export default function SignupClassic() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-auth-ink mb-1">Full Name</label>
+                <label className="block text-sm font-medium text-auth-ink mb-1">Full name</label>
                 <input
                   type="text"
                   value={name}
@@ -252,7 +252,7 @@ export default function SignupClassic() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-auth-ink mb-1">Confirm Password</label>
+                <label className="block text-sm font-medium text-auth-ink mb-1">Confirm password</label>
                 <input
                   type="password"
                   value={confirmPassword}
@@ -290,7 +290,7 @@ export default function SignupClassic() {
                 disabled={loading || !isFormValid || inCooldown}
                 className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-auth-ink hover:bg-auth-ink-strong focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-auth-ink disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {loading ? 'Creating Account...' : 'Create Account'}
+                {loading ? 'Creating Account...' : 'Create account'}
               </button>
 
               {success && (

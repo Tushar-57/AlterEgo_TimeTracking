@@ -12,7 +12,7 @@ export const KeyboardShortcutsDialog = ({
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="sm:max-w-md bg-[#F7F7F7] dark:bg-[#2D3748] border-[#D8BFD8]/30 rounded-2xl shadow-lg">
       <DialogHeader>
-        <DialogTitle className="text-[#2D3748] dark:text-[#E6E6FA] font-serif text-xl">Keyboard Shortcuts</DialogTitle>
+        <DialogTitle className="text-[#2D3748] dark:text-[#E6E6FA] font-serif text-xl">Keyboard shortcuts</DialogTitle>
         <DialogDescription className="text-[#6B7280] dark:text-[#B0C4DE] font-serif">
           Use these shortcuts to navigate and control the TimeTracker efficiently.
         </DialogDescription>
@@ -22,7 +22,7 @@ export const KeyboardShortcutsDialog = ({
         {[
           { label: 'Start/Pause Timer', key: 'Space' },
           { label: 'Stop and Save Timer', key: 'S' },
-          { label: 'Reset Timer', key: 'R' },
+          { label: 'Reset timer', key: 'R' },
           { label: 'Switch to Stopwatch', key: '1' },
           { label: 'Switch to Countdown', key: '2' },
           { label: 'Switch to Pomodoro', key: '3' },

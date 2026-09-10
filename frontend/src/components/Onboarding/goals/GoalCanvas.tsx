@@ -12,7 +12,7 @@ const GoalCanvas: React.FC<GoalCanvasProps> = ({ goals, onGoalSelect }) => {
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
       <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">
-        Choose Your Primary Goal
+        What matters most right now?
       </h2>
       
       <p className="text-gray-600 text-center mb-12 max-w-2xl mx-auto">

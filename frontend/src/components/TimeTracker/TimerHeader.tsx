@@ -18,7 +18,7 @@ export const TimerHeader = ({
   <PageHeader
     title="Timer"
     icon={TimerIcon}
-    description="Start tracking in one tap. Everything you log feeds your calendar and your Coach."
+    description="Start tracking in one tap. Everything you log feeds your calendar and the other half."
     className="mb-6"
     actions={
       <>

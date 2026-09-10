@@ -156,7 +156,7 @@ export const getRandomName = (): string => {
 };
 export const formatIntroduction = (data: OnboardingData): string => {
   const roleLabel = data.role ? ` for ${data.role.toLowerCase()}` : '';
-  const greeting = 'Hello, I am your AI Coach';
+  const greeting = 'Hello — I am the other you';
   return `${greeting}${roleLabel}`;
 };
 

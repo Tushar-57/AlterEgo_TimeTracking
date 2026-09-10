@@ -388,11 +388,11 @@ const CoachWorkspace = ({
     <div ref={containerRef} className="min-h-screen w-full bg-background p-4 sm:p-6">
       <div className="mx-auto w-full max-w-4xl space-y-6">
         <PageHeader
-          title={`Meet your Coach${viewLabel === 'Coach' ? '' : ` · ${viewLabel}`}`}
+          title={`Alter Ego${viewLabel === 'Coach' ? '' : ` · ${viewLabel}`}`}
           icon={Sparkles}
           description={
             autoLaunch
-              ? `Opening the ${viewLabel} view of your Coach…`
+              ? `Opening ${viewLabel}…`
               : 'The other half of Alter Ego. It reads everything you track and works with you on it. Opens in its own view, and brings you back here when you are done.'
           }
         />

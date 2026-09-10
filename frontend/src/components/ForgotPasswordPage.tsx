@@ -146,7 +146,7 @@ export default function ForgotPasswordPage() {
               disabled={loading}
               className="w-full rounded-lg bg-auth-ink px-4 py-2.5 text-sm font-medium text-white transition hover:bg-auth-ink-strong disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? 'Requesting Code...' : 'Request Reset Code'}
+              {loading ? 'Requesting Code...' : 'Send me a code'}
             </button>
           </form>
         ) : (
@@ -183,7 +183,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-auth-ink mb-1">New Password</label>
+              <label className="block text-sm font-medium text-auth-ink mb-1">New password</label>
               <input
                 type="password"
                 value={newPassword}
@@ -195,7 +195,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-auth-ink mb-1">Confirm New Password</label>
+              <label className="block text-sm font-medium text-auth-ink mb-1">Confirm new password</label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -211,7 +211,7 @@ export default function ForgotPasswordPage() {
               disabled={loading}
               className="w-full rounded-lg bg-auth-ink px-4 py-2.5 text-sm font-medium text-white transition hover:bg-auth-ink-strong disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? 'Updating Password...' : 'Update Password'}
+              {loading ? 'Updating Password...' : 'Update password'}
             </button>
           </form>
         )}

@@ -98,7 +98,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
             <p>Check-In: {availability.checkIn.preferredTime} ({availability.checkIn.frequency})</p>
             <p>Timezone: {availability.timezone}</p>
             <p>Reminders: {remindersEnabled ? 'Enabled' : 'Disabled'}</p>
-            <p>Calendar Sync: {calendarSync ? 'Enabled' : 'Disabled'}</p>
+            <p>Calendar sync: {calendarSync ? 'Enabled' : 'Disabled'}</p>
             <p>Task Management Sync: {taskManagementSync ? 'Enabled' : 'Disabled'}</p>
           </div>
         ),
@@ -248,7 +248,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
               className="h-4 w-4 text-purple-600 rounded focus:ring-purple-300"
             />
             <span className="text-sm">
-              <Bell className="inline-block h-4 w-4 mr-1" /> Enable Reminders
+              <Bell className="inline-block h-4 w-4 mr-1" /> Remind me
             </span>
           </label>
         </div>
@@ -263,7 +263,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
               className="h-4 w-4 text-purple-600 rounded focus:ring-purple-300"
             />
             <span className="text-sm">
-              <Calendar className="inline-block h-4 w-4 mr-1" /> Calendar Sync
+              <Calendar className="inline-block h-4 w-4 mr-1" /> Calendar sync
             </span>
           </label>
           <label className="flex items-center space-x-2">
@@ -273,7 +273,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
               onChange={(e) => setTaskManagementSync(e.target.checked)}
               className="h-4 w-4 text-purple-600 rounded focus:ring-purple-300"
             />
-            <span className="text-sm">Task Management Sync</span>
+            <span className="text-sm">Task sync</span>
           </label>
         </div>
 
@@ -281,7 +281,7 @@ const StepPlanner: React.FC<PlannerSetupProps> = ({
           type="submit"
           className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
         >
-          Complete Setup
+          Finish setup
         </button>
       </form>
     </motion.div>

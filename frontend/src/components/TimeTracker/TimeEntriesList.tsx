@@ -11,7 +11,7 @@ const exportTimeEntries = (timeEntries: TimeEntry[]) => {
   const headers = ['Description', 'Project', 'Date', 'Duration', 'Billable', 'Tags'];
   const rows = timeEntries.map((entry) => [
     `"${entry.description || 'Untitled Task'}"`,
-    entry.project ? entry.project.name : 'No Project',
+    entry.project ? entry.project.name : 'No project',
     new Date(entry.startTime).toLocaleDateString(),
     entry.duration ? `${Math.floor(entry.duration / 3600)}h ${Math.floor((entry.duration % 3600) / 60)}m` : '0m',
     entry.billable ? 'Yes' : 'No',

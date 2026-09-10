@@ -664,7 +664,7 @@ export const CalendarSection = ({
         <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Selected Day</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Selected day</p>
               <p className="text-sm font-semibold text-foreground">
                 {mobileSelectedDate.toLocaleDateString("en-US", {
                   weekday: "long",

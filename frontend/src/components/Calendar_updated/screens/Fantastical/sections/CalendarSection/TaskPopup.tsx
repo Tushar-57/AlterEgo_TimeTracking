@@ -210,7 +210,7 @@
 
 //       if (response.status === 401) {
 //         toast({
-//           title: 'Session Expired',
+//           title: 'Signed out',
 //           description: 'Your session has expired. Please log in again.',
 //           variant: 'destructive',
 //         });
@@ -1103,7 +1103,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
             </div>
             <div>
               <label htmlFor="endTime" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                End Time
+                Ends
               </label>
               <Input
                 id="endTime"
@@ -1216,7 +1216,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
               {showAdvancedFields && (
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Linked Goal</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Linked goal</label>
                   <Select
                     value={linkedGoal || ''}
                     onValueChange={(value) => setLinkedGoal(value === 'none' ? null : value)}
@@ -1270,7 +1270,7 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Context Notes</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Notes</label>
                   <textarea
                     value={contextNotes}
                     onChange={(event) => setContextNotes(event.target.value)}

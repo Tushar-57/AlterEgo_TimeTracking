@@ -2206,7 +2206,7 @@ export default function TimeTracker() {
  <section className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
  <p className="text-sm font-semibold text-foreground">Daily checkpoints</p>
  <p className="mt-0.5 text-xs text-muted-foreground">
- One tap records today&apos;s wake-up or sign-off and syncs it to your Coach.
+ One tap records today&apos;s wake-up or sign-off, and it carries over.
  </p>
  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
  <Button

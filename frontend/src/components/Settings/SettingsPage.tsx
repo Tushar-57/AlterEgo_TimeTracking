@@ -108,7 +108,7 @@ const SettingsPage = () => {
       } else {
         toast({
           title: 'Re-sync started',
-          description: 'Your onboarding profile and recent entries were pushed to your Coach.',
+          description: 'Your setup and recent entries were sent over.',
         });
       }
     } finally {
@@ -134,7 +134,7 @@ const SettingsPage = () => {
         <PageHeader
           title="Settings"
           icon={SettingsIcon}
-          description="Appearance, assistant behaviour, and what gets synced to your Coach."
+          description="How it looks, how it behaves, and what syncs to the other half."
         />
 
         <Section

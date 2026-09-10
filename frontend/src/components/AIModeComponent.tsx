@@ -104,7 +104,7 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
       setVoiceFeedback("Listening...");
       setIsAnimating(true);
       onProcessingStart?.();
-      trackEvent('Voice Command Started');
+      trackEvent('Listening');
       SpeechRecognition.startListening({ continuous: false, language: 'en-US' });
     }
   }, [isAuthenticated, listening, onProcessingStart, trackEvent, resetTranscript]);
@@ -155,7 +155,7 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
   const sendToAI = useCallback(async (text: string) => {
     try {
       setAiStatus('processing');
-      trackEvent('Voice Command Received', { length: text.length });
+      trackEvent('Heard you', { length: text.length });
       onActivityLog?.(`Processing: "${text}"`);
 
       const response = await fetch('/api/ai/parseCommand', {
@@ -314,7 +314,7 @@ const VoiceAIMode: React.FC<VoiceAIModeProps> = ({
               onClick={() => handleProjectConfirmation(true)}
               className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
             >
-              Confirm Create
+              Create it
             </button>
             <button
               onClick={() => handleProjectConfirmation(false)}

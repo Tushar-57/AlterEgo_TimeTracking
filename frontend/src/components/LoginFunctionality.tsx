@@ -265,7 +265,7 @@ export default function LoginClassic() {
                     autoComplete="off"
                     className="h-4 w-4 text-auth-ink focus:ring-auth-ink border-auth-ink/25 rounded"
                   />
-                  <label className="ml-2 block text-sm text-auth-ink">Remember Me</label>
+                  <label className="ml-2 block text-sm text-auth-ink">Remember me</label>
                 </div>
                 <Link to="/forgot-password" className="text-sm font-medium text-auth-ink hover:text-auth-ink-strong">
                   Forgot Password?

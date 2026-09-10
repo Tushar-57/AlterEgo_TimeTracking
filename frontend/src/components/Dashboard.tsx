@@ -126,7 +126,7 @@ export const Dashboard = () => {
     try {
       if (!token) {
         toast({
-          title: "Authentication Error",
+          title: "Signed out",
           description: "Please log in to view entries.",
           variant: "destructive",
         });
@@ -144,7 +144,7 @@ export const Dashboard = () => {
 
       if (res.status === 401) {
         toast({
-          title: "Session Expired",
+          title: "Signed out",
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
@@ -244,7 +244,7 @@ export const Dashboard = () => {
       try {
         if (!token) {
           toast({
-            title: "Authentication Error",
+            title: "Signed out",
             description: "Please log in to save position.",
             variant: "destructive",
           });
@@ -294,7 +294,7 @@ export const Dashboard = () => {
       try {
         if (!token) {
           toast({
-            title: "Authentication Error",
+            title: "Signed out",
             description: "Please log in to save position.",
             variant: "destructive",
           });
@@ -390,7 +390,7 @@ export const Dashboard = () => {
       try {
         if (!token) {
           toast({
-            title: 'Authentication Error',
+            title: 'Signed out',
             description: 'Please log in to delete entries.',
             variant: 'destructive',
           });
@@ -431,7 +431,7 @@ export const Dashboard = () => {
       try {
         if (!token) {
           toast({
-            title: 'Authentication Error',
+            title: 'Signed out',
             description: 'Please log in to continue entries.',
             variant: 'destructive',
           });
@@ -462,7 +462,7 @@ export const Dashboard = () => {
         if (!response.ok || payload?.success === false) {
           if (response.status === 409 || errorCode === 'TIMER_CONFLICT') {
             toast({
-              title: 'Active Timer Already Running',
+              title: 'A timer is already running',
               description: 'Stop the running timer from the Timer page, then continue this entry.',
               variant: 'destructive',
             });
@@ -471,7 +471,7 @@ export const Dashboard = () => {
 
           if (response.status === 401) {
             toast({
-              title: 'Session Expired',
+              title: 'Signed out',
               description: 'Please sign in again to continue this entry.',
               variant: 'destructive',
             });
@@ -482,7 +482,7 @@ export const Dashboard = () => {
         }
 
         toast({
-          title: 'Timer Continued',
+          title: 'Continued',
           description: 'A new running timer has started with the same details.',
         });
 
