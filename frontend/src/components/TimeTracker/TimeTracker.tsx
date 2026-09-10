@@ -994,7 +994,7 @@ export default function TimeTracker() {
  if (!res.ok || !response?.success) {
  const serverMessage = responseErrorMessage || `Failed to start timer (HTTP ${res.status})`;
  toast({
- title: 'Server Error',
+ title: 'Something went wrong',
  description: serverMessage,
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1021,7 +1021,7 @@ export default function TimeTracker() {
  const errorMessage = error instanceof Error ? error.message : 'Could not connect to the server.';
  console.error('Start timer error:', error);
  toast({
- title: 'Timer Start Failed',
+ title: 'Couldn’t start the timer',
  description: errorMessage,
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1064,7 +1064,7 @@ export default function TimeTracker() {
  }
  if (!timerState.activeTimerId) {
  toast({
- title: 'No Active Timer',
+ title: 'No timer running',
  description: 'There is no timer to stop',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1119,7 +1119,7 @@ export default function TimeTracker() {
  const response = await res.json();
  if (!response.success) {
  toast({
- title: 'Server Error',
+ title: 'Something went wrong',
  description: response.message || 'Failed to stop timer.',
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1136,7 +1136,7 @@ export default function TimeTracker() {
  });
  } else {
  toast({
- title: 'Time Entry Saved',
+ title: 'Saved',
  description: `Saved time entry for"${currentTask.description}"`,
  className: 'bg-muted text-foreground border-border',
  });
@@ -1145,7 +1145,7 @@ export default function TimeTracker() {
  } catch (error) {
  console.error('Stop timer error:', error);
  toast({
- title: 'Network Error',
+ title: 'Can’t reach the server',
  description: options?.triggeredByReset
  ? 'Could not stop and save the active timer before reset.'
  : 'Could not connect to the server.',
@@ -1204,14 +1204,14 @@ export default function TimeTracker() {
  } else if (timerState.status === 'running') {
  setTimerState(prev => ({ ...prev, status: 'paused' }));
  toast({
- title: 'Timer Paused',
+ title: 'Paused',
  description: 'Your timer is paused.',
  className: 'bg-muted text-foreground border-border',
  });
  } else {
  setTimerState(prev => ({ ...prev, status: 'running' }));
  toast({
- title: 'Timer Resumed',
+ title: 'Resumed',
  description: 'Your timer is running.',
  className: 'bg-muted text-foreground border-border',
  });

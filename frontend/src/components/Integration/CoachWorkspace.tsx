@@ -363,7 +363,7 @@ const CoachWorkspace = ({
     : targetView === 'notifications'
       ? 'AI Notifications'
     : targetView === 'knowledge'
-      ? 'Knowledge Base'
+      ? 'Memory'
       : 'Coach';
 
   const capabilities = [
@@ -393,7 +393,7 @@ const CoachWorkspace = ({
           description={
             autoLaunch
               ? `Opening the ${viewLabel} view of your Coach…`
-              : 'Your Coach is a deeper workspace than the in-app chat — it plans, watches, and reflects across everything you track. It opens as its own view and brings you back here when you are done.'
+              : 'The other half of Alter Ego. It reads everything you track and works with you on it. Opens in its own view, and brings you back here when you are done.'
           }
         />
 
@@ -418,7 +418,7 @@ const CoachWorkspace = ({
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
               >
                 <ArrowUpRight className="h-4 w-4" />
-                Open Coach
+                Open Alter Ego
               </button>
               <button
                 type="button"
@@ -433,7 +433,7 @@ const CoachWorkspace = ({
             <details className="group rounded-xl border border-border bg-card">
               <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
                 <Eye className="h-3.5 w-3.5" />
-                Advanced — preview the Coach inline
+                Advanced — preview it inline
               </summary>
               <div className="border-t border-border p-4">
                 <button
@@ -445,7 +445,7 @@ const CoachWorkspace = ({
                 </button>
                 {showEmbeddedPreview && coachEmbedSrc && (
                   <div className="mt-3 overflow-hidden rounded-xl border border-border">
-                    <iframe title="AI Coach preview" src={coachEmbedSrc} className="h-[70vh] w-full border-0" />
+                    <iframe title="Preview" src={coachEmbedSrc} className="h-[70vh] w-full border-0" />
                   </div>
                 )}
               </div>

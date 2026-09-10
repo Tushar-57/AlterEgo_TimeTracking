@@ -1090,7 +1090,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Budget Cadence</span>
+                  <span className="font-medium text-slate-700">How often you budget</span>
                   <input
                     value={formState.financeBudgetCadence}
                     onChange={(event) =>
@@ -1104,7 +1104,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Savings Priority</span>
+                  <span className="font-medium text-slate-700">What you are saving for</span>
                   <input
                     value={formState.financeSavingsPriority}
                     onChange={(event) =>
@@ -1118,7 +1118,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Risk Profile</span>
+                  <span className="font-medium text-slate-700">Risk appetite</span>
                   <input
                     value={formState.financeRiskProfile}
                     onChange={(event) =>
@@ -1153,7 +1153,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Reflection Frequency</span>
+                  <span className="font-medium text-slate-700">How often you reflect</span>
                   <input
                     value={formState.journalReflectionFrequency}
                     onChange={(event) =>
@@ -1167,7 +1167,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Reflection Depth</span>
+                  <span className="font-medium text-slate-700">How deep you go</span>
                   <input
                     value={formState.journalReflectionDepth}
                     onChange={(event) =>
@@ -1181,7 +1181,7 @@ const ProfilePage = () => {
                 </label>
 
                 <label className="space-y-1 text-sm">
-                  <span className="font-medium text-slate-700">Gratitude Mode</span>
+                  <span className="font-medium text-slate-700">Gratitude</span>
                   <input
                     value={formState.journalGratitudeMode}
                     onChange={(event) =>
@@ -1238,7 +1238,7 @@ const ProfilePage = () => {
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
               <div className="inline-flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                Updating onboarding details also refreshes your AI coach context.
+                Changing this changes the answers you get.
               </div>
               <button
                 type="submit"

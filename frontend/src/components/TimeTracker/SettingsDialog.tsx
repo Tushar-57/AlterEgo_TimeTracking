@@ -82,7 +82,7 @@ export const SettingsDialog = ({
               transition={{ duration: 0.4 }}
             >
               <div>
-                <h3 className="font-serif font-medium text-[#2D3748] dark:text-[#E6E6FA]">Dark Mode</h3>
+                <h3 className="font-serif font-medium text-[#2D3748] dark:text-[#E6E6FA]">Dark mode</h3>
                 <p className="text-sm text-[#6B7280] dark:text-[#B0C4DE] font-serif">Light or dark</p>
               </div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -167,7 +167,7 @@ export const SettingsDialog = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
             >
-              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Work Session</h3>
+              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Work session</h3>
               <div className="flex items-center gap-4">
                 <Slider
                   min={5}
@@ -193,7 +193,7 @@ export const SettingsDialog = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
             >
-              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Short Break</h3>
+              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Short break</h3>
               <div className="flex items-center gap-4">
                 <Slider
                   min={1}
@@ -219,7 +219,7 @@ export const SettingsDialog = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
             >
-              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Long Break</h3>
+              <h3 className="font-serif font-medium mb-3 text-[#2D3748] dark:text-[#E6E6FA]">Long break</h3>
               <div className="flex items-center gap-4">
                 <Slider
                   min={5}
@@ -276,7 +276,7 @@ export const SettingsDialog = ({
               transition={{ duration: 0.4 }}
             >
               <div>
-                <h3 className="font-serif font-medium text-[#2D3748] dark:text-[#E6E6FA]">Sound Effects</h3>
+                <h3 className="font-serif font-medium text-[#2D3748] dark:text-[#E6E6FA]">Sounds</h3>
                 <p className="text-sm text-[#6B7280] dark:text-[#B0C4DE] font-serif">Play sounds for timer events</p>
               </div>
               <div className="flex items-center gap-3">
@@ -308,7 +308,7 @@ export const SettingsDialog = ({
               transition={{ duration: 0.4, delay: 0.1 }}
             >
               <div>
-                <h3 className="font-serif font-medium text-[#2D3748] dark:text-[#E6E6FA]">Browser Notifications</h3>
+                <h3 className="font-serif font-medium text-[#2D3748] dark:text-[#E6E6FA]">Browser notifications</h3>
                 <p className="text-sm text-[#6B7280] dark:text-[#B0C4DE] font-serif">Enable notifications for timer events</p>
               </div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -339,7 +339,7 @@ export const SettingsDialog = ({
               onClick={() => onOpenChange(false)}
               className="bg-[#D8BFD8] text-white hover:bg-[#D8BFD8]/80 rounded-xl"
             >
-              Save Changes
+              Save
             </Button>
           </motion.div>
         </DialogFooter>
