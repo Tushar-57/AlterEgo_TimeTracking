@@ -1376,14 +1376,14 @@ export function TaskPopup({ isOpen, onClose, defaultStartTime, initialEntry, onS
                   onClick={keepEditing}
                   className="w-full rounded-xl border-[#D8BFD8]/50 px-4 py-2 text-slate-700 hover:bg-[#F3EEFF] dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 sm:w-auto"
                 >
-                  Keep Editing
+                  Keep editing
                 </Button>
                 <Button
                   variant="outline"
                   onClick={discardAndClose}
                   className="w-full rounded-xl border-rose-200 px-4 py-2 text-rose-700 hover:bg-rose-50 dark:border-rose-700 dark:text-rose-200 dark:hover:bg-rose-900/30 sm:w-auto"
                 >
-                  Discard Changes
+                  Discard changes
                 </Button>
               </div>
             </motion.div>

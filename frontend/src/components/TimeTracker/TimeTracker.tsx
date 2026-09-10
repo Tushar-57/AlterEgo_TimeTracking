@@ -1389,7 +1389,7 @@ export default function TimeTracker() {
  }
  if (res.status === 409) {
  toast({
- title: 'Tag Exists',
+ title: 'That tag already exists',
  description: `Tag"${currentTask.newTag}" already exists.`,
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1409,7 +1409,7 @@ export default function TimeTracker() {
  return updatedTags;
  });
  toast({
- title: 'Tag Created',
+ title: 'Tag added',
  description: `Tag"${newTag.name}" created successfully!`,
  className: 'bg-muted text-foreground border-border',
  });
@@ -1476,14 +1476,14 @@ export default function TimeTracker() {
 
  setTimeEntries((previous) => previous.filter((entry) => entry.id !== entryId));
  toast({
- title: 'Entry Deleted',
+ title: 'Deleted',
  description: 'Time entry was removed successfully.',
  className: 'bg-muted text-foreground border-border',
  });
  } catch (error) {
  const errorMessage = error instanceof Error ? error.message : 'Failed to delete time entry.';
  toast({
- title: 'Delete Failed',
+ title: 'Couldn’t delete',
  description: errorMessage,
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1609,7 +1609,7 @@ export default function TimeTracker() {
  } catch (error) {
  const errorMessage = error instanceof Error ? error.message : 'Failed to save daily marker.';
  toast({
- title: 'Daily Marker Failed',
+ title: 'Couldn’t log that',
  description: errorMessage,
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -2118,7 +2118,7 @@ export default function TimeTracker() {
  }}
  className="bg-primary text-white hover:bg-primary/80 font-serif"
  >
- Apply Duration
+ Use this
  </Button>
  </DialogFooter>
 
@@ -2144,7 +2144,7 @@ export default function TimeTracker() {
  onClick={keepEditingCustomCountdown}
  className="rounded-xl border-border"
  >
- Keep Editing
+ Keep editing
  </Button>
  <Button
  variant="outline"

@@ -411,7 +411,7 @@ export const Dashboard = () => {
 
         setCalendarEvents((previous) => previous.filter((entry) => entry.id !== eventId));
         toast({
-          title: 'Entry Deleted',
+          title: 'Deleted',
           description: 'Time entry removed successfully.',
         });
       } catch (error) {

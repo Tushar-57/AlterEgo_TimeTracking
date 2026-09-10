@@ -1009,7 +1009,7 @@ const CheckupPrompt = () => {
   }
 
   const promptType = activePrompt.type;
-  const headline = promptType === 'morning' ? 'Morning Checkup' : 'Evening Checkup';
+  const headline = promptType === 'morning' ? 'Morning check-in' : 'Evening check-in';
   const focusTasks = checkupContext?.focusTasks ?? [];
   const upcomingDeadlines = checkupContext?.upcomingDeadlines ?? [];
   const habits = checkupContext?.habits ?? [];
@@ -1032,7 +1032,7 @@ const CheckupPrompt = () => {
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-foreground">{headline} ready</p>
             <p className="truncate text-xs text-muted-foreground">
-              {promptType === 'morning' ? 'Plan the day with your Coach.' : 'Reflect on how today went.'}
+              {promptType === 'morning' ? 'Plan the day with your alter ego.' : 'Reflect on how today went.'}
             </p>
           </div>
           <button
@@ -1207,7 +1207,7 @@ const CheckupPrompt = () => {
                 <div className="flex items-start justify-between gap-2">
                   <p className="inline-flex items-center gap-1.5 font-semibold">
                     <Flame className="h-3.5 w-3.5" />
-                    Habit Consistency
+                    Sticking with habits
                   </p>
                   <span className="rounded-full bg-card px-2 py-0.5 text-[11px] font-medium">
                     {completedHabits}/{totalHabits} today
@@ -1233,7 +1233,7 @@ const CheckupPrompt = () => {
 
           {ragInsights ? (
             <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground">
-              <p className="font-medium">Knowledge Pulse</p>
+              <p className="font-medium">What it has picked up</p>
               <p className="mt-1">
                 Agent: {ragInsights.mostUsedAgent || 'n/a'} | Category: {ragInsights.topKnowledgeCategory || 'n/a'}
               </p>
