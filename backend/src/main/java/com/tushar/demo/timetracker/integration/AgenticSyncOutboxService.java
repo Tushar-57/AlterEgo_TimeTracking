@@ -695,7 +695,9 @@ public class AgenticSyncOutboxService {
                 case EVENT_TASK_BOARD_SYNC -> dispatchTaskBoardSync(payload, user);
                 case EVENT_TASK_ENTRY_SYNC -> dispatchTaskEntrySync(payload, user);
                 case EVENT_GOAL_PROGRESS_SYNC -> dispatchGoalProgressSync(payload, user);
-                default -> DispatchOutcome.permanentFailure("Unsupported outbox event type: " + eventType);
+                // An event type this build does not know about will not become
+                // known by being retried.
+                default -> DispatchOutcome.deadDiscard("Unsupported outbox event type: " + eventType);
             };
         } catch (Exception e) {
             return DispatchOutcome.retryableFailure("Dispatch exception: " + e.getMessage());
@@ -788,14 +790,19 @@ public class AgenticSyncOutboxService {
         Long sourceEntryId = toLong(payload.get("sourceEntryId"));
         Long continuedEntryId = toLong(payload.get("continuedEntryId"));
         if (sourceEntryId == null || continuedEntryId == null) {
-            return DispatchOutcome.permanentFailure("Continuation payload is missing source or continued entry ids");
+            // A payload with no ids in it will never gain any.
+            return DispatchOutcome.deadDiscard("This was queued without the entries it refers to");
         }
 
         Optional<TimeEntry> sourceOpt = timeEntryRepository.findById(sourceEntryId);
         Optional<TimeEntry> continuedOpt = timeEntryRepository.findById(continuedEntryId);
 
         if (sourceOpt.isEmpty() || continuedOpt.isEmpty()) {
-            return DispatchOutcome.permanentFailure("Continuation entries no longer exist");
+            // Nothing to sync and nothing that retrying can change: the
+            // entries this refers to are gone. Marked FAILED, this sat in the
+            // count for ever and the screen kept offering a Retry that could
+            // not possibly work.
+            return DispatchOutcome.deadDiscard("The entries this refers to no longer exist");
         }
 
         String sourceAction = asText(payload.get("sourceAction"), "outbox_continue_time_entry");

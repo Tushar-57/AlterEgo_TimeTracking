@@ -26,6 +26,7 @@ import ChatToggleButton from './components/AIChat/ChatToggleButton';
 import ThemeToggle from './components/ThemeToggle';
 import { ThemeProvider } from './context/ThemeContext';
 import { getStoredAuthToken } from './utils/auth';
+import { useNudges } from './hooks/useNudges';
 
 const App = () => (
   <Router>
@@ -80,6 +81,14 @@ const ProtectedRoutes = () => {
     () => MOBILE_TABS.find((tab) => location.pathname === tab.to || location.pathname.startsWith(`${tab.to}/`)),
     [location.pathname]
   );
+
+  // The day's three check-ins, from the agentic service. They arrive here as
+  // well as in the coach app so that having this tab open — which is the tab
+  // people actually leave open — is enough to be reached.
+  useNudges({
+    enabled: isAuthenticated && Boolean(user?.onboardingCompleted),
+    onOpen: () => navigate('/coach/chat'),
+  });
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
