@@ -511,6 +511,18 @@ public class OnboardingController {
 
     private boolean syncOnboardingSnapshot(OnboardingEntity onboarding, Users user) {
         try {
+            // Re-read with goals fetched. goals is a lazy @OneToMany and every
+            // caller of this reaches it after the session has closed, so every
+            // snapshot sync failed with "could not initialize proxy - no
+            // Session" and the person's goals never crossed to the other half
+            // of the product. Doing it here covers all five call sites rather
+            // than depending on which of them happens to still be in a
+            // transaction.
+            if (onboarding != null && onboarding.getId() != null) {
+                onboarding = onboardingRepository.findWithGoalsById(onboarding.getId())
+                        .orElse(onboarding);
+            }
+
             OnboardingRequestDTO syncRequest = new OnboardingRequestDTO();
             String preferredTone = firstNonBlank(onboarding.getPreferredTone(), "Friendly");
 

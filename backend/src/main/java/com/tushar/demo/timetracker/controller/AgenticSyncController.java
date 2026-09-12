@@ -167,6 +167,8 @@ public class AgenticSyncController {
         boolean isDegraded = metrics.cooldownRemainingSeconds() > 0 || hasBacklog;
         // hasFailures is true only for FAILED (retryable/actionable) events, never for DEAD.
         payload.put("hasFailures", metrics.failed() > 0);
+        // What actually went wrong, so the screen can say more than a count.
+        payload.put("recentFailures", metrics.recentFailures());
         payload.put("degraded", isDegraded);
 
         return ResponseEntity.ok(ApiResponse.success(payload, "Agentic sync status retrieved"));

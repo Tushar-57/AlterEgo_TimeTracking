@@ -64,6 +64,19 @@ public class AgenticKnowledgeSyncService {
     private final boolean enabled;
     private final String baseUrl;
     private final Duration requestTimeout;
+
+    /**
+     * How long to wait for a sleeping instance to get up. Deliberately much
+     * longer than {@link #requestTimeout}: this is one request, made once, and
+     * giving up on it early is what put working time entries into FAILED.
+     */
+    private static final Duration WAKE_TIMEOUT = Duration.ofSeconds(90);
+
+    /** How long the upstream is assumed to stay awake after answering. */
+    private static final long ASSUME_AWAKE_MILLIS = 5L * 60L * 1000L;
+
+    private final java.util.concurrent.atomic.AtomicLong lastContactEpochMillis =
+            new java.util.concurrent.atomic.AtomicLong(0L);
     private final TimeEntryRepository timeEntryRepository;
     private final TimeEntryDetailRepository timeEntryDetailRepository;
     private final UserRepository userRepository;
@@ -208,6 +221,70 @@ public class AgenticKnowledgeSyncService {
 
     public boolean isConfiguredForSync() {
         return isConfigured();
+    }
+
+    /**
+     * Wake the Agentic service before asking it to do anything.
+     *
+     * Agentic runs on an instance that sleeps when idle, and its cold start
+     * takes forty to sixty seconds — longer than the per-request timeout. So a
+     * time entry saved while it slept did not fail because anything was wrong
+     * with it: the request simply timed out waiting for the server to get up,
+     * twice, and the event landed in FAILED. Production logs showed exactly
+     * that, over and over, each time for a different entry:
+     *
+     *   Agentic time_entry sync request failed: request timed out
+     *   Agentic outbox retry scheduled eventId=12688 attempt=1 nextIn=30s
+     *
+     * Pressing Retry hit a cold instance again and failed the same way, which
+     * is why the failed count never went down.
+     *
+     * One cheap GET, with a timeout long enough to cover the whole cold start,
+     * gets the server up before the real work is sent. Once it has answered,
+     * it stays awake for a while, so this only pays that cost once rather than
+     * per event.
+     *
+     * @return true when the upstream answered and work should proceed.
+     */
+    public boolean ensureUpstreamAwake() {
+        if (!isConfigured()) {
+            return false;
+        }
+
+        long sinceLastContact = System.currentTimeMillis() - lastContactEpochMillis.get();
+        if (sinceLastContact < ASSUME_AWAKE_MILLIS) {
+            return true;
+        }
+
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/api/health"))
+                    .timeout(WAKE_TIMEOUT)
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            boolean awake = response.statusCode() >= 200 && response.statusCode() < 300;
+            if (awake) {
+                markUpstreamContact();
+                logger.info("Agentic upstream is awake — took {}s", sinceLastContact / 1000);
+            } else {
+                logger.warn("Agentic upstream wake-up returned status {}", response.statusCode());
+            }
+            return awake;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        } catch (Exception e) {
+            logger.warn("Agentic upstream did not wake: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /** Remember that the upstream answered, so the next call can skip the wake-up. */
+    void markUpstreamContact() {
+        lastContactEpochMillis.set(System.currentTimeMillis());
     }
 
     public long getUpstreamCooldownRemainingSeconds() {
@@ -1201,6 +1278,9 @@ public class AgenticKnowledgeSyncService {
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                // It answered, whatever it said — so it is awake, and the next
+                // batch can skip the wake-up.
+                markUpstreamContact();
 
                 if (response.statusCode() == 521) {
                     activateUpstreamCooldown(syncType, response.statusCode());

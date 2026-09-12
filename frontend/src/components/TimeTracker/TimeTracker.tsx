@@ -81,6 +81,13 @@ type AgenticSyncStatus = {
  nextAttemptAt?: string | null;
  degraded: boolean;
  hasFailures?: boolean;
+ /** A few of the most recent failures, with the reason each gave. */
+ recentFailures?: Array<{
+ eventType: string;
+ reason: string;
+ lastAttemptAt?: string | null;
+ attempts: number;
+ }>;
 };
 
 type ApiEnvelope<T> = {
@@ -233,6 +240,9 @@ export default function TimeTracker() {
  const [dailyMarkerLoading, setDailyMarkerLoading] = useState<DailyMarkerType | null>(null);
  const [agenticSyncStatus, setAgenticSyncStatus] = useState<AgenticSyncStatus | null>(null);
  const [agenticRetryInProgress, setAgenticRetryInProgress] = useState(false);
+ // Giving up on entries is a two-step action, so this holds the moment
+ // between asking and meaning it.
+ const [agenticConfirmDiscard, setAgenticConfirmDiscard] = useState(false);
 
  // User preferences
  const [preferences, setPreferences] = useState<UserPreferences>(() => {
@@ -557,11 +567,22 @@ export default function TimeTracker() {
  };
  }, [isAuthenticated]);
 
+ /**
+  * Try the stuck entries again, and say what actually happened.
+  *
+  * This used to queue them, say "queued for retry", and stop — so the same
+  * count sat there afterwards and pressing the button appeared to do nothing.
+  * It also could not have worked: the other half runs on an instance that
+  * sleeps, and a retry sent to a sleeping server times out exactly as the
+  * first attempt did. That is fixed on the server, which now wakes it first;
+  * this waits for the result and reports the real numbers.
+  */
  const retryFailedAgenticEvents = async () => {
  if (agenticRetryInProgress) {
  return;
  }
 
+ const before = agenticSyncStatus?.failed || 0;
  setAgenticRetryInProgress(true);
  try {
  await fetchWithToken<ApiEnvelope<{ retried: number }>>('/api/agentic/sync/retry-failed?limit=100', {
@@ -571,20 +592,88 @@ export default function TimeTracker() {
  method: 'POST',
  });
 
+ // Waking a sleeping instance and draining the queue takes longer than one
+ // request, so watch until it settles rather than reporting immediately on
+ // a number that has not moved yet.
+ let latest: AgenticSyncStatus | null = agenticSyncStatus;
+ for (let attempt = 0; attempt < 20; attempt += 1) {
+ await new Promise(resolve => setTimeout(resolve, 3000));
+ const status = await fetchWithToken<ApiEnvelope<AgenticSyncStatus>>('/api/agentic/sync/status');
+ if (status.success && status.data) {
+ latest = status.data;
+ setAgenticSyncStatus(status.data);
+ const busy = (status.data.pending || 0) + (status.data.retry || 0) + (status.data.processing || 0);
+ if (busy === 0) break;
+ }
+ }
+
+ const remaining = latest?.failed || 0;
+ const recovered = Math.max(0, before - remaining);
+
+ if (remaining === 0) {
+ toast({
+ title: 'All caught up',
+ description: before > 0
+ ? `${before} ${before === 1 ? 'entry' : 'entries'} went through.`
+ : 'Everything has reached your alter ego.',
+ className: 'bg-muted text-foreground border-border',
+ });
+ } else {
+ toast({
+ title: recovered > 0 ? 'Some went through' : 'Still stuck',
+ description: recovered > 0
+ ? `${recovered} of ${before} went through. ${remaining} still ${remaining === 1 ? 'needs' : 'need'} another try.`
+ : `${remaining} still ${remaining === 1 ? 'has not' : 'have not'} gone through. ${latest?.recentFailures?.[0]?.reason || 'No reason was recorded.'}`,
+ variant: 'destructive',
+ className: 'bg-muted text-foreground border-border',
+ });
+ }
+ } catch (error) {
+ const message = error instanceof Error ? error.message : 'Could not reach the server.';
+ toast({
+ title: 'Could not try again',
+ description: `${message} Your tracked time is safe — nothing was lost.`,
+ variant: 'destructive',
+ className: 'bg-muted text-foreground border-border',
+ });
+ } finally {
+ setAgenticRetryInProgress(false);
+ }
+ };
+
+ /**
+  * Stop trying entries that will never go through.
+  *
+  * Without this the count can only ever go up: an entry that fails for a
+  * reason retrying cannot fix stays failed for ever, and the screen keeps
+  * asking about it. Deliberately two steps, because it does give up on
+  * something.
+  */
+ const discardStuckAgenticEvents = async () => {
+ setAgenticRetryInProgress(true);
+ try {
+ const result = await fetchWithToken<ApiEnvelope<{ discarded: number }>>('/api/agentic/sync/discard-stale', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ olderThanHours: 1 }),
+ });
  const status = await fetchWithToken<ApiEnvelope<AgenticSyncStatus>>('/api/agentic/sync/status');
  if (status.success && status.data) {
  setAgenticSyncStatus(status.data);
  }
-
+ const discarded = result?.data?.discarded ?? 0;
+ setAgenticConfirmDiscard(false);
  toast({
- title: 'Retrying sync',
- description: 'Failed Agentic sync events were queued for retry.',
+ title: discarded > 0 ? 'Stopped trying those' : 'Nothing to stop',
+ description: discarded > 0
+ ? `${discarded} ${discarded === 1 ? 'entry' : 'entries'} will not be sent again. Your tracked time is unchanged.`
+ : 'There was nothing old enough to give up on.',
  className: 'bg-muted text-foreground border-border',
  });
  } catch (error) {
- const message = error instanceof Error ? error.message : 'Failed to retry Agentic sync events.';
+ const message = error instanceof Error ? error.message : 'Could not reach the server.';
  toast({
- title: 'Retry didn’t work',
+ title: 'Could not do that',
  description: message,
  variant: 'destructive',
  className: 'bg-muted text-foreground border-border',
@@ -1744,9 +1833,12 @@ export default function TimeTracker() {
  );
  const agenticHasFailedOnly = Boolean(
  agenticSyncStatus
- && !agenticIsDegraded
  && (agenticSyncStatus.failed > 0 || agenticSyncStatus.hasFailures)
  );
+ // What the person is actually being told about: entries that have stopped
+ // trying on their own. A backlog still moving is not something to act on.
+ const agenticStuckCount = agenticSyncStatus?.failed || 0;
+ const agenticFailureReason = agenticSyncStatus?.recentFailures?.[0]?.reason || null;
 
  return (
  <div className="min-h-screen bg-background font-sans">
@@ -1781,42 +1873,56 @@ export default function TimeTracker() {
  </motion.div>
  )}
 
- {agenticIsDegraded && (
+ {/* One panel, in plain language.
+              *
+              * There were two — "Sync is having trouble" and "Sync needs
+              * attention" — distinguished by whether the queue was busy, which
+              * is not a distinction anyone outside this code can make. Between
+              * them they showed "Cooldown: 0s | Pending: 0 | Failed: 16", named
+              * the other half of the product by its repository name, and
+              * offered a button reading "Retry didn’t work Sync".
+              *
+              * What matters to the person is: their tracked time is safe, some
+              * of it has not reached their alter ego yet, and here is what they
+              * can do. */}
+ {(agenticIsDegraded || agenticHasFailedOnly) && (
  <motion.div
  className="mb-6 rounded-2xl border border-amber-300/60 bg-amber-50/85 p-4 text-amber-900 shadow-sm dark:border-amber-700/60 dark:bg-amber-950/35 dark:text-amber-100"
  initial={{ opacity: 0, y: -10 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.25 }}
+ role="status"
  >
+ <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
  <div className="flex items-start gap-3">
  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
  <div className="space-y-1 text-sm">
- <p className="font-semibold">Sync is having trouble</p>
+ <p className="font-semibold">
+ {agenticStuckCount > 0
+ ? `${agenticStuckCount} ${agenticStuckCount === 1 ? 'entry has' : 'entries have'} not reached your alter ego`
+ : 'Catching up on what you have tracked'}
+ </p>
  <p>
- Background sync is delayed. You can keep working locally, then use the refresh/sync action once Agentic is back.
+ {agenticStuckCount > 0
+ ? 'Your tracked time is saved and unaffected. This is only the copy used for insights.'
+ : 'Everything is saved. It is still working through the backlog.'}
  </p>
- <p className="text-xs opacity-90">
- Cooldown: {Math.max(0, agenticSyncStatus?.cooldownRemainingSeconds || 0)}s | Pending: {agenticPendingCount} | Failed: {agenticSyncStatus?.failed || 0}
- </p>
- </div>
- </div>
- </motion.div>
+ {agenticRetryInProgress && (
+ <p className="text-xs opacity-90">Trying now — this can take a minute.</p>
  )}
-
- {agenticHasFailedOnly && (
- <motion.div
- className="mb-6 rounded-2xl border border-yellow-300/60 bg-yellow-50/85 p-4 text-yellow-900 shadow-sm dark:border-yellow-700/60 dark:bg-yellow-950/35 dark:text-yellow-100"
- initial={{ opacity: 0, y: -10 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ duration: 0.25 }}
- >
- <div className="flex items-start justify-between gap-3">
- <div className="space-y-1 text-sm">
- <p className="font-semibold">Sync needs attention</p>
- <p>
- Queue is idle, but {agenticSyncStatus?.failed || 0} earlier sync event(s) failed and need retry.
+ {!agenticRetryInProgress && agenticFailureReason && (
+ <p className="text-xs opacity-90">Last reason: {agenticFailureReason}</p>
+ )}
+ {!agenticRetryInProgress && agenticPendingCount > 0 && agenticStuckCount === 0 && (
+ <p className="text-xs opacity-90">
+ {agenticPendingCount} waiting to go through.
  </p>
+ )}
  </div>
+ </div>
+
+ {agenticStuckCount > 0 && (
+ <div className="flex shrink-0 flex-wrap gap-2">
  <Button
  type="button"
  variant="outline"
@@ -1825,10 +1931,50 @@ export default function TimeTracker() {
  void retryFailedAgenticEvents();
  }}
  disabled={agenticRetryInProgress}
- className="shrink-0 rounded-xl border-yellow-500/40 bg-yellow-100/80 text-yellow-900 hover:bg-yellow-200 dark:border-yellow-600/40 dark:bg-yellow-900/40 dark:text-yellow-100"
+ className="rounded-xl border-amber-500/40 bg-amber-100/80 text-amber-900 hover:bg-amber-200 dark:border-amber-600/40 dark:bg-amber-900/40 dark:text-amber-100"
  >
- {agenticRetryInProgress ? 'Retrying...' : 'Retry didn’t work Sync'}
+ {agenticRetryInProgress ? 'Trying…' : 'Try again'}
  </Button>
+
+ {agenticConfirmDiscard ? (
+ <>
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={() => {
+ void discardStuckAgenticEvents();
+ }}
+ disabled={agenticRetryInProgress}
+ className="rounded-xl border-amber-500/40 bg-amber-100/80 text-amber-900 hover:bg-amber-200 dark:border-amber-600/40 dark:bg-amber-900/40 dark:text-amber-100"
+ >
+ Yes, stop trying
+ </Button>
+ <Button
+ type="button"
+ variant="ghost"
+ size="sm"
+ onClick={() => setAgenticConfirmDiscard(false)}
+ disabled={agenticRetryInProgress}
+ className="rounded-xl"
+ >
+ Keep trying
+ </Button>
+ </>
+ ) : (
+ <Button
+ type="button"
+ variant="ghost"
+ size="sm"
+ onClick={() => setAgenticConfirmDiscard(true)}
+ disabled={agenticRetryInProgress}
+ className="rounded-xl"
+ >
+ Stop trying these
+ </Button>
+ )}
+ </div>
+ )}
  </div>
  </motion.div>
  )}

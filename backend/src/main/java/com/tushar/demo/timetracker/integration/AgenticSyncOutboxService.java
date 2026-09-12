@@ -89,8 +89,19 @@ public class AgenticSyncOutboxService {
             long dead,
             long success,
             long cooldownRemainingSeconds,
-            String nextAttemptAt
+            String nextAttemptAt,
+            List<FailureSample> recentFailures
     ) {}
+
+    /**
+     * One failed event, in enough detail to tell someone what went wrong.
+     *
+     * The status endpoint only ever returned counts, so the screen could say
+     * "16 failed" and nothing else — not what failed, not why, and not whether
+     * trying again stood any chance. The reason was recorded on the row the
+     * whole time.
+     */
+    public record FailureSample(String eventType, String reason, String lastAttemptAt, int attempts) {}
 
     private record DispatchOutcome(boolean success, boolean retryable, boolean dead, String message) {
         static DispatchOutcome successful() {
@@ -444,6 +455,18 @@ public class AgenticSyncOutboxService {
             return;
         }
 
+        // Agentic sleeps when idle and takes the better part of a minute to
+        // get up — longer than a single request will wait. Sending the batch
+        // at a sleeping server meant every event in it timed out and landed in
+        // FAILED, for no reason to do with the event. Wake it once, then send.
+        if (!syncService.ensureUpstreamAwake()) {
+            logger.info(
+                    "Leaving {} event(s) queued — Agentic did not answer the wake-up",
+                    dueEvents.size()
+            );
+            return;
+        }
+
         for (AgenticSyncOutboxEvent event : dueEvents) {
             processEvent(event);
         }
@@ -465,7 +488,8 @@ public class AgenticSyncOutboxService {
                 outboxRepository.countByStatus(AgenticSyncOutboxStatus.DEAD),
                 outboxRepository.countByStatus(AgenticSyncOutboxStatus.SUCCESS),
                 syncService.getUpstreamCooldownRemainingSeconds(),
-                nextPending.map(event -> event.getNextAttemptAt().toString()).orElse(null)
+                nextPending.map(event -> event.getNextAttemptAt().toString()).orElse(null),
+                recentFailureSamples()
         );
     }
 
@@ -497,8 +521,46 @@ public class AgenticSyncOutboxService {
         return stale.size();
     }
 
+    /**
+     * A few of the most recent failures, with the reason each one gave.
+     *
+     * Three is enough to tell someone what kind of thing is failing without
+     * turning the screen into a log viewer, and the reasons on a stuck queue
+     * are nearly always the same one repeated.
+     */
+    private List<FailureSample> recentFailureSamples() {
+        try {
+            return outboxRepository
+                    .findByStatusOrderByUpdatedAtDesc(AgenticSyncOutboxStatus.FAILED, PageRequest.of(0, 3))
+                    .stream()
+                    .map(event -> new FailureSample(
+                            event.getEventType(),
+                            summariseError(event.getLastError()),
+                            event.getLastAttemptAt() != null ? event.getLastAttemptAt().toString() : null,
+                            event.getAttemptCount()
+                    ))
+                    .toList();
+        } catch (Exception e) {
+            logger.debug("Could not read failure samples: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    /** The reason, short enough to read and without the stack behind it. */
+    private String summariseError(String lastError) {
+        if (lastError == null || lastError.isBlank()) {
+            return "No reason was recorded";
+        }
+        String firstLine = lastError.split("\\R", 2)[0].trim();
+        return firstLine.length() > 180 ? firstLine.substring(0, 177) + "..." : firstLine;
+    }
+
     public int retryFailedEvents(int limit) {
         int boundedLimit = Math.max(1, limit);
+        // Retry used to re-queue straight into a sleeping upstream, time out
+        // again and put everything back into FAILED — which is why pressing it
+        // never moved the number.
+        syncService.ensureUpstreamAwake();
         List<AgenticSyncOutboxEvent> failedEvents = outboxRepository.findByStatusOrderByUpdatedAtDesc(
                 AgenticSyncOutboxStatus.FAILED,
                 PageRequest.of(0, boundedLimit)
